@@ -1,0 +1,8 @@
+.
+├── phase1
+│   ├── docker-compose.yml
+│   ├── README.md
+│   └── structure.txt
+└── structure.txt
+
+2 directories, 4 files
