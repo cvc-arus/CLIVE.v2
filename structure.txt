@@ -1,8 +1,17 @@
 .
-├── phase1
-│   ├── docker-compose.yml
-│   ├── README.md
-│   └── structure.txt
+├── backups
+│   └── clive_pgvector_20260805_160501.sql.gz
+├── configs
+│   └── postgres
+│       └── init-pgvector.sql
+├── docker-compose.yml
+├── docs
+│   ├── phase1.md
+│   └── phase2.md
+├── README.md
+├── scripts
+│   ├── backup.sh
+│   └── verify.sh
 └── structure.txt
 
-2 directories, 4 files
+6 directories, 9 files
