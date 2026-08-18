@@ -1,0 +1,10 @@
+# Environment files with secrets
+.env
+#Docker volumes (managed by Docker, not in repo)
+data/
+#OS files
+.DS_Store
+Thumbs.db
+#IDE
+.vscode/
+*.swp

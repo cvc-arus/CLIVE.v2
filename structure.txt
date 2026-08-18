@@ -1,8 +1,22 @@
 .
-├── phase1
-│   ├── docker-compose.yml
-│   ├── README.md
-│   └── structure.txt
-└── structure.txt
+├── backups
+│   └── clive_pgvector_20260805_160501.sql.gz
+├── configs
+│   └── postgres
+│       └── init-pgvector.sql
+├── docker-compose.yml
+├── docs
+│   ├── phase1.md
+│   └── phase2.md
+├── pyproject.toml
+├── README.md
+├── scripts
+│   ├── backup.sh
+│   └── verify.sh
+├── src
+│   └── simpro_client
+│       └── __init__.py
+├── structure.txt
+└── tests
 
-2 directories, 4 files
+9 directories, 11 files
