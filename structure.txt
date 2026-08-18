@@ -8,10 +8,15 @@
 ├── docs
 │   ├── phase1.md
 │   └── phase2.md
+├── pyproject.toml
 ├── README.md
 ├── scripts
 │   ├── backup.sh
 │   └── verify.sh
-└── structure.txt
+├── src
+│   └── simpro_client
+│       └── __init__.py
+├── structure.txt
+└── tests
 
-6 directories, 9 files
+9 directories, 11 files
