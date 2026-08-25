@@ -15,36 +15,9 @@
 │   ├── backup.sh
 │   └── verify.sh
 ├── src
-│   ├── simpro_client
-│   │   ├── auth.py
-│   │   ├── client.py
-│   │   ├── config.py
-│   │   ├── exceptions.py
-│   │   ├── __init__.py
-│   │   ├── logging.py
-│   │   └── __pycache__
-│   └── simpro_client.egg-info
-│       ├── dependency_links.txt
-│       ├── PKG-INFO
-│       ├── requires.txt
-│       ├── SOURCES.txt
-│       └── top_level.txt
+│   └── simpro_client
+│       └── __init__.py
 ├── structure.txt
 └── tests
-    ├── conftest.py
-    ├── __init__.py
-    ├── __pycache__
-    │   ├── conftest.cpython-312-pytest-9.1.1.pyc
-    │   ├── __init__.cpython-312.pyc
-    │   ├── test_auth.cpython-312-pytest-9.1.1.pyc
-    │   ├── test_client.cpython-312-pytest-9.1.1.pyc
-    │   ├── test_config.cpython-312-pytest-9.1.1.pyc
-    │   ├── test_logging.cpython-312-pytest-9.1.1.pyc
-    │   └── test_manual_logging.cpython-312-pytest-9.1.1.pyc
-    ├── test_auth.py
-    ├── test_client.py
-    ├── test_config.py
-    ├── test_logging.py
-    └── test_manual_logging.py
 
-12 directories, 36 files
+9 directories, 11 files
