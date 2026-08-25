@@ -60,6 +60,38 @@ services:
       retries: 5
       start_period: 30s
 
+  simpro-mock-db:
+    image: postgres:16-alpine
+    container_name: clive-simpro-mock-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: clive
+      POSTGRES_PASSWORD: clive
+      POSTGRES_DB: simpro_mock
+    volumes:
+      - simpro-mock-db-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clive -d simpro_mock"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  simpro-mock:
+    build:
+      context: ./services/simpro_mock
+      dockerfile: Dockerfile
+    container_name: clive-simpro-mock
+    restart: unless-stopped
+    ports:
+      - "8100:8000"
+    environment:
+       SIMPRO_MOCK_DATABASE_URL: postgresql://<db-user>:<db-password>@simpro-mock-db:5432/simpro_mock
+    depends_on:
+      simpro-mock-db:
+        condition: service_healthy
+ 
   tika:
     image: apache/tika:3.3.1.0-full
     container_name: clive-tika
@@ -71,3 +103,4 @@ volumes:
   ollama_data:
   openwebui_data:
   pgvector_data:
+  simpro-mock-db-data:

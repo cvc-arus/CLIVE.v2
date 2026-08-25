@@ -8,6 +8,7 @@
 ├── docs
 │   ├── phase1.md
 │   └── phase2.md
+├── phase3-logging.md
 ├── pyproject.toml
 ├── README.md
 ├── scripts
