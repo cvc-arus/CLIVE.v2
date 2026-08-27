@@ -1,13 +1,20 @@
 # Environment files with secrets
 .env
+
 # Docker volumes (managed by Docker, not in repo)
 data/
+
+# Database backups (these are large and should not be versioned)
+backups/
+
 # OS files
 .DS_Store
 Thumbs.db
+
 # IDE
 .vscode/
 *.swp
+
 # Python
 .venv/
 **/.venv/
@@ -17,3 +24,25 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
+
+# Logs (if any are generated)
+*.log
+logs/
+
+# Test coverage reports (if you use pytest-cov or similar)
+.coverage
+htmlcov/
+.coverage.*
+coverage.xml
+
+# Type checking caches (mypy, pyright, etc.)
+.mypy_cache/
+.pyright_cache/
+
+# Distribution / build artifacts
+dist/
+build/
+*.whl
+
+# Generated documentation (if any)
+docs/_build/

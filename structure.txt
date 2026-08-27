@@ -3,21 +3,71 @@
 │   └── clive_pgvector_20260805_160501.sql.gz
 ├── configs
 │   └── postgres
-│       └── init-pgvector.sql
 ├── docker-compose.yml
 ├── docs
+│   ├── ADR
 │   ├── phase1.md
-│   └── phase2.md
+│   ├── phase2.md
+│   ├── phase3-logging.md
+│   └── phase3.md
+├── .env
+├── .env.example
+├── .git
+│   ├── branches
+│   ├── COMMIT_EDITMSG
+│   ├── config
+│   ├── description
+│   ├── FETCH_HEAD
+│   ├── gk
+│   ├── HEAD
+│   ├── hooks
+│   ├── index
+│   ├── info
+│   ├── logs
+│   ├── objects
+│   ├── ORIG_HEAD
+│   ├── packed-refs
+│   └── refs
+├── .gitignore
 ├── phase3-logging.md
 ├── pyproject.toml
+├── .pytest_cache
+│   ├── CACHEDIR.TAG
+│   ├── .gitignore
+│   ├── README.md
+│   └── v
 ├── README.md
+├── .ruff_cache
+│   ├── 0.16.1
+│   ├── CACHEDIR.TAG
+│   └── .gitignore
 ├── scripts
 │   ├── backup.sh
 │   └── verify.sh
+├── services
+│   └── simpro_mock
 ├── src
-│   └── simpro_client
-│       └── __init__.py
+│   ├── simpro_client
+│   └── simpro_client.egg-info
 ├── structure.txt
-└── tests
+├── tests
+│   ├── conftest.py
+│   ├── __init__.py
+│   ├── __pycache__
+│   ├── test_auth.py
+│   ├── test_client.py
+│   ├── test_config.py
+│   ├── test_logging.py
+│   ├── test_manual_logging.py
+│   ├── test_simpro_integration.py
+│   └── test_simpro_mock.py
+├── uv.lock
+└── .venv
+    ├── bin
+    ├── include
+    ├── lib
+    ├── lib64 -> lib
+    ├── .lock
+    └── pyvenv.cfg
 
-9 directories, 11 files
+31 directories, 40 files
