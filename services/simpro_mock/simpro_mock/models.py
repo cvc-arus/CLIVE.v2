@@ -1,6 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import Date, Float, ForeignKey, String, Column, Integer, String, Text, DateTime
+from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from simpro_mock.database import Base
@@ -22,6 +22,24 @@ class Company(Base):
     quotes: Mapped[list["Quote"]] = relationship(
         back_populates="company", cascade="all, delete-orphan"
     )
+    contacts: Mapped[list["Contact"]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
+    )
+    sites: Mapped[list["Site"]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
+    )
+    employees: Mapped[list["Employee"]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
+    )
+    projects: Mapped[list["Project"]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
+    )
+    statuses: Mapped[list["Status"]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
+    )
+    assets: Mapped[list["Asset"]] = relationship(
+        back_populates="company", cascade="all, delete-orphan"
+    )
 
 
 class Customer(Base):
@@ -39,6 +57,13 @@ class Customer(Base):
     # Relationships
     company: Mapped["Company"] = relationship(back_populates="customers")
     quotes: Mapped[list["Quote"]] = relationship(back_populates="customer")
+    contacts: Mapped[list["Contact"]] = relationship(
+        back_populates="customer", cascade="all, delete-orphan"
+    )
+    sites: Mapped[list["Site"]] = relationship(
+        back_populates="customer", cascade="all, delete-orphan"
+    )
+    projects: Mapped[list["Project"]] = relationship(back_populates="customer")
 
 
 class Job(Base):
@@ -55,6 +80,12 @@ class Job(Base):
 
     # Relationships
     company: Mapped["Company"] = relationship(back_populates="jobs")
+    notes: Mapped[list["JobNote"]] = relationship(
+        back_populates="job", cascade="all, delete-orphan"
+    )
+    attachments: Mapped[list["Attachment"]] = relationship(
+        back_populates="job", cascade="all, delete-orphan"
+    )
 
 
 class Quote(Base):
@@ -79,118 +110,160 @@ class Quote(Base):
 class Contact(Base):
     __tablename__ = "contacts"
 
-    id = Column(Integer, primary_key=True)
-    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-    customer_id = Column(Integer, ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
-    given_name = Column(String(255), nullable=False)
-    family_name = Column(String(255), nullable=False)
-    position = Column(String(255), nullable=True)
-    email = Column(String(255), nullable=True)
-    phone = Column(String(50), nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    customer_id: Mapped[int] = mapped_column(
+        ForeignKey("customers.id", ondelete="CASCADE"), nullable=False
+    )
+    given_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    family_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    position: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
-    company = relationship("Company", backref="contacts")
-    customer = relationship("Customer", backref="contacts")
+    # Relationships
+    company: Mapped["Company"] = relationship(back_populates="contacts")
+    customer: Mapped["Customer"] = relationship(back_populates="contacts")
 
 
 class Site(Base):
     __tablename__ = "sites"
 
-    id = Column(Integer, primary_key=True)
-    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-    customer_id = Column(Integer, ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
-    name = Column(String(255), nullable=False)
-    address = Column(String(255), nullable=True)
-    city = Column(String(100), nullable=True)
-    postcode = Column(String(20), nullable=True)
-    state = Column(String(50), nullable=True)
-    country = Column(String(50), nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    customer_id: Mapped[int] = mapped_column(
+        ForeignKey("customers.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    address: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    postcode: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    state: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    country: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
-    company = relationship("Company", backref="sites")
-    customer = relationship("Customer", backref="sites")
+    # Relationships
+    company: Mapped["Company"] = relationship(back_populates="sites")
+    customer: Mapped["Customer"] = relationship(back_populates="sites")
+    assets: Mapped[list["Asset"]] = relationship(
+        back_populates="site", cascade="all, delete-orphan"
+    )
+    projects: Mapped[list["Project"]] = relationship(back_populates="site")
 
 
 class Asset(Base):
     __tablename__ = "assets"
 
-    id = Column(Integer, primary_key=True)
-    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-    site_id = Column(Integer, ForeignKey("sites.id", ondelete="CASCADE"), nullable=False)
-    asset_no = Column(String(50), nullable=False, unique=True)
-    name = Column(String(255), nullable=False)
-    serial_no = Column(String(100), nullable=True)
-    model = Column(String(100), nullable=True)
-    manufacturer = Column(String(100), nullable=True)
-    installed_date = Column(Date, nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    site_id: Mapped[int] = mapped_column(
+        ForeignKey("sites.id", ondelete="CASCADE"), nullable=False
+    )
+    asset_no: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    serial_no: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    manufacturer: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    installed_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
-    company = relationship("Company", backref="assets")
-    site = relationship("Site", backref="assets")
+    # Relationships
+    company: Mapped["Company"] = relationship(back_populates="assets")
+    site: Mapped["Site"] = relationship(back_populates="assets")
 
 
 class Employee(Base):
     __tablename__ = "employees"
 
-    id = Column(Integer, primary_key=True)
-    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-    given_name = Column(String(255), nullable=False)
-    family_name = Column(String(255), nullable=False)
-    position = Column(String(255), nullable=True)
-    email = Column(String(255), nullable=True)
-    phone = Column(String(50), nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    given_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    family_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    position: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
-    company = relationship("Company", backref="employees")
+    # Relationships
+    company: Mapped["Company"] = relationship(back_populates="employees")
+    job_notes: Mapped[list["JobNote"]] = relationship(back_populates="employee")
 
 
 class Project(Base):
     __tablename__ = "projects"
 
-    id = Column(Integer, primary_key=True)
-    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-    customer_id = Column(Integer, ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
-    site_id = Column(Integer, ForeignKey("sites.id", ondelete="SET NULL"), nullable=True)
-    name = Column(String(255), nullable=False)
-    status = Column(String(100), nullable=False)
-    total = Column(Float, nullable=False, default=0.0)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    customer_id: Mapped[int] = mapped_column(
+        ForeignKey("customers.id", ondelete="CASCADE"), nullable=False
+    )
+    site_id: Mapped[int | None] = mapped_column(
+        ForeignKey("sites.id", ondelete="SET NULL"), nullable=True
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(100), nullable=False)
+    total: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
 
-    company = relationship("Company", backref="projects")
-    customer = relationship("Customer", backref="projects")
-    site = relationship("Site", backref="projects")
+    # Relationships
+    company: Mapped["Company"] = relationship(back_populates="projects")
+    customer: Mapped["Customer"] = relationship(back_populates="projects")
+    site: Mapped["Site"] = relationship(back_populates="projects")
 
 
 class JobNote(Base):
     __tablename__ = "job_notes"
 
-    id = Column(Integer, primary_key=True)
-    job_id = Column(Integer, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
-    subject = Column(String(255), nullable=True)
-    note = Column(Text, nullable=True)
-    created_by = Column(Integer, ForeignKey("employees.id", ondelete="SET NULL"), nullable=True)
-    created_at = Column(DateTime, nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    job_id: Mapped[int] = mapped_column(
+        ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False
+    )
+    subject: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[int | None] = mapped_column(
+        ForeignKey("employees.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    job = relationship("Job", backref="notes")
-    employee = relationship("Employee", backref="job_notes")
+    # Relationships
+    job: Mapped["Job"] = relationship(back_populates="notes")
+    employee: Mapped["Employee"] = relationship(back_populates="job_notes")
 
 
 class Attachment(Base):
     __tablename__ = "attachments"
 
-    id = Column(Integer, primary_key=True)
-    job_id = Column(Integer, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
-    filename = Column(String(255), nullable=False)
-    mime_type = Column(String(100), nullable=True)
-    file_size = Column(Integer, nullable=True)  # in bytes
-    uploaded_at = Column(DateTime, nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    job_id: Mapped[int] = mapped_column(
+        ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False
+    )
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    mime_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    file_size: Mapped[int | None] = mapped_column(Integer, nullable=True)  # bytes
+    uploaded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    job = relationship("Job", backref="attachments")
+    # Relationships
+    job: Mapped["Job"] = relationship(back_populates="attachments")
 
 
 class Status(Base):
     __tablename__ = "statuses"
 
-    id = Column(Integer, primary_key=True)
-    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
-    name = Column(String(100), nullable=False)
-    category = Column(String(50), nullable=True)  # e.g., "Job", "Quote", "Project"
-    is_default = Column(Integer, default=0)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    category: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # e.g. "Job", "Quote", "Project"
+    is_default: Mapped[int] = mapped_column(Integer, default=0)
 
-    company = relationship("Company", backref="statuses")
-    
+    # Relationships
+    company: Mapped["Company"] = relationship(back_populates="statuses")

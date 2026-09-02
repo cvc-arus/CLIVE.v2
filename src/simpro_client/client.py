@@ -16,7 +16,6 @@ from simpro_client.logging import (
     RequestTimer,
     configure_logging,
     get_correlation_id,
-    set_correlation_id,
 )
 
 
@@ -59,9 +58,14 @@ class SimproClient:
         _retry_on_401: bool = True,
     ) -> Any:
         """Execute an HTTP request with auth, logging, and error handling."""
-        cid = get_correlation_id() or set_correlation_id()
+        # get_correlation_id() already auto-generates and stores an ID the
+        # first time it's called (see logging.py), so it never returns a
+        # falsy value here - no separate set_correlation_id() fallback is
+        # needed. The resulting ID is attached as a request header so it
+        # actually leaves the client for downstream tracing.
+        cid = get_correlation_id()
         token = self._auth.get_token()
-        headers = {"Authorization": f"Bearer {token}"}
+        headers = {"Authorization": f"Bearer {token}", "X-Correlation-ID": cid}
         with RequestTimer() as timer:
             try:
                 response = self._http.request(

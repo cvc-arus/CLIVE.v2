@@ -1,4 +1,5 @@
 """Simpro-style query parameter filtering with operator support."""
+
 import re
 from typing import Any
 
@@ -26,6 +27,7 @@ PASCAL_TO_SNAKE = {
     "CustomerID": "customer_id",
 }
 
+
 def parse_operator(value: str) -> tuple[str, Any]:
     """Parse a Simpro operator expression. Returns (operator, parsed_value)."""
     match = OPERATOR_PATTERN.match(value)
@@ -45,6 +47,7 @@ def parse_operator(value: str) -> tuple[str, Any]:
         return op, parts
 
     return op, raw
+
 
 def build_filter_expression(column, operator: str, value: Any):
     """Convert an operator and value into a SQLAlchemy filter expression."""
@@ -68,6 +71,7 @@ def build_filter_expression(column, operator: str, value: Any):
         return ~column.in_(value)
     return column == value
 
+
 def _cast_numeric(value: str):
     """Try to cast a string to int or float for comparison operators."""
     try:
@@ -77,6 +81,7 @@ def _cast_numeric(value: str):
             return float(value)
         except ValueError:
             return value
+
 
 def apply_filters(query: Query, model, query_params: dict[str, str]) -> Query:
     """Apply Simpro-style filters from query parameters to a SQLAlchemy query."""

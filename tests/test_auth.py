@@ -14,19 +14,22 @@ from simpro_client.exceptions import SimproAuthError
 @respx.mock
 def test_token_obtained_on_first_call(mock_settings: SimproSettings):
     respx.post(mock_settings.token_url).mock(
-        return_value=Response(200, json={"access_token":
-                                         "fresh_token",
-                                           "expires_in": 3600})
+        return_value=Response(
+            200, json={"access_token": "fresh_token", "expires_in": 3600}
+        )
     )
     auth = AuthManager(mock_settings)
     token = auth.get_token()
     assert token == "fresh_token"
     auth.close()
 
+
 @respx.mock
 def test_token_cached_on_second_call(mock_settings: SimproSettings):
     route = respx.post(mock_settings.token_url).mock(
-        return_value=Response(200, json={"access_token": "cached-token", "expires_in": 3600})
+        return_value=Response(
+            200, json={"access_token": "cached-token", "expires_in": 3600}
+        )
     )
     auth = AuthManager(mock_settings)
     auth.get_token()
@@ -38,7 +41,9 @@ def test_token_cached_on_second_call(mock_settings: SimproSettings):
 @respx.mock
 def test_expired_token_triggers_refresh(mock_settings: SimproSettings):
     route = respx.post(mock_settings.token_url).mock(
-        return_value=Response(200, json={"access_token": "refreshed-token", "expires_in": 3600})
+        return_value=Response(
+            200, json={"access_token": "refreshed-token", "expires_in": 3600}
+        )
     )
     auth = AuthManager(mock_settings)
     auth.get_token()
@@ -47,6 +52,7 @@ def test_expired_token_triggers_refresh(mock_settings: SimproSettings):
     assert token == "refreshed-token"
     assert route.call_count == 2
     auth.close()
+
 
 @respx.mock
 def test_invalid_credentials_raise_auth_error(mock_settings: SimproSettings):
