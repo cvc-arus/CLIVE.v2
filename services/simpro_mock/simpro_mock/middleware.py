@@ -18,6 +18,7 @@ class BearerAuthMiddleware(BaseHTTPMiddleware):
         "/openapi.json",
         "/redoc",
     }
+
     async def dispatch(self, request: Request, call_next):
         if request.url.path in self.EXEMPT_PATHS:
             return await call_next(request)

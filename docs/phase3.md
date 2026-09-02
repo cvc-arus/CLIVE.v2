@@ -112,6 +112,7 @@ Every request is mapped with a thread-safe and async-safe transaction `correlati
 
 ```python
 from simpro_client.logging import set_correlation_id
+
 set_correlation_id("invoice-sync-01")
 ```
 

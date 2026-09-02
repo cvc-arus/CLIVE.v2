@@ -2,22 +2,43 @@
 
 import random
 from datetime import date, datetime, timedelta
-from sqlalchemy.orm import Session
+
 from sqlalchemy import text
-from simpro_mock.models import (
-    Company, Customer, Contact, Site, Asset, Employee, Project,
-    Job, JobNote, Attachment, Quote, Status
-)
+from sqlalchemy.orm import Session
+
 from simpro_mock.database import SessionLocal
+from simpro_mock.models import (
+    Asset,
+    Attachment,
+    Company,
+    Contact,
+    Customer,
+    Employee,
+    Job,
+    JobNote,
+    Project,
+    Quote,
+    Site,
+    Status,
+)
 
 
 def truncate_tables(db: Session):
     """Truncate all tables and reset identity sequences."""
     # Order doesn't matter much with CASCADE, but we list all tables explicitly.
     tables = [
-        "attachments", "job_notes", "projects", "assets",
-        "statuses", "employees", "sites", "contacts",
-        "quotes", "jobs", "customers", "companies"
+        "attachments",
+        "job_notes",
+        "projects",
+        "assets",
+        "statuses",
+        "employees",
+        "sites",
+        "contacts",
+        "quotes",
+        "jobs",
+        "customers",
+        "companies",
     ]
     for table in tables:
         db.execute(text(f"TRUNCATE TABLE {table} RESTART IDENTITY CASCADE;"))
@@ -82,7 +103,13 @@ def seed_data():
     db.commit()
 
     # ---- 3. Contacts (24) ----
-    positions = ["Site Manager", "Accounts Contact", "Facilities Manager", "Operations Manager", "Project Coordinator"]
+    positions = [
+        "Site Manager",
+        "Accounts Contact",
+        "Facilities Manager",
+        "Operations Manager",
+        "Project Coordinator",
+    ]
     for customer in customers:
         for pos in random.sample(positions, k=3):
             contact = Contact(
@@ -99,10 +126,22 @@ def seed_data():
 
     # ---- 4. Sites (16) ----
     site_names = [
-        "Smith Residence", "Doe Office", "Johnson Warehouse", "Williams Retail",
-        "Brown Factory", "Green Depot", "Miller Medical", "Taylor School",
-        "Harris Estate", "Owens Tower", "Nelson Complex", "Carter Plaza",
-        "Parker Centre", "Cooper Court", "Reed Gardens", "Bennett House",
+        "Smith Residence",
+        "Doe Office",
+        "Johnson Warehouse",
+        "Williams Retail",
+        "Brown Factory",
+        "Green Depot",
+        "Miller Medical",
+        "Taylor School",
+        "Harris Estate",
+        "Owens Tower",
+        "Nelson Complex",
+        "Carter Plaza",
+        "Parker Centre",
+        "Cooper Court",
+        "Reed Gardens",
+        "Bennett House",
     ]
     cities = ["Brisbane", "Sydney", "Melbourne", "Perth", "Adelaide"]
     states = ["QLD", "NSW", "VIC", "WA", "SA"]
@@ -241,10 +280,22 @@ def seed_data():
     # ---- 9. Jobs (16) ----
     job_statuses = ["Pending", "Approved", "In Progress", "Complete", "On Hold"]
     job_names = [
-        "Install CCTV", "Upgrade Access", "Fire Panel Test", "Network Cabling",
-        "Door Installation", "Alarm System", "Camera Maintenance", "Site Survey",
-        "Electrical Work", "Security Audit", "System Integration", "Testing",
-        "Repair", "Inspection", "Service Call", "Emergency Response",
+        "Install CCTV",
+        "Upgrade Access",
+        "Fire Panel Test",
+        "Network Cabling",
+        "Door Installation",
+        "Alarm System",
+        "Camera Maintenance",
+        "Site Survey",
+        "Electrical Work",
+        "Security Audit",
+        "System Integration",
+        "Testing",
+        "Repair",
+        "Inspection",
+        "Service Call",
+        "Emergency Response",
     ]
     for company in companies:
         company_sites = [s for s in sites if s.company_id == company.id]
@@ -261,7 +312,13 @@ def seed_data():
     db.commit()
 
     # ---- 10. Job Notes (32) ----
-    note_subjects = ["Client Meeting", "Action Item", "Site Visit", "Report", "Follow-up"]
+    note_subjects = [
+        "Client Meeting",
+        "Action Item",
+        "Site Visit",
+        "Report",
+        "Follow-up",
+    ]
     note_bodies = [
         "Confirmed stage 2 installation dates.",
         "Need additional power outlets.",
@@ -288,9 +345,18 @@ def seed_data():
 
     # ---- 11. Attachments (20) ----
     file_names = [
-        "site_plan.pdf", "wiring_diagram.pdf", "schedule.xlsx", "quote.pdf",
-        "permit.pdf", "invoice.pdf", "specifications.pdf", "manual.pdf",
-        "photo.jpg", "drawing.dwg", "compliance_report.pdf", "checklist.docx",
+        "site_plan.pdf",
+        "wiring_diagram.pdf",
+        "schedule.xlsx",
+        "quote.pdf",
+        "permit.pdf",
+        "invoice.pdf",
+        "specifications.pdf",
+        "manual.pdf",
+        "photo.jpg",
+        "drawing.dwg",
+        "compliance_report.pdf",
+        "checklist.docx",
     ]
     mime_types = {
         "pdf": "application/pdf",
@@ -303,7 +369,7 @@ def seed_data():
     for job in jobs[:10]:  # attach to first 10 jobs
         for _ in range(random.randint(1, 3)):
             fname = random.choice(file_names)
-            ext = fname.split('.')[-1]
+            ext = fname.split(".")[-1]
             attach = Attachment(
                 job_id=job.id,
                 filename=fname,
@@ -317,11 +383,22 @@ def seed_data():
     # ---- 12. Quotes (16) ----
     quote_statuses = ["Draft", "Sent", "Accepted", "Rejected"]
     quote_names = [
-        "CCTV Quote", "Access Control Quote", "Fire Safety Quote",
-        "Network Upgrade", "Security Package", "Maintenance Agreement",
-        "Additional Sensors", "System Expansion", "Annual Service",
-        "Emergency Callout", "Retrofit Proposal", "New Installation",
-        "Consulting", "Training", "Support Plan", "Equipment Supply",
+        "CCTV Quote",
+        "Access Control Quote",
+        "Fire Safety Quote",
+        "Network Upgrade",
+        "Security Package",
+        "Maintenance Agreement",
+        "Additional Sensors",
+        "System Expansion",
+        "Annual Service",
+        "Emergency Callout",
+        "Retrofit Proposal",
+        "New Installation",
+        "Consulting",
+        "Training",
+        "Support Plan",
+        "Equipment Supply",
     ]
     for company in companies:
         company_customers = [c for c in customers if c.company_id == company.id]

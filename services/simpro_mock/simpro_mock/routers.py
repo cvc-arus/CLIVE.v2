@@ -6,22 +6,35 @@ from simpro_mock.config import settings
 from simpro_mock.database import get_db
 from simpro_mock.filtering import apply_filters
 from simpro_mock.middleware import paginate_query, set_pagination_headers
-from simpro_mock.models import Contact, Site, Asset, Employee, Project, JobNote, Attachment, Status, Company, Customer, Job, Quote
+from simpro_mock.models import (
+    Asset,
+    Attachment,
+    Company,
+    Contact,
+    Customer,
+    Employee,
+    Job,
+    JobNote,
+    Project,
+    Quote,
+    Site,
+    Status,
+)
 from simpro_mock.schemas import (
-    ContactResponse,
-    SiteResponse,
     AssetResponse,
-    EmployeeResponse,
-    ProjectResponse,
-    JobNoteResponse,
     AttachmentResponse,
-    StatusResponse,
-    HealthResponse,
-    TokenResponse,
     CompanyResponse,
+    ContactResponse,
     CustomerResponse,
+    EmployeeResponse,
+    HealthResponse,
+    JobNoteResponse,
     JobResponse,
+    ProjectResponse,
     QuoteResponse,
+    SiteResponse,
+    StatusResponse,
+    TokenResponse,
 )
 
 # Create separate routers for health, tokens, and API resources
@@ -33,6 +46,7 @@ api_router = APIRouter(prefix="/api/v1.0")
 # ==========================================
 # 1. HEALTH CHECK & INFRASTRUCTURE ROUTES
 # ==========================================
+
 
 @health_router.get("/health", response_model=HealthResponse)
 def health_check():
@@ -64,6 +78,7 @@ def issue_token(
 # ==========================================
 # 2. COMPANIES RESOURCE ROUTES
 # ==========================================
+
 
 @api_router.get("/companies/", response_model=list[CompanyResponse])
 def list_companies(
@@ -109,6 +124,7 @@ def get_company(company_id: int, db: Session = Depends(get_db)):
 # 3. CUSTOMERS RESOURCE ROUTES
 # ==========================================
 
+
 @api_router.get(
     "/companies/{company_id}/customers/",
     response_model=list[CustomerResponse],
@@ -153,10 +169,14 @@ def get_customer(
     db: Session = Depends(get_db),
 ):
     """Fetch details of a single customer scoped to their respective company."""
-    customer = db.query(Customer).filter(
-        Customer.id == customer_id,
-        Customer.company_id == company_id,
-    ).first()
+    customer = (
+        db.query(Customer)
+        .filter(
+            Customer.id == customer_id,
+            Customer.company_id == company_id,
+        )
+        .first()
+    )
 
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
@@ -174,6 +194,7 @@ def get_customer(
 # ==========================================
 # 4. JOBS RESOURCE ROUTES
 # ==========================================
+
 
 @api_router.get(
     "/companies/{company_id}/jobs/",
@@ -199,11 +220,7 @@ def list_jobs(
             CompanyID=job.company_id,
             Name=job.name,
             Status=job.status,
-            DateIssued=(
-                job.date_issued.isoformat()
-                if job.date_issued
-                else None
-            ),
+            DateIssued=(job.date_issued.isoformat() if job.date_issued else None),
             Total=job.total,
         )
         for job in items
@@ -223,10 +240,14 @@ def get_job(
     db: Session = Depends(get_db),
 ):
     """Fetch details of a single job scoped to a specific company ID."""
-    job = db.query(Job).filter(
-        Job.id == job_id,
-        Job.company_id == company_id,
-    ).first()
+    job = (
+        db.query(Job)
+        .filter(
+            Job.id == job_id,
+            Job.company_id == company_id,
+        )
+        .first()
+    )
 
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -244,6 +265,7 @@ def get_job(
 # ==========================================
 # 5. QUOTES RESOURCE ROUTES
 # ==========================================
+
 
 @api_router.get(
     "/companies/{company_id}/quotes/",
@@ -289,10 +311,14 @@ def get_quote(
     db: Session = Depends(get_db),
 ):
     """Fetch details of a single quote scoped to a specific company ID."""
-    quote = db.query(Quote).filter(
-        Quote.id == quote_id,
-        Quote.company_id == company_id,
-    ).first()
+    quote = (
+        db.query(Quote)
+        .filter(
+            Quote.id == quote_id,
+            Quote.company_id == company_id,
+        )
+        .first()
+    )
 
     if not quote:
         raise HTTPException(status_code=404, detail="Quote not found")
@@ -306,7 +332,11 @@ def get_quote(
         Total=quote.total,
     )
 
-@api_router.get("/companies/{company_id}/customers/{customer_id}/contacts/", response_model=list[ContactResponse])
+
+@api_router.get(
+    "/companies/{company_id}/customers/{customer_id}/contacts/",
+    response_model=list[ContactResponse],
+)
 def list_contacts(
     company_id: int,
     customer_id: int,
@@ -317,8 +347,7 @@ def list_contacts(
     db: Session = Depends(get_db),
 ):
     query = db.query(Contact).filter(
-        Contact.company_id == company_id,
-        Contact.customer_id == customer_id
+        Contact.company_id == company_id, Contact.customer_id == customer_id
     )
     query = apply_filters(query, Contact, dict(request.query_params))
     items, total, total_pages = paginate_query(query, page, pageSize)
@@ -339,13 +368,22 @@ def list_contacts(
     return results
 
 
-@api_router.get("/companies/{company_id}/customers/{customer_id}/contacts/{contact_id}", response_model=ContactResponse)
-def get_contact(company_id: int, customer_id: int, contact_id: int, db: Session = Depends(get_db)):
-    contact = db.query(Contact).filter(
-        Contact.id == contact_id,
-        Contact.company_id == company_id,
-        Contact.customer_id == customer_id
-    ).first()
+@api_router.get(
+    "/companies/{company_id}/customers/{customer_id}/contacts/{contact_id}",
+    response_model=ContactResponse,
+)
+def get_contact(
+    company_id: int, customer_id: int, contact_id: int, db: Session = Depends(get_db)
+):
+    contact = (
+        db.query(Contact)
+        .filter(
+            Contact.id == contact_id,
+            Contact.company_id == company_id,
+            Contact.customer_id == customer_id,
+        )
+        .first()
+    )
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
     return ContactResponse(
@@ -363,6 +401,7 @@ def get_contact(company_id: int, customer_id: int, contact_id: int, db: Session 
 # ==========================================
 # 7. SITES
 # ==========================================
+
 
 @api_router.get("/companies/{company_id}/sites/", response_model=list[SiteResponse])
 def list_sites(
@@ -396,7 +435,9 @@ def list_sites(
 
 @api_router.get("/companies/{company_id}/sites/{site_id}", response_model=SiteResponse)
 def get_site(company_id: int, site_id: int, db: Session = Depends(get_db)):
-    site = db.query(Site).filter(Site.id == site_id, Site.company_id == company_id).first()
+    site = (
+        db.query(Site).filter(Site.id == site_id, Site.company_id == company_id).first()
+    )
     if not site:
         raise HTTPException(status_code=404, detail="Site not found")
     return SiteResponse(
@@ -416,7 +457,11 @@ def get_site(company_id: int, site_id: int, db: Session = Depends(get_db)):
 # 8. ASSETS
 # ==========================================
 
-@api_router.get("/companies/{company_id}/sites/{site_id}/assets/", response_model=list[AssetResponse])
+
+@api_router.get(
+    "/companies/{company_id}/sites/{site_id}/assets/",
+    response_model=list[AssetResponse],
+)
 def list_assets(
     company_id: int,
     site_id: int,
@@ -426,7 +471,9 @@ def list_assets(
     pageSize: int = Query(30, ge=1, le=250),
     db: Session = Depends(get_db),
 ):
-    query = db.query(Asset).filter(Asset.company_id == company_id, Asset.site_id == site_id)
+    query = db.query(Asset).filter(
+        Asset.company_id == company_id, Asset.site_id == site_id
+    )
     query = apply_filters(query, Asset, dict(request.query_params))
     items, total, total_pages = paginate_query(query, page, pageSize)
     results = [
@@ -447,13 +494,22 @@ def list_assets(
     return results
 
 
-@api_router.get("/companies/{company_id}/sites/{site_id}/assets/{asset_id}", response_model=AssetResponse)
-def get_asset(company_id: int, site_id: int, asset_id: int, db: Session = Depends(get_db)):
-    asset = db.query(Asset).filter(
-        Asset.id == asset_id,
-        Asset.company_id == company_id,
-        Asset.site_id == site_id
-    ).first()
+@api_router.get(
+    "/companies/{company_id}/sites/{site_id}/assets/{asset_id}",
+    response_model=AssetResponse,
+)
+def get_asset(
+    company_id: int, site_id: int, asset_id: int, db: Session = Depends(get_db)
+):
+    asset = (
+        db.query(Asset)
+        .filter(
+            Asset.id == asset_id,
+            Asset.company_id == company_id,
+            Asset.site_id == site_id,
+        )
+        .first()
+    )
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
     return AssetResponse(
@@ -465,7 +521,9 @@ def get_asset(company_id: int, site_id: int, asset_id: int, db: Session = Depend
         SerialNo=asset.serial_no,
         Model=asset.model,
         Manufacturer=asset.manufacturer,
-        InstalledDate=asset.installed_date.isoformat() if asset.installed_date else None,
+        InstalledDate=asset.installed_date.isoformat()
+        if asset.installed_date
+        else None,
     )
 
 
@@ -473,7 +531,10 @@ def get_asset(company_id: int, site_id: int, asset_id: int, db: Session = Depend
 # 9. EMPLOYEES
 # ==========================================
 
-@api_router.get("/companies/{company_id}/employees/", response_model=list[EmployeeResponse])
+
+@api_router.get(
+    "/companies/{company_id}/employees/", response_model=list[EmployeeResponse]
+)
 def list_employees(
     company_id: int,
     request: Request,
@@ -501,9 +562,15 @@ def list_employees(
     return results
 
 
-@api_router.get("/companies/{company_id}/employees/{employee_id}", response_model=EmployeeResponse)
+@api_router.get(
+    "/companies/{company_id}/employees/{employee_id}", response_model=EmployeeResponse
+)
 def get_employee(company_id: int, employee_id: int, db: Session = Depends(get_db)):
-    employee = db.query(Employee).filter(Employee.id == employee_id, Employee.company_id == company_id).first()
+    employee = (
+        db.query(Employee)
+        .filter(Employee.id == employee_id, Employee.company_id == company_id)
+        .first()
+    )
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
     return EmployeeResponse(
@@ -521,7 +588,10 @@ def get_employee(company_id: int, employee_id: int, db: Session = Depends(get_db
 # 10. PROJECTS
 # ==========================================
 
-@api_router.get("/companies/{company_id}/projects/", response_model=list[ProjectResponse])
+
+@api_router.get(
+    "/companies/{company_id}/projects/", response_model=list[ProjectResponse]
+)
 def list_projects(
     company_id: int,
     request: Request,
@@ -549,9 +619,15 @@ def list_projects(
     return results
 
 
-@api_router.get("/companies/{company_id}/projects/{project_id}", response_model=ProjectResponse)
+@api_router.get(
+    "/companies/{company_id}/projects/{project_id}", response_model=ProjectResponse
+)
 def get_project(company_id: int, project_id: int, db: Session = Depends(get_db)):
-    project = db.query(Project).filter(Project.id == project_id, Project.company_id == company_id).first()
+    project = (
+        db.query(Project)
+        .filter(Project.id == project_id, Project.company_id == company_id)
+        .first()
+    )
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     return ProjectResponse(
@@ -569,7 +645,10 @@ def get_project(company_id: int, project_id: int, db: Session = Depends(get_db))
 # 11. JOB NOTES
 # ==========================================
 
-@api_router.get("/companies/{company_id}/jobs/{job_id}/notes/", response_model=list[JobNoteResponse])
+
+@api_router.get(
+    "/companies/{company_id}/jobs/{job_id}/notes/", response_model=list[JobNoteResponse]
+)
 def list_job_notes(
     company_id: int,
     job_id: int,
@@ -601,12 +680,18 @@ def list_job_notes(
     return results
 
 
-@api_router.get("/companies/{company_id}/jobs/{job_id}/notes/{note_id}", response_model=JobNoteResponse)
-def get_job_note(company_id: int, job_id: int, note_id: int, db: Session = Depends(get_db)):
-    note = db.query(JobNote).filter(
-        JobNote.id == note_id,
-        JobNote.job_id == job_id
-    ).first()
+@api_router.get(
+    "/companies/{company_id}/jobs/{job_id}/notes/{note_id}",
+    response_model=JobNoteResponse,
+)
+def get_job_note(
+    company_id: int, job_id: int, note_id: int, db: Session = Depends(get_db)
+):
+    note = (
+        db.query(JobNote)
+        .filter(JobNote.id == note_id, JobNote.job_id == job_id)
+        .first()
+    )
     # Verify job belongs to company (optional)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
@@ -627,7 +712,11 @@ def get_job_note(company_id: int, job_id: int, note_id: int, db: Session = Depen
 # 12. ATTACHMENTS
 # ==========================================
 
-@api_router.get("/companies/{company_id}/jobs/{job_id}/attachments/", response_model=list[AttachmentResponse])
+
+@api_router.get(
+    "/companies/{company_id}/jobs/{job_id}/attachments/",
+    response_model=list[AttachmentResponse],
+)
 def list_attachments(
     company_id: int,
     job_id: int,
@@ -658,12 +747,18 @@ def list_attachments(
     return results
 
 
-@api_router.get("/companies/{company_id}/jobs/{job_id}/attachments/{attachment_id}", response_model=AttachmentResponse)
-def get_attachment(company_id: int, job_id: int, attachment_id: int, db: Session = Depends(get_db)):
-    attachment = db.query(Attachment).filter(
-        Attachment.id == attachment_id,
-        Attachment.job_id == job_id
-    ).first()
+@api_router.get(
+    "/companies/{company_id}/jobs/{job_id}/attachments/{attachment_id}",
+    response_model=AttachmentResponse,
+)
+def get_attachment(
+    company_id: int, job_id: int, attachment_id: int, db: Session = Depends(get_db)
+):
+    attachment = (
+        db.query(Attachment)
+        .filter(Attachment.id == attachment_id, Attachment.job_id == job_id)
+        .first()
+    )
     if not attachment:
         raise HTTPException(status_code=404, detail="Attachment not found")
     job = db.query(Job).filter(Job.id == job_id, Job.company_id == company_id).first()
@@ -675,7 +770,9 @@ def get_attachment(company_id: int, job_id: int, attachment_id: int, db: Session
         Filename=attachment.filename,
         MimeType=attachment.mime_type,
         FileSize=attachment.file_size,
-        UploadedAt=attachment.uploaded_at.isoformat() if attachment.uploaded_at else None,
+        UploadedAt=attachment.uploaded_at.isoformat()
+        if attachment.uploaded_at
+        else None,
     )
 
 
@@ -683,7 +780,10 @@ def get_attachment(company_id: int, job_id: int, attachment_id: int, db: Session
 # 13. STATUSES
 # ==========================================
 
-@api_router.get("/companies/{company_id}/statuses/", response_model=list[StatusResponse])
+
+@api_router.get(
+    "/companies/{company_id}/statuses/", response_model=list[StatusResponse]
+)
 def list_statuses(
     company_id: int,
     request: Request,
@@ -709,9 +809,15 @@ def list_statuses(
     return results
 
 
-@api_router.get("/companies/{company_id}/statuses/{status_id}", response_model=StatusResponse)
+@api_router.get(
+    "/companies/{company_id}/statuses/{status_id}", response_model=StatusResponse
+)
 def get_status(company_id: int, status_id: int, db: Session = Depends(get_db)):
-    status = db.query(Status).filter(Status.id == status_id, Status.company_id == company_id).first()
+    status = (
+        db.query(Status)
+        .filter(Status.id == status_id, Status.company_id == company_id)
+        .first()
+    )
     if not status:
         raise HTTPException(status_code=404, detail="Status not found")
     return StatusResponse(

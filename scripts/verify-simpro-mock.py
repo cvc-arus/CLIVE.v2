@@ -1,11 +1,21 @@
 #!/usr/bin/env python3
 """
-Integration test for the full Simpro mock API.
-Prints detailed diagnostics on failure.
+Manual diagnostic script for the full Simpro mock API.
+
+Not a pytest test - deliberately kept outside tests/ so pytest never
+collects it (its helper functions are named test_list_endpoint,
+test_single_endpoint, etc., which previously caused pytest to try, and
+fail, to run them as real tests). Run it directly against a live mock:
+
+    docker compose up -d simpro-mock
+    python scripts/verify_simpro_mock.py
+
+Prints detailed diagnostics on failure and exits non-zero.
 """
 
-import httpx
 import sys
+
+import httpx
 
 BASE_URL = "http://localhost:8100"
 
@@ -71,7 +81,9 @@ def test_list_endpoint(
         first = data[0]
         for field in expected_fields:
             if field not in first:
-                print(f"❌ {resource_name} missing field '{field}'. Keys: {list(first.keys())}")
+                print(
+                    f"❌ {resource_name} missing field '{field}'. Keys: {list(first.keys())}"
+                )
                 sys.exit(1)
     for header in ("Result-Total", "Result-Count", "Result-Pages"):
         if header not in r.headers:
@@ -91,7 +103,9 @@ def test_single_endpoint(
     data = check_response(r, resource_name, expect_list=False)
     for field in expected_fields:
         if field not in data:
-            print(f"❌ {resource_name} missing field '{field}'. Keys: {list(data.keys())}")
+            print(
+                f"❌ {resource_name} missing field '{field}'. Keys: {list(data.keys())}"
+            )
             sys.exit(1)
     print(f"✅ {resource_name} single OK")
 
@@ -121,7 +135,9 @@ def main():
     company_id = companies[0]["ID"]
     print(f"Using company ID: {company_id}")
 
-    r = httpx.get(f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/", headers=headers)
+    r = httpx.get(
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/", headers=headers
+    )
     customers = check_response(r, "Customers", expect_list=True)
     if len(customers) == 0:
         print("❌ No customers found – check seed data")
@@ -161,19 +177,48 @@ def main():
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{customer_id}/contacts/",
-        ["ID", "CompanyID", "CustomerID", "GivenName", "FamilyName", "Position", "Email", "Phone"],
+        [
+            "ID",
+            "CompanyID",
+            "CustomerID",
+            "GivenName",
+            "FamilyName",
+            "Position",
+            "Email",
+            "Phone",
+        ],
         "Contacts",
     )
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/",
-        ["ID", "CompanyID", "CustomerID", "Name", "Address", "City", "Postcode", "State", "Country"],
+        [
+            "ID",
+            "CompanyID",
+            "CustomerID",
+            "Name",
+            "Address",
+            "City",
+            "Postcode",
+            "State",
+            "Country",
+        ],
         "Sites",
     )
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/{site_id}/assets/",
-        ["ID", "CompanyID", "SiteID", "AssetNo", "Name", "SerialNo", "Model", "Manufacturer", "InstalledDate"],
+        [
+            "ID",
+            "CompanyID",
+            "SiteID",
+            "AssetNo",
+            "Name",
+            "SerialNo",
+            "Model",
+            "Manufacturer",
+            "InstalledDate",
+        ],
         "Assets",
     )
     test_list_endpoint(
@@ -234,14 +279,26 @@ def main():
     )
 
     # Contacts (need a contact ID)
-    r = httpx.get(f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{customer_id}/contacts/", headers=headers)
+    r = httpx.get(
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{customer_id}/contacts/",
+        headers=headers,
+    )
     contacts = check_response(r, "Contacts", expect_list=True)
     if contacts:
         cid = contacts[0]["ID"]
         test_single_endpoint(
             headers,
             f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{customer_id}/contacts/{cid}",
-            ["ID", "CompanyID", "CustomerID", "GivenName", "FamilyName", "Position", "Email", "Phone"],
+            [
+                "ID",
+                "CompanyID",
+                "CustomerID",
+                "GivenName",
+                "FamilyName",
+                "Position",
+                "Email",
+                "Phone",
+            ],
             "Contact",
         )
     else:
@@ -251,40 +308,75 @@ def main():
     test_single_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/{site_id}",
-        ["ID", "CompanyID", "CustomerID", "Name", "Address", "City", "Postcode", "State", "Country"],
+        [
+            "ID",
+            "CompanyID",
+            "CustomerID",
+            "Name",
+            "Address",
+            "City",
+            "Postcode",
+            "State",
+            "Country",
+        ],
         "Site",
     )
 
     # Assets (need asset ID)
-    r = httpx.get(f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/{site_id}/assets/", headers=headers)
+    r = httpx.get(
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/{site_id}/assets/",
+        headers=headers,
+    )
     assets = check_response(r, "Assets", expect_list=True)
     if assets:
         aid = assets[0]["ID"]
         test_single_endpoint(
             headers,
             f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/{site_id}/assets/{aid}",
-            ["ID", "CompanyID", "SiteID", "AssetNo", "Name", "SerialNo", "Model", "Manufacturer", "InstalledDate"],
+            [
+                "ID",
+                "CompanyID",
+                "SiteID",
+                "AssetNo",
+                "Name",
+                "SerialNo",
+                "Model",
+                "Manufacturer",
+                "InstalledDate",
+            ],
             "Asset",
         )
     else:
         print("⚠️  No assets found, skipping Asset single test")
 
     # Employees (need employee ID)
-    r = httpx.get(f"{BASE_URL}/api/v1.0/companies/{company_id}/employees/", headers=headers)
+    r = httpx.get(
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/employees/", headers=headers
+    )
     emps = check_response(r, "Employees", expect_list=True)
     if emps:
         eid = emps[0]["ID"]
         test_single_endpoint(
             headers,
             f"{BASE_URL}/api/v1.0/companies/{company_id}/employees/{eid}",
-            ["ID", "CompanyID", "GivenName", "FamilyName", "Position", "Email", "Phone"],
+            [
+                "ID",
+                "CompanyID",
+                "GivenName",
+                "FamilyName",
+                "Position",
+                "Email",
+                "Phone",
+            ],
             "Employee",
         )
     else:
         print("⚠️  No employees found, skipping Employee single test")
 
     # Projects
-    r = httpx.get(f"{BASE_URL}/api/v1.0/companies/{company_id}/projects/", headers=headers)
+    r = httpx.get(
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/projects/", headers=headers
+    )
     projs = check_response(r, "Projects", expect_list=True)
     if projs:
         pid = projs[0]["ID"]
@@ -306,7 +398,10 @@ def main():
     )
 
     # Job Notes
-    r = httpx.get(f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/notes/", headers=headers)
+    r = httpx.get(
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/notes/",
+        headers=headers,
+    )
     notes = check_response(r, "JobNotes", expect_list=True)
     if notes:
         nid = notes[0]["ID"]
@@ -320,7 +415,10 @@ def main():
         print("⚠️  No job notes found, skipping JobNote single test")
 
     # Attachments
-    r = httpx.get(f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/", headers=headers)
+    r = httpx.get(
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/",
+        headers=headers,
+    )
     atts = check_response(r, "Attachments", expect_list=True)
     if atts:
         atid = atts[0]["ID"]
@@ -334,7 +432,9 @@ def main():
         print("⚠️  No attachments found, skipping Attachment single test")
 
     # Quotes
-    r = httpx.get(f"{BASE_URL}/api/v1.0/companies/{company_id}/quotes/", headers=headers)
+    r = httpx.get(
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/quotes/", headers=headers
+    )
     quotes = check_response(r, "Quotes", expect_list=True)
     if quotes:
         qid = quotes[0]["ID"]
@@ -348,7 +448,9 @@ def main():
         print("⚠️  No quotes found, skipping Quote single test")
 
     # Statuses
-    r = httpx.get(f"{BASE_URL}/api/v1.0/companies/{company_id}/statuses/", headers=headers)
+    r = httpx.get(
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/statuses/", headers=headers
+    )
     statuses = check_response(r, "Statuses", expect_list=True)
     if statuses:
         sid = statuses[0]["ID"]
@@ -364,17 +466,53 @@ def main():
     # ---- 5. 404 tests ----
     bogus = 99999
     test_404(headers, f"{BASE_URL}/api/v1.0/companies/{bogus}", "Company")
-    test_404(headers, f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{bogus}", "Customer")
-    test_404(headers, f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/{bogus}", "Site")
+    test_404(
+        headers,
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{bogus}",
+        "Customer",
+    )
+    test_404(
+        headers, f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/{bogus}", "Site"
+    )
     test_404(headers, f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{bogus}", "Job")
-    test_404(headers, f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{customer_id}/contacts/{bogus}", "Contact")
-    test_404(headers, f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/{site_id}/assets/{bogus}", "Asset")
-    test_404(headers, f"{BASE_URL}/api/v1.0/companies/{company_id}/employees/{bogus}", "Employee")
-    test_404(headers, f"{BASE_URL}/api/v1.0/companies/{company_id}/projects/{bogus}", "Project")
-    test_404(headers, f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/notes/{bogus}", "JobNote")
-    test_404(headers, f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/{bogus}", "Attachment")
-    test_404(headers, f"{BASE_URL}/api/v1.0/companies/{company_id}/quotes/{bogus}", "Quote")
-    test_404(headers, f"{BASE_URL}/api/v1.0/companies/{company_id}/statuses/{bogus}", "Status")
+    test_404(
+        headers,
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{customer_id}/contacts/{bogus}",
+        "Contact",
+    )
+    test_404(
+        headers,
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/{site_id}/assets/{bogus}",
+        "Asset",
+    )
+    test_404(
+        headers,
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/employees/{bogus}",
+        "Employee",
+    )
+    test_404(
+        headers,
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/projects/{bogus}",
+        "Project",
+    )
+    test_404(
+        headers,
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/notes/{bogus}",
+        "JobNote",
+    )
+    test_404(
+        headers,
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/{bogus}",
+        "Attachment",
+    )
+    test_404(
+        headers, f"{BASE_URL}/api/v1.0/companies/{company_id}/quotes/{bogus}", "Quote"
+    )
+    test_404(
+        headers,
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/statuses/{bogus}",
+        "Status",
+    )
 
     print("\n🎉 All integration tests passed!")
 

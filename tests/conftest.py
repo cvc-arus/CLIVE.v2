@@ -13,13 +13,15 @@ def mock_settings() -> SimproSettings:
         token_url="http://simpro-mock:8000/oauth/token",
         client_id="mock_client_id",
         client_secret="mock_client_secret",
-        #api_key="mock_api_key",
+        # api_key="mock_api_key",
         auth_mode="client_credentials",
         company_id_service=1,
         company_id_projects=2,
         timeout=30.0,
         max_retries=3,
     )
+
+
 @pytest.fixture
 def api_key_settings() -> SimproSettings:
     """create test settings with API key auth mode."""
