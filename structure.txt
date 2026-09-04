@@ -3,71 +3,82 @@
 │   └── clive_pgvector_20260805_160501.sql.gz
 ├── configs
 │   └── postgres
+│       └── init-pgvector.sql
 ├── docker-compose.yml
 ├── docs
 │   ├── ADR
+│   │   └── adr-mock-simpro-api.md
+│   ├── architecture.md
+│   ├── CHANGELOG.md
+│   ├── development-standards.md
+│   ├── installation.md
+│   ├── known-issues.md
+│   ├── PDD-phase3.md
 │   ├── phase1.md
 │   ├── phase2.md
 │   ├── phase3-logging.md
-│   └── phase3.md
-├── .env
-├── .env.example
-├── .git
-│   ├── branches
-│   ├── COMMIT_EDITMSG
-│   ├── config
-│   ├── description
-│   ├── FETCH_HEAD
-│   ├── gk
-│   ├── HEAD
-│   ├── hooks
-│   ├── index
-│   ├── info
-│   ├── logs
-│   ├── objects
-│   ├── ORIG_HEAD
-│   ├── packed-refs
-│   └── refs
-├── .gitignore
+│   ├── phase3.md
+│   ├── roadmap.md
+│   ├── scope
+│   │   ├── initial.md
+│   │   └── scope&readmap-rev2.md
+│   ├── simpro-mock-api-reference.md
+│   └── testing.md
 ├── phase3-logging.md
 ├── pyproject.toml
-├── .pytest_cache
-│   ├── CACHEDIR.TAG
-│   ├── .gitignore
-│   ├── README.md
-│   └── v
 ├── README.md
-├── .ruff_cache
-│   ├── 0.16.1
-│   ├── CACHEDIR.TAG
-│   └── .gitignore
 ├── scripts
 │   ├── backup.sh
-│   └── verify.sh
+│   ├── verify.sh
+│   └── verify-simpro-mock.py
 ├── services
 │   └── simpro_mock
+│       ├── alembic
+│       │   ├── env.py
+│       │   ├── script.py.mako
+│       │   └── versions
+│       │       ├── 27082026_add_simpro_resources.py
+│       │       └── 876a0e057b67_init_db.py
+│       ├── alembic.ini
+│       ├── configuration.md
+│       ├── Dockerfile
+│       ├── pyproject.toml
+│       ├── simpro_mock
+│       │   ├── config.py
+│       │   ├── database.py
+│       │   ├── filtering.py
+│       │   ├── __init__.py
+│       │   ├── main.py
+│       │   ├── middleware.py
+│       │   ├── models.py
+│       │   ├── routers.py
+│       │   ├── schemas.py
+│       │   └── seed.py
+│       └── uv.lock
 ├── src
 │   ├── simpro_client
+│   │   ├── auth.py
+│   │   ├── client.py
+│   │   ├── config.py
+│   │   ├── exceptions.py
+│   │   ├── __init__.py
+│   │   └── logging.py
 │   └── simpro_client.egg-info
+│       ├── dependency_links.txt
+│       ├── PKG-INFO
+│       ├── requires.txt
+│       ├── SOURCES.txt
+│       └── top_level.txt
 ├── structure.txt
 ├── tests
 │   ├── conftest.py
 │   ├── __init__.py
-│   ├── __pycache__
 │   ├── test_auth.py
 │   ├── test_client.py
 │   ├── test_config.py
 │   ├── test_logging.py
 │   ├── test_manual_logging.py
-│   ├── test_simpro_integration.py
-│   └── test_simpro_mock.py
-├── uv.lock
-└── .venv
-    ├── bin
-    ├── include
-    ├── lib
-    ├── lib64 -> lib
-    ├── .lock
-    └── pyvenv.cfg
+│   └── test_simpro_mock_v2.py
+└── uv.lock
 
-31 directories, 40 files
+17 directories, 65 files
