@@ -51,9 +51,7 @@ def test_companies_list_uses_pascal_case_and_pagination_headers(token: str):
     headers = {"Authorization": f"Bearer {token}"}
     response = httpx.get(f"{BASE}/api/v1.0/companies/", headers=headers)
 
-    assert response.status_code == 200, (
-        f"Companies request failed: {response.status_code}"
-    )
+    assert response.status_code == 200, f"Companies request failed: {response.status_code}"
     data = response.json()
     assert data, "Expected at least one seeded company"
     assert "ID" in data[0], f"Expected PascalCase fields, got: {list(data[0].keys())}"
