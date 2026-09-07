@@ -4,27 +4,49 @@
 ├── configs
 │   └── postgres
 │       └── init-pgvector.sql
+├── dock
+│   └── phase1
 ├── docker-compose.yml
 ├── docs
 │   ├── ADR
+│   │   ├── adr-001-local-llm-stack.md
+│   │   ├── adr-002-vector-database-pgvector.md
+│   │   ├── adr-003-document-extraction-tika.md
+│   │   ├── adr-004-http-client-choice.md
+│   │   ├── adr-005-auth-strategy.md
+│   │   ├── adr-006-library-first-architecture.md
+│   │   ├── adr-007-configuration-management.md
+│   │   ├── adr-008-rate-limiting-strategy.md
+│   │   ├── adr-009-phase3-phase4-handoff.md
+│   │   ├── ADR-index.md
 │   │   └── adr-mock-simpro-api.md
 │   ├── architecture.md
 │   ├── CHANGELOG.md
 │   ├── development-standards.md
 │   ├── installation.md
 │   ├── known-issues.md
-│   ├── PDD-phase3.md
-│   ├── phase1.md
-│   ├── phase2.md
-│   ├── phase3-logging.md
-│   ├── phase3.md
+│   ├── PDDs
+│   │   ├── PDD-phase1.md
+│   │   ├── PDD-phase2.md
+│   │   ├── PDD-phase3.md
+│   │   └── PDD-phase4.md
+│   ├── phase1
+│   │   └── summary.md
+│   ├── phase2
+│   │   └── summary.md
+│   ├── phase3
+│   │   ├── logging.md
+│   │   ├── phase3-sprint4.md
+│   │   ├── sprint4-architecture-summary.md
+│   │   ├── sprint4-contract.md
+│   │   ├── sprint4-preflight-audit.md
+│   │   └── summary.md
 │   ├── roadmap.md
 │   ├── scope
 │   │   ├── initial.md
 │   │   └── scope&readmap-rev2.md
 │   ├── simpro-mock-api-reference.md
 │   └── testing.md
-├── phase3-logging.md
 ├── pyproject.toml
 ├── README.md
 ├── scripts
@@ -34,26 +56,11 @@
 ├── services
 │   └── simpro_mock
 │       ├── alembic
-│       │   ├── env.py
-│       │   ├── script.py.mako
-│       │   └── versions
-│       │       ├── 27082026_add_simpro_resources.py
-│       │       └── 876a0e057b67_init_db.py
 │       ├── alembic.ini
 │       ├── configuration.md
 │       ├── Dockerfile
 │       ├── pyproject.toml
 │       ├── simpro_mock
-│       │   ├── config.py
-│       │   ├── database.py
-│       │   ├── filtering.py
-│       │   ├── __init__.py
-│       │   ├── main.py
-│       │   ├── middleware.py
-│       │   ├── models.py
-│       │   ├── routers.py
-│       │   ├── schemas.py
-│       │   └── seed.py
 │       └── uv.lock
 ├── src
 │   ├── simpro_client
@@ -81,4 +88,4 @@
 │   └── test_simpro_mock_v2.py
 └── uv.lock
 
-17 directories, 65 files
+22 directories, 67 files
