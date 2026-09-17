@@ -7,16 +7,26 @@ import httpx
 
 from simpro_client.auth import AuthManager
 from simpro_client.config import SimproSettings, get_settings
+from simpro_client.endpoints import (
+    AssetsEndpoint,
+    AttachmentsEndpoint,
+    CompaniesEndpoint,
+    ContactsEndpoint,
+    CustomersEndpoint,
+    EmployeesEndpoint,
+    JobNotesEndpoint,
+    JobsEndpoint,
+    ProjectsEndpoint,
+    QuotesEndpoint,
+    SitesEndpoint,
+    StatusesEndpoint,
+)
 from simpro_client.exceptions import (
     SimproAPIError,
     SimproNotFoundError,
     SimproRateLimitError,
 )
-from simpro_client.logging import (
-    RequestTimer,
-    configure_logging,
-    get_correlation_id,
-)
+from simpro_client.logging import RequestTimer, configure_logging, get_correlation_id
 
 
 class SimproClient:
@@ -26,28 +36,44 @@ class SimproClient:
         self._settings = settings or get_settings()
         self._auth = AuthManager(self._settings)
         self._logger = configure_logging()
-        # Configure httpx with base URL, timeout, and default headers
         self._http = httpx.Client(
             base_url=self._settings.base_url,
             timeout=self._settings.timeout,
             headers={"Content-Type": "application/json", "Accept": "application/json"},
         )
+        self.companies = CompaniesEndpoint(self)
+        self.customers = CustomersEndpoint(self)
+        self.jobs = JobsEndpoint(self)
+        self.quotes = QuotesEndpoint(self)
+        self.contacts = ContactsEndpoint(self)
+        self.sites = SitesEndpoint(self)
+        self.assets = AssetsEndpoint(self)
+        self.employees = EmployeesEndpoint(self)
+        self.projects = ProjectsEndpoint(self)
+        self.job_notes = JobNotesEndpoint(self)
+        self.attachments = AttachmentsEndpoint(self)
+        self.statuses = StatusesEndpoint(self)
 
     def get(self, path: str, params: dict[str, Any] | None = None) -> Any:
-        """Send a GET request."""
+        """Send a GET request and return decoded JSON."""
         return self._request("GET", path, params=params)
 
     def post(self, path: str, json: dict[str, Any] | None = None) -> Any:
-        """Send a POST request."""
+        """Send a POST request and return decoded JSON."""
         return self._request("POST", path, json=json)
 
     def patch(self, path: str, json: dict[str, Any] | None = None) -> Any:
-        """Send a PATCH request."""
+        """Send a PATCH request and return decoded JSON."""
         return self._request("PATCH", path, json=json)
 
     def delete(self, path: str) -> Any:
-        """Send a DELETE request."""
+        """Send a DELETE request and return decoded JSON."""
         return self._request("DELETE", path)
+
+    def _get_response(
+        self, path: str, params: dict[str, Any] | None = None
+    ) -> httpx.Response:
+        return self._request_response("GET", path, params=params)
 
     def _request(
         self,
@@ -57,28 +83,45 @@ class SimproClient:
         json: dict[str, Any] | None = None,
         _retry_on_401: bool = True,
     ) -> Any:
-        """Execute an HTTP request with auth, logging, and error handling."""
-        # get_correlation_id() already auto-generates and stores an ID the
-        # first time it's called (see logging.py), so it never returns a
-        # falsy value here - no separate set_correlation_id() fallback is
-        # needed. The resulting ID is attached as a request header so it
-        # actually leaves the client for downstream tracing.
+        response = self._request_response(
+            method,
+            path,
+            params=params,
+            json=json,
+            _retry_on_401=_retry_on_401,
+        )
+        if response.status_code == 204:
+            return None
+        return response.json()
+
+    def _request_response(
+        self,
+        method: str,
+        path: str,
+        params: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
+        _retry_on_401: bool = True,
+    ) -> httpx.Response:
         cid = get_correlation_id()
         token = self._auth.get_token()
         headers = {"Authorization": f"Bearer {token}", "X-Correlation-ID": cid}
         with RequestTimer() as timer:
             try:
                 response = self._http.request(
-                    method=method, url=path, params=params, json=json, headers=headers
+                    method=method,
+                    url=path,
+                    params=params,
+                    json=json,
+                    headers=headers,
                 )
-            except httpx.HTTPError as e:
+            except httpx.HTTPError as exc:
                 self._logger.error(
-                    f"Request failed: {method} {path}: {e}",
+                    f"Request failed: {method} {path}: {exc}",
                     extra={"method": method, "url": path},
                 )
                 raise SimproAPIError(
-                    message=f"Request failed: {e}", status_code=0
-                ) from e
+                    message=f"Request failed: {exc}", status_code=0
+                ) from exc
 
         self._log_request(method, path, response.status_code, timer.duration_ms)
         return self._handle_response(
@@ -93,13 +136,16 @@ class SimproClient:
         params: dict[str, Any] | None,
         json: dict[str, Any] | None,
         retry_on_401: bool,
-    ) -> Any:
-        """Process the response, handling errors and retries."""
+    ) -> httpx.Response:
         if response.status_code == 401 and retry_on_401:
             self._logger.info("Received 401, refreshing token and retrying")
             self._auth.invalidate()
-            return self._request(
-                method, path, params=params, json=json, _retry_on_401=False
+            return self._request_response(
+                method,
+                path,
+                params=params,
+                json=json,
+                _retry_on_401=False,
             )
         if response.status_code == 404:
             raise SimproNotFoundError(f"Not found: {method} {path}")
@@ -114,14 +160,11 @@ class SimproClient:
                 status_code=response.status_code,
                 response_body=response.text,
             )
-        if response.status_code == 204:
-            return None
-        return response.json()
+        return response
 
     def _log_request(
         self, method: str, url: str, status_code: int, duration_ms: float
     ) -> None:
-        """Log request details with structured fields."""
         log_record = logging.LogRecord(
             name="simpro_client",
             level=logging.INFO,
@@ -138,7 +181,6 @@ class SimproClient:
         self._logger.handle(log_record)
 
     def close(self) -> None:
-        """Close all underlying connections."""
         self._http.close()
         self._auth.close()
 

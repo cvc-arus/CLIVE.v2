@@ -37,4 +37,7 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "A", "SIM"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+    "integration: requires the running simpro-mock service",
+]
 
