@@ -14,7 +14,10 @@ Place these files in `docs/ADR/` alongside the existing `adr-mock-simpro-api.md`
 | 007 | Configuration Management — pydantic-settings | 3 | Accepted, implemented |
 | 008 | Rate Limiting — token bucket at 8 req/sec | 3 | **Proposed, not yet implemented** |
 | 009 | Phase 3 → Phase 4 Handoff Mechanism | 3→4 | **Proposed, open decision — needs CVC sign-off** |
+| 010 |  Client-Side Resilience, Rate Limiting, and Error Handling  | 3→4| **Approved** |
+
 
 Two items need your attention, not just filing:
 - **ADR-008** describes a rate limiter that was planned but never built. `SimproRateLimitError` is ready for it, but nothing raises it from client-side enforcement yet.
 - **ADR-009** is a genuine open decision (direct import vs. service wrapper for Phase 4). I've laid out both options with a non-binding recommendation, but this is the one that needs an actual answer from you before Phase 4 scoping starts — everything else in this batch documents decisions already made in code.
+- **ADR-010** 
