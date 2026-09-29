@@ -52,6 +52,9 @@ class SimproSettings(BaseSettings):
         default=3,
         description="Maximum number of retries on transient failures",
     )
+    limiter_capacity: int = Field(default=8)
+    limiter_refill_rate: float = Field(default=8.0)
+    
 
 
 @lru_cache
