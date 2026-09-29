@@ -35,7 +35,7 @@ uv run pytest tests/test_retries.py -v         # one module
 uv run pytest -q --durations=5                 # spot slow tests
 ```
 
-Verified baseline at `87139ef`: 56 passed, 2 skipped (mock not running), in
+Verified baseline at `31936f8`: 56 passed, 2 skipped (mock not running), in
 about 18 s. About 15 s of that is one test (see §4).
 
 ## 3. Fixtures and settings

@@ -1,4 +1,4 @@
-# CLAUDE.md — `src/` (`simpro_client` library)
+# CLAUDE.md — `src/simpro_client/` (library)
 
 Complements the root `CLAUDE.md`. Applies to `src/simpro_client/`.
 `src/simpro_client.egg-info/` is build output. Do not edit it.
@@ -15,7 +15,8 @@ It must stay independent of the mock:
 - Never hardcode mock details (port 8100, `mock-access-token-simpro`, mock
   hostnames). These belong in configuration and test fixtures only.
 - Never add behaviour that exists only to satisfy a mock quirk. If the mock
-  differs from real Simpro, the mock is the thing to fix (see `services/`).
+  differs from real Simpro, the mock is the thing to fix (see
+  `services/simpro_mock/CLAUDE.md`).
 
 ## 2. Layout (as implemented)
 
@@ -125,7 +126,7 @@ failures. (Missing route parameters currently raise `ValueError` from
 - Every field has an explicit PascalCase `alias` and a snake_case attribute.
 - Required vs optional must match the mock response schema
   (`services/simpro_mock/simpro_mock/schemas.py`) and
-  `docs/phase3/sprint4-contract.md`. Where they disagree, report it.
+  `docs/phase3/phase3-sprint4-contract.md`. Where they disagree, report it.
 - Dates are `datetime.date`; timestamps are `datetime.datetime`.
 - Do not add fields the mock does not return unless they are optional and
   you can cite real Simpro documentation for them.
