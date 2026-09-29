@@ -1,6 +1,10 @@
 """Base HTTP client for the Simpro REST API."""
 
 import logging
+import random
+import time
+from datetime import UTC, datetime, timezone
+from email.utils import parsedate_to_datetime
 from typing import Any
 
 import httpx
@@ -23,15 +27,22 @@ from simpro_client.endpoints import (
 )
 from simpro_client.exceptions import (
     SimproAPIError,
+    SimproClientError,
     SimproNotFoundError,
     SimproRateLimitError,
+    SimproServerError,
 )
 from simpro_client.logging import RequestTimer, configure_logging, get_correlation_id
+from simpro_client.rate_limiter import TokenBucket
+
+_MAX_RETRY_DELAY_SECONDS = 60.0
+
+
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
 
 
 class SimproClient:
-    """Main entry point for the Simpro API integration."""
-
     def __init__(self, settings: SimproSettings | None = None) -> None:
         self._settings = settings or get_settings()
         self._auth = AuthManager(self._settings)
@@ -41,6 +52,12 @@ class SimproClient:
             timeout=self._settings.timeout,
             headers={"Content-Type": "application/json", "Accept": "application/json"},
         )
+        self._limiter = TokenBucket(
+            self._settings.limiter_refill_rate, self._settings.limiter_capacity
+        )
+        self._sleep = time.sleep
+        self._random = random.random
+        self._now = _utc_now
         self.companies = CompaniesEndpoint(self)
         self.customers = CustomersEndpoint(self)
         self.jobs = JobsEndpoint(self)
@@ -54,138 +71,127 @@ class SimproClient:
         self.attachments = AttachmentsEndpoint(self)
         self.statuses = StatusesEndpoint(self)
 
-    def get(self, path: str, params: dict[str, Any] | None = None) -> Any:
-        """Send a GET request and return decoded JSON."""
+    def get(self, path, params=None):
         return self._request("GET", path, params=params)
 
-    def post(self, path: str, json: dict[str, Any] | None = None) -> Any:
-        """Send a POST request and return decoded JSON."""
+    def post(self, path, json=None):
         return self._request("POST", path, json=json)
 
-    def patch(self, path: str, json: dict[str, Any] | None = None) -> Any:
-        """Send a PATCH request and return decoded JSON."""
+    def patch(self, path, json=None):
         return self._request("PATCH", path, json=json)
 
-    def delete(self, path: str) -> Any:
-        """Send a DELETE request and return decoded JSON."""
+    def delete(self, path):
         return self._request("DELETE", path)
 
-    def _get_response(
-        self, path: str, params: dict[str, Any] | None = None
-    ) -> httpx.Response:
+    def _get_response(self, path, params=None):
         return self._request_response("GET", path, params=params)
 
-    def _request(
-        self,
-        method: str,
-        path: str,
-        params: dict[str, Any] | None = None,
-        json: dict[str, Any] | None = None,
-        _retry_on_401: bool = True,
-    ) -> Any:
+    def _request(self, method, path, params=None, json=None, _retry_on_401=True):
         response = self._request_response(
-            method,
-            path,
-            params=params,
-            json=json,
-            _retry_on_401=_retry_on_401,
+            method, path, params=params, json=json, _retry_on_401=_retry_on_401
         )
-        if response.status_code == 204:
-            return None
-        return response.json()
+        return None if response.status_code == 204 else response.json()
 
     def _request_response(
-        self,
-        method: str,
-        path: str,
-        params: dict[str, Any] | None = None,
-        json: dict[str, Any] | None = None,
-        _retry_on_401: bool = True,
-    ) -> httpx.Response:
-        cid = get_correlation_id()
-        token = self._auth.get_token()
-        headers = {"Authorization": f"Bearer {token}", "X-Correlation-ID": cid}
-        with RequestTimer() as timer:
-            try:
-                response = self._http.request(
-                    method=method,
-                    url=path,
-                    params=params,
-                    json=json,
-                    headers=headers,
+        self, method, path, params=None, json=None, _retry_on_401=True
+    ):
+        correlation_id = get_correlation_id()
+        auth_retry_available = _retry_on_401
+        rate_retry_count = 0
+        attempt_count = 0
+        while True:
+            token = self._auth.get_token()
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "X-Correlation-ID": correlation_id,
+            }
+            self._limiter.acquire()
+            attempt_count += 1
+            with RequestTimer() as timer:
+                try:
+                    response = self._http.request(
+                        method=method, url=path, params=params, json=json, headers=headers
+                    )
+                except httpx.HTTPError as exc:
+                    raise SimproAPIError(
+                        f"Request failed: {exc}", 0, method=method, url=path,
+                        correlation_id=correlation_id, retry_count=rate_retry_count,
+                    ) from exc
+            self._log_request(method, path, response.status_code, timer.duration_ms)
+            if response.status_code == 401 and auth_retry_available:
+                self._auth.invalidate()
+                auth_retry_available = False
+                continue
+            if response.status_code == 429:
+                retry_after = self._parse_retry_after(response.headers.get("Retry-After"))
+                if rate_retry_count >= self._settings.max_retries:
+                    raise SimproRateLimitError(
+                        retry_after=retry_after, method=method, url=path,
+                        response_body=response.text, correlation_id=correlation_id,
+                        retry_count=rate_retry_count, attempt_count=attempt_count,
+                    )
+                delay = retry_after if retry_after is not None else self._backoff_delay(rate_retry_count)
+                rate_retry_count += 1
+                self._sleep(delay)
+                continue
+            if response.status_code == 404:
+                raise SimproNotFoundError(
+                    f"Not found: {method} {path}", response_body=response.text,
+                    method=method, url=path, correlation_id=correlation_id,
                 )
-            except httpx.HTTPError as exc:
-                self._logger.error(
-                    f"Request failed: {method} {path}: {exc}",
-                    extra={"method": method, "url": path},
+            if 400 <= response.status_code < 500:
+                raise SimproClientError(
+                    f"Client error: {response.status_code} on {method} {path}",
+                    response.status_code, response.text, method=method, url=path,
+                    correlation_id=correlation_id, retry_count=rate_retry_count,
                 )
-                raise SimproAPIError(
-                    message=f"Request failed: {exc}", status_code=0
-                ) from exc
+            if response.status_code >= 500:
+                raise SimproServerError(
+                    f"Server error: {response.status_code} on {method} {path}",
+                    response.status_code, response.text, method=method, url=path,
+                    correlation_id=correlation_id, retry_count=rate_retry_count,
+                )
+            return response
 
-        self._log_request(method, path, response.status_code, timer.duration_ms)
-        return self._handle_response(
-            response, method, path, params, json, _retry_on_401
+    def _parse_retry_after(self, value):
+        if value is None:
+            return None
+        candidate = value.strip()
+        if candidate.isascii() and candidate.isdigit():
+            return float(int(candidate))
+        try:
+            retry_at = parsedate_to_datetime(candidate)
+        except (TypeError, ValueError, OverflowError):
+            return None
+        if retry_at.tzinfo is None:
+            return None
+        delay = (retry_at.astimezone(UTC) - self._now()).total_seconds()
+        return delay if delay >= 0 else None
+
+    def _backoff_delay(self, retry_count):
+        return min(
+            _MAX_RETRY_DELAY_SECONDS,
+            (2**retry_count) * (0.5 + self._random()),
         )
 
-    def _handle_response(
-        self,
-        response: httpx.Response,
-        method: str,
-        path: str,
-        params: dict[str, Any] | None,
-        json: dict[str, Any] | None,
-        retry_on_401: bool,
-    ) -> httpx.Response:
-        if response.status_code == 401 and retry_on_401:
-            self._logger.info("Received 401, refreshing token and retrying")
-            self._auth.invalidate()
-            return self._request_response(
-                method,
-                path,
-                params=params,
-                json=json,
-                _retry_on_401=False,
-            )
-        if response.status_code == 404:
-            raise SimproNotFoundError(f"Not found: {method} {path}")
-        if response.status_code == 429:
-            retry_after = response.headers.get("Retry-After")
-            raise SimproRateLimitError(
-                retry_after=float(retry_after) if retry_after else None
-            )
-        if response.status_code >= 400:
-            raise SimproAPIError(
-                message=f"API error: {response.status_code} on {method} {path}",
-                status_code=response.status_code,
-                response_body=response.text,
-            )
-        return response
-
-    def _log_request(
-        self, method: str, url: str, status_code: int, duration_ms: float
-    ) -> None:
-        log_record = logging.LogRecord(
-            name="simpro_client",
-            level=logging.INFO,
-            pathname="",
-            lineno=0,
-            msg=f"{method} {url} -> {status_code} ({duration_ms:.1f}ms)",
-            args=None,
-            exc_info=None,
+    def _log_request(self, method, url, status_code, duration_ms):
+        record = logging.LogRecord(
+            "simpro_client", logging.INFO, "", 0,
+            f"{method} {url} -> {status_code} ({duration_ms:.1f}ms)",
+            None, None,
         )
-        log_record.method = method
-        log_record.url = url
-        log_record.status_code = status_code
-        log_record.duration_ms = round(duration_ms, 1)
-        self._logger.handle(log_record)
+        record.method = method
+        record.url = url
+        record.status_code = status_code
+        record.duration_ms = round(duration_ms, 1)
+        self._logger.handle(record)
 
-    def close(self) -> None:
+    def close(self):
         self._http.close()
         self._auth.close()
 
-    def __enter__(self) -> "SimproClient":
+    def __enter__(self):
         return self
 
-    def __exit__(self, *args: Any) -> None:
+    def __exit__(self, *args: Any):
         self.close()
