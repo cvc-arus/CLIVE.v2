@@ -1,116 +1,176 @@
-# CLAUDE.md
+# CLAUDE.md — CLIVE repository (root)
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code in this repository. This root file holds project-wide
+rules. Directory files add narrower rules and are loaded when you work there:
 
-## Project overview
+- `docs/CLAUDE.md` — documentation, ADRs, verification evidence
+- `services/CLAUDE.md` — `simpro_mock` FastAPI service, PostgreSQL, Alembic, Docker
+- `src/CLAUDE.md` — `simpro_client` library architecture and rules
+- `tests/CLAUDE.md` — test layers, pytest conventions, determinism
 
-CLIVE is a self-hosted Enterprise AI Platform for CVC (a CCTV/security company), deployed via Docker Compose on a single Ubuntu host. Phases 1–2 (local LLM inference via Ollama/Open WebUI, RAG via PGVector + Tika) are complete infrastructure and rarely touched. Active development is Phase 3: a typed Python client (`simpro_client`) for the Simpro REST API, developed against a FastAPI mock service (`simpro_mock`) that stands in for real Simpro until production credentials arrive.
+If a directory file and this file seem to conflict, stop and ask. Do not pick one.
 
-Two independent Python projects live in this repo, each with its own `pyproject.toml` and dependency lock:
-- **`src/simpro_client/`** — the library. Root `pyproject.toml`, root `.venv`, `uv` managed.
-- **`services/simpro_mock/`** — the FastAPI mock API. Its own `pyproject.toml`/`uv.lock`/`.venv` under `services/simpro_mock/`.
+## 1. What this project is
 
-Documentation is treated as generated from code, not the other way around: `docs/development-standards.md` §9 states "Code is the sole source of truth" — when a planning doc (`docs/roadmap.md`, `docs/scope/`) and the code disagree, the code wins, and note the discrepancy rather than silently reconciling the doc. Never assume a component exists because it is described in a roadmap, scope document, ADR, or previous sprint summary. Verify its path and implementation in the repository before treating it as implemented.
+CLIVE is a self-hosted enterprise AI platform for CVC (CCTV and security),
+run with Docker Compose on one Ubuntu 24.04 host. Alex is the sole developer and
+the approver for every sprint and architectural decision.
 
-## Commands
+- Phases 1–2 (complete, rarely touched): Ollama + Open WebUI; RAG via
+  PostgreSQL/PGVector + Apache Tika.
+- Phase 3 (active): Simpro integration. **There is no live Simpro API access.**
+  - `src/simpro_client/` — reusable, typed, synchronous Python client library.
+  - `services/simpro_mock/` — FastAPI + PostgreSQL mock of the Simpro REST API.
+- Phase 4+ (not started): document generation, agents, etc. Blocked on ADR-009.
 
-### simpro_client (root package)
+The client talks to the mock **only over HTTP**. Switching to real Simpro must
+be a configuration change (`SIMPRO_BASE_URL`, `SIMPRO_TOKEN_URL`, credentials),
+never a client code change.
+
+## 2. Source of truth
+
+1. The code and the results of actually running it are the source of truth.
+2. ADRs record intended architecture and binding constraints.
+3. PDDs, scope files, roadmap and sprint reports are context and may be stale.
+
+Never treat a component as implemented because a roadmap, ADR, PDD, sprint
+report, or earlier CLAUDE.md describes it. Confirm the file exists and read
+it. When documents and code disagree, say so explicitly. Do not quietly
+"fix" either side to match the other.
+
+## 3. Architecture constraints (hard rules)
+
+- **Synchronous throughout.** Sync `httpx.Client`; sync SQLAlchemy 2.0 with
+  `psycopg2-binary`. Do not introduce async SQLAlchemy, `asyncpg`,
+  `httpx.AsyncClient`, or an async database layer without a new ADR.
+- **Package independence.** `simpro_client` must never import `simpro_mock`,
+  and `simpro_mock` must never import `simpro_client`. They are separate
+  projects with separate `pyproject.toml` / `uv.lock` files.
+- **Library-first (ADR-006).** No service wrapper around `simpro_client`.
+  Whether Phase 4 imports it directly or via a wrapper is ADR-009, which is
+  **open**. Do not build toward either option.
+- **Read-only scope.** All typed endpoints and all mock resource routes are
+  GET-only (the mock's only POST is `/oauth2/token`). Do not add write
+  operations without an approved scope change.
+- **Two isolated Postgres instances.** `postgres` (port 5432, Phase 2
+  PGVector knowledge base) must never be used by Phase 3 code or tests.
+  `simpro-mock-db` (port 5433) is the only database for Phase 3.
+- **No architectural change without an ADR** (new service, new dependency
+  category, async, auth flow, handoff mechanism, persistence strategy).
+- **Self-hosted.** No cloud AI providers or external SaaS calls unless Alex
+  explicitly approves. Code and tests must never contact `*.simprosuite.com`.
+
+## 4. ADR status (verified against code at commit `87139ef`)
+
+| ADR | Topic | Status |
+|---|---|---|
+| 001–003 | Local LLM stack, PGVector, Tika | Accepted, implemented |
+| mock | `adr-mock-simpro-api.md` | Accepted. Its capability list (4 resources) predates the 12-resource mock |
+| 004 | httpx | Accepted, implemented |
+| 005 | Client Credentials + API key fallback; Authorization Code deferred | Accepted, implemented |
+| 006 | Library-first `simpro_client` | Accepted, implemented |
+| 007 | pydantic-settings, `SIMPRO_` / `SIMPRO_MOCK_` prefixes | Accepted, implemented |
+| 008 | Rate limiting | **Unresolved:** file text duplicates ADR-010; `ADR-index.md` lists it as Proposed |
+| 009 | Phase 3 → 4 handoff | **Open. Do not decide or assume.** |
+| 010 | Resilience: token bucket, 401/429 budgets, error hierarchy | Approved; implemented with deviations (see `src/CLAUDE.md`) |
+
+Re-verify this table before relying on it; it is a snapshot.
+
+## 5. How to work
+
+- **Plan before code.** For sprint work, produce the plan in the project's
+  sprint format (Goal, Business value, Tasks, Implementation, Commands,
+  Configuration, Folder structure, Files created, Verification, Rollback,
+  Common issues, Documentation updates, Git commit, Acceptance criteria;
+  see `docs/development-standards.md` §8). Wait for Alex's approval.
+- One sprint and one task at a time. Do not start the next until Alex confirms.
+- Explain why before how, and state trade-offs when proposing a change.
+- Prefer targeted, minimal changes over rewrites. Do not refactor, reformat,
+  or "tidy" code outside the task's scope.
+- If the requested approach seems worse than an alternative, say so and
+  explain before doing anything different.
+
+### No speculative implementation
+
+- Do not create stubs, placeholders, or empty modules for planned features.
+- Do not add configuration, abstractions, or extension points "for later".
+- Do not reference files, functions, settings, markers, or commands you have
+  not confirmed exist.
+- If a task seems to need something that does not exist, stop and report it.
+
+## 6. Commands (verified to exist)
+
+Root project (`simpro_client`), from the repo root, using `uv`:
 
 ```bash
-# Tests — offline, no live dependency (respx mocks all httpx traffic)
-pytest tests/ -v
-
-# Single test file / test
-pytest tests/test_client.py -v
-pytest tests/test_client.py::test_name -v
-
-# Lint & format
-ruff check src/ --fix
-ruff format src/
-
-# Manual log-output inspection (not a pytest test, has no test_* functions)
-python tests/test_manual_logging.py
+uv sync                                  # installs dev group (PEP 735)
+uv run pytest -q -m "not integration"    # offline suite
+uv run pytest tests/test_client.py::test_successful_get -v
+uv run ruff check <paths>                # check only; see §7
+uv run ruff format --check <paths>
 ```
 
-`uv` is the package manager. **Argument order matters**: `ENV_VAR="..." uv run <cmd>` works; `uv run ENV_VAR="..." <cmd>` fails because `uv` tries to exec the env-var string as a binary. `pip install -e ".[dev]"` silently skips dev deps because they're declared under PEP 735 `[dependency-groups]`, not `[project.optional-dependencies]` — use `uv sync` instead.
+- `pip install -e ".[dev]"` does **not** install dev tools; dev dependencies
+  live in `[dependency-groups]`. Use `uv sync`.
+- Env vars go before `uv run`: `VAR=x uv run cmd`, not `uv run VAR=x cmd`.
 
-### Integration testing against the mock service
+Mock and full stack: see `services/CLAUDE.md`. Test layers: `tests/CLAUDE.md`.
 
-```bash
-docker compose up -d simpro-mock          # start the mock (rebuilds needed after source edits, see below)
-pytest tests/test_simpro_mock_v2.py -v    # skip-gated: auto-skips if mock unreachable at :8100
-python scripts/verify-simpro-mock.py      # manual diagnostic, exercises every resource, exits non-zero on failure
-```
+## 7. Coding standards
 
-`scripts/verify-simpro-mock.py` deliberately lives outside `tests/` — its helper functions are named `test_list_endpoint` etc., which pytest would otherwise try to collect and run as real tests.
+- Python 3.12 (pinned 3.12.3 on the host), PEP 8, ruff (`line-length = 88`,
+  rules `E F I N W UP B A SIM`, configured in root `pyproject.toml`).
+- Type hints and docstrings on all new or modified public functions and
+  classes. Do not remove existing type hints or docstrings.
+- `str | None` union syntax, not `Optional[...]`.
+- Structured logging via `simpro_client.logging`; no `print` in library code.
+- Configuration through pydantic-settings and environment variables only.
+- Exact-pinned dependencies (`==`). Adding any runtime dependency needs a
+  stated justification; adding a new category of dependency needs an ADR.
 
-### simpro_mock service
+**Lint baseline:** at `87139ef`, `ruff check .` and `ruff format --check .`
+do not pass (existing debt in `src/`, `tests/`, `services/`, `scripts/`,
+and Markdown code blocks). Therefore:
 
-The mock's `Dockerfile` bakes `simpro_mock/` source into the image at build time. **Editing source files on disk is not enough** — after any change, rebuild:
+- New files must pass `ruff check` and `ruff format --check`.
+- Modified files must not gain new violations. Code you add or rewrite must
+  be clean. Pre-existing violations elsewhere in the file are reported, not
+  fixed, unless the task asks for it. (Some are intentional; see
+  `services/CLAUDE.md` §4 for `B008`/`N803` in `routers.py`.)
+- Do not run `ruff --fix` or `ruff format` on files outside your change.
+- Report pre-existing lint failures; do not silently fix them in unrelated work.
 
-```bash
-docker compose up -d --build simpro-mock
-# or
-docker compose build simpro-mock
-```
+## 8. Git
 
-Migrations run automatically on container start (`alembic upgrade head`) before seeding and `uvicorn` launch. To make a schema change: write an Alembic migration (`alembic revision` → edit → `alembic upgrade head`), never a manual `CREATE TABLE`.
+- Work on `develop`; `main` is updated via pull request.
+- Never push without Alex's explicit approval (`.claude/settings.json` asks on
+  `git push`). If history must be rewritten, use `--force-with-lease`, never
+  `--force`, and only when asked.
+- Commit only when Alex asks. At the end of a sprint, propose the commit
+  message and wait. One logical change per commit, with a descriptive
+  message (existing history uses `feat:`, `fix:`, `chore:`, `refactor:`).
+- Never commit `.env`, `.venv/`, `__pycache__/`, `*.egg-info/`, `backups/`,
+  or coverage output. Some bytecode and `egg-info` files are still tracked at
+  `87139ef`, so running tests can make them appear modified. Restore them
+  with `git checkout -- <path>`; never stage them.
+- A sprint is complete only after its documentation update and commit.
 
-### Full stack
+## 9. Security
 
-```bash
-docker compose up -d          # all services: ollama, open-webui, postgres, tika, simpro-mock-db, simpro-mock
-```
+- Never read, print, edit, or summarise `.env` or `.env.*` (denied in
+  `.claude/settings.json`). Use `.env.example` to learn variable names.
+- Never hardcode secrets or log tokens, client secrets, or API keys.
+- The mock's static bearer token and the mock DB credentials in
+  `docker-compose.yml` are development-only. Do not copy that pattern into
+  new services or into `simpro_client`.
+- New ports bind to `127.0.0.1` unless there is a stated reason not to.
+  Keep exposed ports to a minimum.
+- Least privilege: Phase 3 is read-only against Simpro.
 
-## Architecture
+## 10. Reporting results
 
-### `simpro_client` layers
-
-```
-SimproClient (client.py)
-  ├─ AuthManager (auth.py)       — OAuth2 Client Credentials w/ token cache, or static API key
-  ├─ TokenBucket (rate_limiter.py) — client-side throttle, acquired before every request
-  ├─ endpoints/*.py               — one class per resource (CompaniesEndpoint, JobsEndpoint, ...)
-  │    └─ ResourceEndpoint (endpoints/base.py) — shared get / fetch_page / iter_all logic
-  └─ models/*.py                  — one Pydantic model per resource, extends SimproBaseModel
-```
-
-- **`client.py`**: `SimproClient._request_response()` is the single funnel for every HTTP call. It attaches `Authorization` + `X-Correlation-ID` headers, acquires a rate-limit token, times the call, and handles the response: `401` → invalidate cached token and retry once; `429` → parse `Retry-After` (integer-seconds or HTTP-date) or fall back to exponential backoff with jitter, retrying up to `SIMPRO_MAX_RETRIES` times before raising `SimproRateLimitError`; `404` → `SimproNotFoundError`; other `4xx` → `SimproClientError`; `5xx` → `SimproServerError`; `204` → `None`.
-- **`endpoints/base.py`**: `ResourceEndpoint` is generic over the Pydantic model and provides three read operations for every resource — `get(item_id, ...)`, `fetch_page(...)` (one page, returns a `Page` dataclass with `total`/`count`/`pages` from the `Result-*` response headers), and `iter_all(...)` (generator that walks every page, raising `SimproProtocolError` if the server's pagination headers are internally inconsistent — e.g. an empty page before the last one). Route templates (`collection_path`, `detail_path`) are `str.format()` templates filled from `company_id` plus arbitrary `**scope_ids` (e.g. `site_id` for nested Assets).
-- **`models/base.py`**: `SimproBaseModel` sets `validate_by_alias=True, validate_by_name=True, extra="ignore"` so every resource model accepts the API's committed PascalCase field names *and* snake_case, ignoring unknown fields. Each resource model in `models/*.py` declares explicit aliases for its PascalCase payload fields and converts date/datetime strings to Python values.
-- **`exceptions.py`**: `SimproError` → `SimproAuthError` / `SimproAPIError` → `SimproClientError` (`SimproRateLimitError`, `SimproNotFoundError`) / `SimproServerError`; `SimproProtocolError` for contract violations (bad/missing pagination headers) that aren't HTTP errors.
-- **`config.py`**: `SimproSettings` (pydantic-settings), env prefix `SIMPRO_`, `extra="ignore"` so Simpro keys coexist in the same root `.env` as unrelated Postgres/PGVector keys. `get_settings()` is `lru_cache`d.
-- **`logging.py`**: `ContextVar`-based correlation IDs threaded through every request/log line, `JSONFormatter` emitting single-line JSON to stderr.
-
-### `simpro_mock` (FastAPI, `services/simpro_mock/simpro_mock/`)
-
-Exists so `simpro_client` needs zero code changes when real Simpro credentials arrive — only `SIMPRO_BASE_URL`/`SIMPRO_TOKEN_URL` change. Synchronous SQLAlchemy 2.0 throughout (`Mapped[]`, `sessionmaker`, `psycopg2-binary`) — this is a deliberate standing decision; don't introduce `asyncpg`/async sessions without a dedicated ADR.
-
-- `main.py` — FastAPI app wiring health/token/resource routers + `BearerAuthMiddleware`.
-- `middleware.py` — `BearerAuthMiddleware` (every route except `/health`, `/oauth2/token`, `/docs`, `/openapi.json`, `/redoc` requires the exact static bearer token); `paginate_query()` / `set_pagination_headers()` implement the `page`/`pageSize` → `Result-Total`/`Result-Count`/`Result-Pages` header contract that `simpro_client`'s `fetch_page`/`iter_all` depend on.
-- `filtering.py` — maps Simpro-style PascalCase query params to snake_case SQLAlchemy columns, supports operator syntax (`gt()`, `lt()`, `le()`, `ge()`, `ne()`, `between()`, `in()`, `!in()`) and `search=all|any` (AND/OR) combination.
-- `models.py` / `schemas.py` — 12 SQLAlchemy ORM models and matching PascalCase Pydantic response schemas: `Company (1) ──< Customer ──< {Contact, Site ──< Asset, Project}`, `Job ──< {JobNote, Attachment}`, plus `Quote`, `Employee`, `Status`. FKs use `ondelete="CASCADE"` for strict ownership, `SET NULL` for optional links (e.g. `Quote.customer_id`); every relationship declares `back_populates` on both sides.
-- `seed.py` — seeds exactly two companies mirroring CVC's real Simpro setup (`company_id=1` "CVC Service", `company_id=2` "CVC Projects"); `simpro_client`'s `SIMPRO_COMPANY_ID_SERVICE`/`SIMPRO_COMPANY_ID_PROJECTS` settings mirror these.
-- All routes are currently **read-only** — write operations (POST/PATCH/DELETE) are out of scope for this phase per ADR and PDD.
-
-### Two separate Postgres instances by design
-
-`postgres` (Phase 2, PGVector-enabled, holds the RAG knowledge base, port 5432) and `simpro-mock-db` (Phase 3, plain Postgres 16, port 5433) are intentionally isolated so Phase 3 development/testing can never touch production knowledge-base data.
-
-## Testing conventions
-
-Three deliberately separate layers (see `docs/testing.md`):
-1. **Unit tests** (`tests/test_auth.py`, `test_client.py`, `test_config.py`, `test_logging.py`, `test_models.py`, `test_endpoints.py`, `test_route_contract.py`, `test_pagination.py`, `test_rate_limiter.py`, `test_retries.py`) — fully offline, `respx` intercepts all `httpx` traffic. This is what `pytest tests/ -v` should run cleanly at all times.
-2. **Manual script** (`tests/test_manual_logging.py`) — no `test_*` functions, pytest collects it but runs zero tests; run directly for visual log inspection.
-3. **Live/skip-gated integration** (`tests/test_simpro_mock_v2.py`) — checks `GET http://localhost:8100/health` first and skips entirely if the mock isn't running, so `pytest tests/` never fails just because the container is down.
-
-A sprint or review is not considered complete on a code read alone — run `pytest tests/ -v` (this project has previously caught pytest-collection bugs, like script-style test files with module-level asserts, that a static read missed).
-
-## ADR context worth knowing before touching resilience/auth/config code
-
-- **ADR-004**: httpx chosen as the HTTP client.
-- **ADR-005**: Client Credentials is the primary auth mode; static API key is a fallback.
-- **ADR-006**: `simpro_client` is library-first — importable directly by future phases, not accessed only through a network service.
-- **ADR-007**: `pydantic-settings` is the configuration mechanism; no hardcoded secrets.
-- **ADR-010**: client-side resilience (token-bucket rate limiting + retry/backoff on 429, typed error hierarchy) — approved and implemented in `client.py`/`rate_limiter.py`.
-- **ADR-009** (open): whether Phase 4 imports `simpro_client` directly or talks to it through a service wrapper is an unresolved decision requiring sign-off — don't assume either direction when working on Phase 4-adjacent code.
+- Report what you actually ran and its actual output (test counts, lint
+  results, commit hash). Never claim a check passed without running it.
+- If you could not run something (for example, Docker is unavailable, so
+  integration tests could not run), say so plainly.
+- List every file you changed.
