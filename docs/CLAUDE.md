@@ -22,7 +22,6 @@ rewrite the code or the document to hide it.
 Known stale or inaccurate documents at `31936f8` (do not repeat their
 claims):
 - `README.md`: Phase 3 shown as "Planned"; repository tree is out of date.
-- `structure.txt`: predates `models/`, `endpoints/`, `rate_limiter.py`.
 - `testing.md`, `development-standards.md`: say 18 tests and refer to the
   deleted `tests/test_simpro_mock.py`.
 - `known-issues.md` #6: says `models/`, `endpoints/`, `rate_limiter.py` do not
@@ -70,7 +69,8 @@ phase or ADR complete without evidence.
   change.
 - Minimum sections: Status, Context, Decision, Alternatives Considered,
   Consequences. Status is one of Proposed, Accepted / Approved, Superseded by
-  ADR-NNN, or Rejected. Also record Deciders and a date.
+  ADR-NNN, Rejected, or Withdrawn (with a reason). Also record Deciders and a
+  date.
 - An ADR is required before: async I/O, new services or containers, new
   dependency categories, auth-flow changes, the Phase 3 → 4 handoff,
   persistence/caching, or changes to documented mock limitations.
@@ -78,9 +78,10 @@ phase or ADR complete without evidence.
   supersedes it, and update the old one's Status line only.
 - Claude drafts ADRs as **Proposed** with options and a non-binding
   recommendation. Only Alex accepts them. Do not fill in ADR-009's Decision.
-- ADR-008 vs ADR-010 is an open question: the ADR-008 file duplicates
-  ADR-010 and the index calls ADR-008 "Proposed". Do not merge, delete or
-  renumber them without Alex's decision.
+- ADR-008 is **Withdrawn** (duplicate of ADR-010). Do not implement from it,
+  cite it, or renumber it; ADR-010 is the authoritative record.
+- `structure.txt` is generated. Regenerate it with the command in
+  `docs/README.md` instead of editing it by hand.
 
 ## 5. Document types and where they go
 

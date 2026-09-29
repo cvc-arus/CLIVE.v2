@@ -1,8 +1,7 @@
 # CLIVE Documentation Index
 
-> **Status: PROPOSED.** Drafted for Alex's review from the repository at
-> commit `31936f8`. Items marked *Proposed* are not yet decided. Edit this
-> file, then remove this note once the structure is agreed.
+> **Status: adopted 2026-09-29.** Structure agreed by Alex. Section 6 and 7
+> actions are still to do; section 8 records the decisions made.
 
 This index lists every document, what it is for, and whether it is kept up
 to date. If a document is not listed here, either add it here or delete it.
@@ -32,7 +31,7 @@ to date. If a document is not listed here, either add it here or delete it.
 | Document | Owns | Current state (at `31936f8`) |
 |---|---|---|
 | `../README.md` | Project overview, links into `docs/` | Stale: Phase 3 shown as Planned; out-of-date tree |
-| `roadmap.md` | Phase list and phase status *(Proposed: the only place phase status is stated)* | Stale: says typed layer not started |
+| `roadmap.md` | Phase list and phase status (the only place phase status is stated) | Stale: says typed layer not started |
 | `architecture.md` | Services, ports, containers, `simpro_client` and `simpro_mock` design | Stale: typed layer and rate limiter listed as absent |
 | `installation.md` | Setting up and running the stack | Not yet reviewed against current code |
 | `development-standards.md` | Coding, tooling, Git, sprint template | Stale: 18 tests, deleted test file |
@@ -46,7 +45,11 @@ to date. If a document is not listed here, either add it here or delete it.
 |---|---|
 | `simpro-mock-api-reference.md` | `services/simpro_mock/simpro_mock/routers.py`, `schemas.py`, `filtering.py`, `middleware.py` |
 | `../services/simpro_mock/configuration.md` | `services/simpro_mock/simpro_mock/config.py` |
-| `../structure.txt` | `tree -L 4 -I '.git|.venv|__pycache__|*.egg-info'` *(Proposed: or delete, since `architecture.md` covers layout)* |
+| `../structure.txt` | Tracked files only. Regenerate from the repo root after adding, moving or deleting files (needs `tree` ≥ 2.0): |
+
+```bash
+{ echo "# Generated from 'git ls-files'. Do not edit by hand; regenerate with the command in docs/README.md."; git ls-files | grep -vE '__pycache__|\.egg-info/' | tree --fromfile . --charset=utf-8 -a; } > structure.txt
+```
 
 ## 5. Decision documents
 
@@ -63,19 +66,19 @@ to date. If a document is not listed here, either add it here or delete it.
 | `ADR/adr-009-phase3-phase4-handoff.md` | Open decision |
 | `ADR/adr-010-resilience-policy.md` | Approved; implemented with deviations (see `../src/simpro_client/CLAUDE.md`) |
 | `ADR/adr-mock-simpro-api.md` | Capability list predates the 12-resource mock |
-| `ADR/adr-008-rate-limiting-strategy.md` | **Decision needed:** its text duplicates ADR-010 |
+| `ADR/adr-008-rate-limiting-strategy.md` | Withdrawn 2026-09-29 (duplicate of ADR-010). Kept for history |
 | `PDDs/PDD-phase1.md`, `PDD-phase2.md` | Phases complete |
-| `PDDs/PDD-phase3.md` | "As-built" at 2026-09-04; predates Sprint 4. Revise at Phase 3 sign-off |
+| `PDDs/PDD-phase3.md` | "As-built" at 2026-09-04; predates Sprint 4. **To do: revise now** (decided 2026-09-29) |
 | `PDDs/PDD-phase4.md` | Draft. Links to a non-existent `adr-006-phase3-phase4-handoff.md` (should be ADR-009) |
 
 ## 6. Historical documents
 
-Phase 3 documents now use a `phase3-` prefix (commit `31936f8`). *Proposed:*
-also move the sprint records into `docs/phase3/sprints/`, keeping the prefixed
-names, so they are visibly separate from living documents. Each gets a
-one-line header: `> Historical record as of <date>, commit <hash>. Not maintained.`
+Phase 3 documents use a `phase3-` prefix. Sprint records move into
+`docs/phase3/sprints/`, keeping the prefixed names, so they are visibly
+separate from living documents. Each gets a one-line header:
+`> Historical record as of <date>, commit <hash>. Not maintained.`
 
-| Current path | Proposed action |
+| Current path | Action (to do) |
 |---|---|
 | `phase1/summary.md` | Keep as historical. Its `docker exec -it ollama` commands fail (container is `clive-ollama`); add a correction note or move usable commands into `installation.md` |
 | `phase2/summary.md` | Keep as historical |
@@ -87,27 +90,27 @@ one-line header: `> Historical record as of <date>, commit <hash>. Not maintaine
 | `phase3/phase3-sprint4-4-pagiantion and retries.md` | Move and rename to `phase3/sprints/phase3-sprint4-4-pagination-and-retries.md` (no spaces, typo fixed) |
 | `phase3/phase3-sprint4.md` | Chat fragment duplicating the contract's test sequence. Delete after checking nothing unique is lost |
 | `scope/scope&readmap-rev2.md` | Keep as historical (superseded by `roadmap.md`). Rename to `scope/scope-rev2.md` (no `&` in filenames) |
-| `scope/initial.md` | Empty file. Either paste in the original `Clive_Scope.txt` (a project file, not currently in the repository) as a record, or delete |
 
 ## 7. Content to relocate
 
-| Content | From | To (Proposed) |
+| Content | From | To (to do) |
 |---|---|---|
 | Client logging usage | `phase3/logging.md` (fragment) | A "Logging" section in `architecture.md`, then delete the fragment |
 | Phase status | `README.md`, `architecture.md`, `phase3/phase3-summary.md` | `roadmap.md` only; others link to it |
 | Test counts | `testing.md`, `development-standards.md` | Remove; give the command instead |
 
-## 8. Decisions waiting on Alex
+## 8. Decisions (2026-09-29, Alex)
 
-1. Adopt the living/historical split above, or amend it.
-2. ADR-008 vs ADR-010: withdraw ADR-008, or rewrite it as the original
-   rate-limiting proposal and mark it superseded by ADR-010.
-3. `structure.txt`: regenerate or delete.
-4. `scope/initial.md`: fill or delete.
-5. Whether `PDD-phase3.md` is revised now or at Phase 3 sign-off.
+| Decision | Outcome | Done |
+|---|---|---|
+| Living/historical split (sections 3–7) | Accepted | Index adopted; section 6–7 moves to do |
+| ADR-008 | Withdrawn as a duplicate of ADR-010 | Yes |
+| `structure.txt` | Regenerate from tracked files | Yes |
+| `scope/initial.md` | Delete (was empty) | Yes |
+| `PDD-phase3.md` | Revise now, not at sign-off | To do |
 
-ADR-009 (Phase 3 → 4 handoff) is also open, but it is not a documentation
-decision and does not block this tidy-up.
+Still open, but not a documentation decision: ADR-009 (Phase 3 → 4
+handoff).
 
 ## 9. Instructions for Claude
 

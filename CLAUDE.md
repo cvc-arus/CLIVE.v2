@@ -73,7 +73,7 @@ it. When documents and code disagree, say so explicitly. Do not quietly
 | 005 | Client Credentials + API key fallback; Authorization Code deferred | Accepted, implemented |
 | 006 | Library-first `simpro_client` | Accepted, implemented |
 | 007 | pydantic-settings, `SIMPRO_` / `SIMPRO_MOCK_` prefixes | Accepted, implemented |
-| 008 | Rate limiting | **Unresolved:** file text duplicates ADR-010; `ADR-index.md` lists it as Proposed |
+| 008 | Rate limiting | Withdrawn 2026-09-29 as a duplicate of ADR-010; kept for history |
 | 009 | Phase 3 → 4 handoff | **Open. Do not decide or assume.** |
 | 010 | Resilience: token bucket, 401/429 budgets, error hierarchy | Approved; implemented with deviations (see `src/simpro_client/CLAUDE.md`) |
 
