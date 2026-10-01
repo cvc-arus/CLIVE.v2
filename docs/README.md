@@ -28,7 +28,7 @@ to date. If a document is not listed here, either add it here or delete it.
 
 ## 3. Living documents
 
-| Document | Owns | Current state (at `31936f8`) |
+| Document | Owns | Current state (re-verify before relying on this) |
 |---|---|---|
 | `../README.md` | Project overview, links into `docs/` | Stale: Phase 3 shown as Planned; out-of-date tree |
 | `roadmap.md` | Phase list and phase status (the only place phase status is stated) | Stale: says typed layer not started |
@@ -45,10 +45,10 @@ to date. If a document is not listed here, either add it here or delete it.
 |---|---|
 | `simpro-mock-api-reference.md` | `services/simpro_mock/simpro_mock/routers.py`, `schemas.py`, `filtering.py`, `middleware.py` |
 | `../services/simpro_mock/configuration.md` | `services/simpro_mock/simpro_mock/config.py` |
-| `../structure.txt` | Tracked files only. Regenerate from the repo root after adding, moving or deleting files (needs `tree` ≥ 2.0): |
+| `../structure.txt` | Tracked files only. Regenerate from the repo root after adding, moving or deleting files (needs `tree` ≥ 2.0 for `--fromfile`): |
 
 ```bash
-{ echo "# Generated from 'git ls-files'. Do not edit by hand; regenerate with the command in docs/README.md."; git ls-files | grep -vE '__pycache__|\.egg-info/' | tree --fromfile . --charset=utf-8 -a; } > structure.txt
+{ echo "# Generated from 'git ls-files'. Do not edit by hand; regenerate with the command in docs/README.md."; git ls-files | tree --fromfile -L 4 . ; } > structure.txt
 ```
 
 ## 5. Decision documents
@@ -87,8 +87,9 @@ separate from living documents. Each gets a one-line header:
 | `phase3/phase3-sprint4-preflight-audit.md` | Move to `phase3/sprints/` |
 | `phase3/phase3-sprint4-architecture-summary.md` | Move to `phase3/sprints/` (baseline snapshot) |
 | `phase3/phase3-sprint4-2-typed-python-SDK-endpoint-layer.md` | Move to `phase3/sprints/`; add correction note (claims don't match the repository) |
-| `phase3/phase3-sprint4-4-pagiantion and retries.md` | Move and rename to `phase3/sprints/phase3-sprint4-4-pagination-and-retries.md` (no spaces, typo fixed) |
+| `phase3/phase3-sprint4-4-pagination-and-retries.md` | Renamed (no spaces, typo fixed). Move to `phase3/sprints/` |
 | `phase3/phase3-sprint4.md` | Chat fragment duplicating the contract's test sequence. Delete after checking nothing unique is lost |
+| `doc-audit.md` | Keep as historical. Full `/doc-check all` report of 2026-10-01; its findings are not yet fixed |
 | `scope/scope&readmap-rev2.md` | Keep as historical (superseded by `roadmap.md`). Rename to `scope/scope-rev2.md` (no `&` in filenames) |
 
 ## 7. Content to relocate

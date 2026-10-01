@@ -63,7 +63,7 @@ it. When documents and code disagree, say so explicitly. Do not quietly
 - **Self-hosted.** No cloud AI providers or external SaaS calls unless Alex
   explicitly approves. Code and tests must never contact `*.simprosuite.com`.
 
-## 4. ADR status (verified against code at commit `31936f8`)
+## 4. ADR status (snapshot; re-verify before relying on this)
 
 | ADR | Topic | Status |
 |---|---|---|
@@ -132,9 +132,9 @@ Mock and full stack: see `services/simpro_mock/CLAUDE.md`. Test layers:
 - Exact-pinned dependencies (`==`). Adding any runtime dependency needs a
   stated justification; adding a new category of dependency needs an ADR.
 
-**Lint baseline:** at `31936f8`, `ruff check .` and `ruff format --check .`
-do not pass (existing debt in `src/`, `tests/`, `services/`, `scripts/`,
-and Markdown code blocks). Therefore:
+**Lint baseline** (re-verify before relying on this): `ruff check .` and
+`ruff format --check .` do not pass (existing debt in `src/`, `tests/`,
+`services/`, `scripts/`, and Markdown code blocks). Therefore:
 
 - New files must pass `ruff check` and `ruff format --check`.
 - Modified files must not gain new violations. Code you add or rewrite must
@@ -154,9 +154,9 @@ and Markdown code blocks). Therefore:
   message and wait. One logical change per commit, with a descriptive
   message (existing history uses `feat:`, `fix:`, `chore:`, `refactor:`).
 - Never commit `.env`, `.venv/`, `__pycache__/`, `*.egg-info/`, `backups/`,
-  or coverage output. Some bytecode and `egg-info` files are still tracked at
-  `31936f8`, so running tests can make them appear modified. Restore them
-  with `git checkout -- <path>`; never stage them.
+  or coverage output. Some bytecode and `egg-info` files are still tracked
+  (re-verify before relying on this), so running tests can make them appear
+  modified. Restore them with `git checkout -- <path>`; never stage them.
 - A sprint is complete only after its documentation update and commit.
 
 ## 9. Security

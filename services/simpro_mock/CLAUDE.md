@@ -14,6 +14,12 @@ code changes when `SIMPRO_BASE_URL` / `SIMPRO_TOKEN_URL` switch to production.
   real API lacks, since the client would come to depend on them.
 - It is a separate project: own `pyproject.toml` and `uv.lock`. It must never
   import `simpro_client`.
+- Its dev tools (`pytest`, `httpx`) are an optional extra in
+  `[project.optional-dependencies]`, not a PEP 735 group as in the root
+  project. Install them from `services/simpro_mock/` with
+  `uv sync --extra dev`. They are range-pinned (`>=`), contrary to root §7;
+  report this rather than changing it without a task. Ruff is not in this
+  extra; lint from the repo root (§9).
 - Do not add sibling services under `services/` without a stated
   justification and an ADR (root §3). ADR-006 rules out a `simpro_client`
   wrapper service for now, and ADR-009 is open.
@@ -70,6 +76,9 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
 - `filtering.py`'s `PASCAL_TO_SNAKE` maps only 11 fields. Unmapped filter
   params (e.g. `SiteID`, `Position`) are **silently ignored**.
 - `columns`, `orderby`, `limit` are accepted but ignored.
+- `search` is applied, but only as a mode switch: `search=any` joins the
+  field filters with OR; anything else (default `all`) joins them with AND
+  (`apply_filters()` in `filtering.py`). It is not a free-text search.
 - `JobNote` and `Attachment` responses have no `CompanyID`.
 - The mock does not read or log `X-Correlation-ID`.
 - The token endpoint accepts any credentials.
@@ -97,9 +106,10 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
   and `SET NULL` for optional links.
 - Queries use the legacy `db.query(...)` API, which is supported in 2.0. Do
   not mass-migrate to `select()` as a side effect of other work.
-- The mock uses its own container `simpro-mock-db` (`postgres:16-alpine`,
-  host port 5433, database `simpro_mock`, default `public` schema). Never
-  point the mock, its migrations or its seed at the Phase 2 `postgres`
+- The mock uses its own Compose service `simpro-mock-db` (container name
+  `clive-simpro-mock-db`, so `docker exec` needs that name;
+  `postgres:16-alpine`, host port 5433, database `simpro_mock`, default
+  `public` schema). Never point the mock, its migrations or its seed at the Phase 2 `postgres`
   container (port 5432).
 
 ## 6. Migrations (Alembic)

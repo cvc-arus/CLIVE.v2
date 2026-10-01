@@ -32,9 +32,11 @@ SimproClient (client.py)
   └─ logging.py                    ContextVar correlation IDs, JSONFormatter
 ```
 
-Public API is what `simpro_client/__init__.py` exports. Adding to it is a
-deliberate API change; removing from or renaming it is a breaking change and
-needs Alex's approval.
+Public API is what `simpro_client/__init__.py` exports, plus the exception
+classes in `simpro_client.exceptions` (they are not re-exported from the
+package root; callers import them from `simpro_client.exceptions`). Adding to
+it is a deliberate API change; removing from or renaming it is a breaking
+change and needs Alex's approval.
 
 There is no separate `pagination.py`. Pagination lives in `endpoints/base.py`.
 Do not create `pagination.py` unless a task asks for it.
@@ -180,7 +182,10 @@ caching/ORM libraries. Upgrade pins only as a deliberate, stated change.
 
 ## 12. Code quality note
 
-`client.py`, `rate_limiter.py` and `endpoints/base.py` currently lack most
-type hints and docstrings and have lines over 88 characters. When you modify
-a function in these files, give it type hints and a docstring and keep it
-within the line length. Do not reformat the whole file as a side effect.
+`client.py` lacks most type hints and docstrings. `rate_limiter.py` is typed
+but has no class or method docstrings. In `endpoints/base.py` only
+`_route_values` and `_render` lack type hints; it has no docstrings.
+`client.py` and `endpoints/base.py` have lines over 88 characters. When
+you modify a function in these files, give it type hints and a docstring and
+keep it within the line length. Do not reformat the whole file as a side
+effect.

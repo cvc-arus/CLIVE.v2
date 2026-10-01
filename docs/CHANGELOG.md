@@ -50,10 +50,12 @@ Reconstructed from `RevisedScope.txt`, chat history, and the current state of th
 
 ### Documentation Catch-Up (this delivery)
 - Generated: Phase 3 as-built PDD, platform architecture doc, expanded `docs/phase3.md`, Simpro mock API reference, development standards, testing guide, installation guide, roadmap, known-issues log
-- Flagged for follow-up: legacy `tests/test_simpro_mock.py` still present alongside its replacement; `structure.txt` stale; `RevisedScope.txt`'s "Sprint 4" narrative ahead of what's in the code
+-  `structure.txt` stale; `RevisedScope.txt`'s "Sprint 4" narrative ahead of what's in the code
+- `simpro_client/models/` and `simpro_client/endpoints/` (typed Pydantic models + endpoint modules)
+- Client-side pagination iterator and token-bucket rate limiter- STARTED
 
 ## Not Yet Started
-- `simpro_client/models/` and `simpro_client/endpoints/` (typed Pydantic models + endpoint modules)
-- Client-side pagination iterator and token-bucket rate limiter
+
+
 - Phase 3 → Phase 4 handoff ADR (direct import vs. service wrapper)
 - Phase 4 (Document Generation) — blocked on the above

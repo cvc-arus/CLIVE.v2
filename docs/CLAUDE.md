@@ -19,21 +19,10 @@ that proves it. When a document disagrees with the code, record the
 discrepancy (in your report, or in `known-issues.md` if asked). Do not
 rewrite the code or the document to hide it.
 
-Known stale or inaccurate documents at `31936f8` (do not repeat their
-claims):
-- `README.md`: Phase 3 shown as "Planned"; repository tree is out of date.
-- `testing.md`, `development-standards.md`: say 18 tests and refer to the
-  deleted `tests/test_simpro_mock.py`.
-- `known-issues.md` #6: says `models/`, `endpoints/`, `rate_limiter.py` do not
-  exist. They do.
-- `architecture.md`: lists typed layer and rate limiter as "not yet present".
-- `phase3/phase3-sprint4-2-typed-python-SDK-endpoint-layer.md`: claims
-  `src/simpro_client/models.py`, a clean `ruff check .`, and 31 passed /
-  18 deselected. None of these match the repository.
-- `phase3/phase3-sprint4-contract.md` Gate 3: says correlation IDs propagate through
-  the mock's middleware. The mock does not read `X-Correlation-ID`.
-- `ADR/adr-mock-simpro-api.md`: describes 4 resources / 8 routes; the mock
-  now has 12 resources.
+Known stale or inaccurate documents are listed in `docs/README.md` §3
+(living documents, "Current state" column) and §6 (historical documents
+needing correction notes). Do not repeat their claims. That list is a
+snapshot; re-verify before relying on this.
 
 ## 2. Implemented vs planned
 
@@ -98,8 +87,7 @@ phase or ADR complete without evidence.
 - New files are Markdown with a `.md` extension and lowercase kebab-case
   names without spaces. Phase documents are prefixed with the phase, as in
   `docs/phase3/phase3-sprint4-contract.md`.
-  (`docs/phase3/phase3-sprint4-4-pagiantion and retries.md` still contains
-  spaces and a typo. Do not rename it unless asked.)
+
 - Sprint reports are historical records. Do not rewrite them to match later
   code. If one contains a factual error, add a dated correction note at the
   end of the file, and only when asked.
