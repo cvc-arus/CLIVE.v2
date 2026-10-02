@@ -1,3 +1,5 @@
+> Historical record as of 2026-08-06, commit 49b071a. Not maintained.
+
 # AI Platform - Phase 1: Local LLM Development Environment
 
 A self-hosted AI chat platform running Ollama + Open WebUI via Docker Compose.

@@ -21,36 +21,7 @@ The platform is designed to be modular, reproducible, scalable, and built entire
 
 ## Current Status
 
-### ✅ Phase 1 – Complete
-
-- Ubuntu 24.04 LTS
-- Docker & Docker Compose
-- Ollama
-- Open WebUI
-- Local LLM inference
-
-### ✅ Phase 2 – Complete
-
-Production RAG infrastructure
-
-- PostgreSQL + PGVector
-- Apache Tika
-- Local Ollama embeddings (`nomic-embed-text`)
-- Open WebUI Knowledge Base
-- Hybrid Search
-- Tuned chunking
-- Automated backup & restore verification
-
-### ⏳ Planned
-
-- Phase 3 – Simpro API Integration
-- Phase 4 – Document Generation
-- Phase 5 – Security & Reverse Proxy
-- Phase 6 – AI Sales Agent
-- Phase 7 – Public Tender Agent
-- Phase 8 – Customer Intelligence
-- Phase 9 – Multi-Agent Architecture
-- Phase 10 – Monitoring, Backup & Disaster Recovery
+Phase status is kept in one place: [`docs/roadmap.md`](docs/roadmap.md).
 
 ---
 
@@ -109,175 +80,13 @@ The platform is designed to scale without requiring architectural changes.
 
 # Repository Structure
 
-```text
-.
-├── backups
-│   └── clive_pgvector_20260805_160501.sql.gz
-├── CLAUDE.md
-├── configs
-│   └── postgres
-│       └── init-pgvector.sql
-├── dock
-│   └── phase1
-├── docker-compose.yml
-├── docs
-│   ├── ADR
-│   │   ├── adr-001-local-llm-stack.md
-│   │   ├── adr-002-vector-database-pgvector.md
-│   │   ├── adr-003-document-extraction-tika.md
-│   │   ├── adr-004-http-client-choice.md
-│   │   ├── adr-005-auth-strategy.md
-│   │   ├── adr-006-library-first-architecture.md
-│   │   ├── adr-007-configuration-management.md
-│   │   ├── adr-008-rate-limiting-strategy.md
-│   │   ├── adr-009-phase3-phase4-handoff.md
-│   │   ├── adr-010-resilience-policy.md
-│   │   ├── ADR-index.md
-│   │   └── adr-mock-simpro-api.md
-│   ├── architecture.md
-│   ├── CHANGELOG.md
-│   ├── CLAUDE.md
-│   ├── development-standards.md
-│   ├── installation.md
-│   ├── known-issues.md
-│   ├── PDDs
-│   │   ├── PDD-phase1.md
-│   │   ├── PDD-phase2.md
-│   │   ├── PDD-phase3.md
-│   │   └── PDD-phase4.md
-│   ├── phase1
-│   │   └── summary.md
-│   ├── phase2
-│   │   └── summary.md
-│   ├── phase3
-│   │   ├── logging.md
-│   │   ├── phase3-sprint4-2-typed-python-SDK-endpoint-layer.md
-│   │   ├── phase3-sprint4-4-pagiantion and retries.md
-│   │   ├── phase3-sprint4-architecture-summary.md
-│   │   ├── phase3-sprint4-contract.md
-│   │   ├── phase3-sprint4.md
-│   │   ├── phase3-sprint4-preflight-audit.md
-│   │   └── phase3-summary.md
-│   ├── README.md
-│   ├── roadmap.md
-│   ├── scope
-│   │   └── scope&readmap-rev2.md
-│   ├── simpro-mock-api-reference.md
-│   └── testing.md
-├── pyproject.toml
-├── README.md
-├── scripts
-│   ├── backup.sh
-│   ├── verify.sh
-│   └── verify-simpro-mock.py
-├── services
-│   └── simpro_mock
-│       ├── alembic
-│       │   ├── env.py
-│       │   ├── script.py.mako
-│       │   └── versions
-│       ├── alembic.ini
-│       ├── CLAUDE.md
-│       ├── configuration.md
-│       ├── Dockerfile
-│       ├── pyproject.toml
-│       ├── simpro_mock
-│       │   ├── config.py
-│       │   ├── database.py
-│       │   ├── filtering.py
-│       │   ├── __init__.py
-│       │   ├── main.py
-│       │   ├── middleware.py
-│       │   ├── models.py
-│       │   ├── routers.py
-│       │   ├── schemas.py
-│       │   └── seed.py
-│       └── uv.lock
-├── src
-│   ├── simpro_client
-│   │   ├── auth.py
-│   │   ├── CLAUDE.md
-│   │   ├── client.py
-│   │   ├── config.py
-│   │   ├── endpoints
-│   │   │   ├── asset.py
-│   │   │   ├── attachment.py
-│   │   │   ├── base.py
-│   │   │   ├── company.py
-│   │   │   ├── contact.py
-│   │   │   ├── customer.py
-│   │   │   ├── employee.py
-│   │   │   ├── __init__.py
-│   │   │   ├── job_note.py
-│   │   │   ├── job.py
-│   │   │   ├── project.py
-│   │   │   ├── quote.py
-│   │   │   ├── site.py
-│   │   │   └── status.py
-│   │   ├── exceptions.py
-│   │   ├── __init__.py
-│   │   ├── logging.py
-│   │   ├── models
-│   │   │   ├── asset.py
-│   │   │   ├── attachment.py
-│   │   │   ├── base.py
-│   │   │   ├── company.py
-│   │   │   ├── contact.py
-│   │   │   ├── customer.py
-│   │   │   ├── employee.py
-│   │   │   ├── __init__.py
-│   │   │   ├── job_note.py
-│   │   │   ├── job.py
-│   │   │   ├── project.py
-│   │   │   ├── quote.py
-│   │   │   ├── site.py
-│   │   │   └── status.py
-│   │   └── rate_limiter.py
-│   └── simpro_client.egg-info
-│       ├── dependency_links.txt
-│       ├── PKG-INFO
-│       ├── requires.txt
-│       ├── SOURCES.txt
-│       └── top_level.txt
-├── structure.txt
-├── tests
-│   ├── CLAUDE.md
-│   ├── conftest.py
-│   ├── __init__.py
-│   ├── test_auth.py
-│   ├── test_client.py
-│   ├── test_config.py
-│   ├── test_endpoints.py
-│   ├── test_logging.py
-│   ├── test_manual_logging.py
-│   ├── test_models.py
-│   ├── test_pagination.py
-│   ├── test_rate_limiter.py
-│   ├── test_retries.py
-│   ├── test_route_contract.py
-│   └── test_simpro_mock_v2.py
-└── uv.lock
-
-25 directories, 122 files
-
-```
+The tracked file tree is in [`structure.txt`](structure.txt), generated with the command in [`docs/README.md`](docs/README.md) §4.
 
 ---
 
 # Roadmap
 
-| Phase | Description | Status |
-|--------|-------------|--------|
-| 1 | Local AI Platform | ✅ Complete |
-| 2 | Production RAG Knowledge Base | ✅ Complete |
-| 3 | Simpro API Integration | Planned |
-| 4 | AI Document Generation | Planned |
-| 5 | Security & Reverse Proxy | Planned |
-| 6 | AI Sales Agent | Planned |
-| 7 | Public Tender Agent | Planned |
-| 8 | Customer Intelligence | Planned |
-| 9 | Multi-Agent Architecture | Planned |
-| 10 | Monitoring & Disaster Recovery | Planned |
+Phase list and phase status: [`docs/roadmap.md`](docs/roadmap.md).
 
 ---
 
@@ -314,19 +123,7 @@ Every phase follows the same workflow:
 8. Documentation Update
 9. Git Commit
 
-Each sprint includes:
-
-- Goal
-- Business Value
-- Tasks
-- Commands
-- Configuration
-- Folder Structure
-- Files Created
-- Verification
-- Common Issues
-- Rollback Procedure
-- Acceptance Criteria
+Each sprint plan follows the sprint template in [`docs/development-standards.md` §8](docs/development-standards.md#8-sprint--task-template).
 
 ---
 

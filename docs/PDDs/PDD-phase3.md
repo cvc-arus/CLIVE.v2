@@ -16,7 +16,7 @@ Build a reusable, typed Python integration layer for the Simpro REST API that wi
 
 The original PDD assumed live Simpro sandbox access and planned to build typed endpoint modules early (Sprint 2), tested against a thin mock. Once it was confirmed CVC has **no live Simpro API access**, the team made an architecture decision (`docs/ADR/adr-mock-simpro-api.md`) to build a **high-fidelity mock service first**, covering all 12 target resources with realistic pagination, filtering, and PascalCase field fidelity. This means only `SIMPRO_BASE_URL` (and `SIMPRO_TOKEN_URL`) need to change when live access arrives — no client code changes.
 
-This is documented in full in `RevisedScope.txt`, which supersedes the original 6-sprint plan.
+This is documented in full in `docs/scope/scope&readmap-rev2.md` (formerly `RevisedScope.txt`), which supersedes the original 6-sprint plan.
 
 ## 3. Current State of the Codebase (verified by running the test suite, not just reading it)
 
@@ -27,7 +27,7 @@ This is documented in full in `RevisedScope.txt`, which supersedes the original 
 | `simpro_client/models/` and `simpro_client/endpoints/` (typed Pydantic models + endpoint modules) | ❌ Not yet started | These directories do not exist in the current tree; only the foundation client (`client.py`, `auth.py`, `config.py`) is present |
 | `pagination.py`, `rate_limiter.py` on the client side | ❌ Not yet started | Not present in `src/simpro_client/` |
 
-**Important correction to the narrative in `RevisedScope.txt`:** that document describes a "Sprint 4 — Typed Client Layer" as "🔶 In Progress." The code shows no `models/` or `endpoints/` package under `simpro_client` yet — the typed layer has not been started in code. What *is* complete is the client foundation (Sprint 1) and the mock service (Sprint 3), plus a set of hardening fixes applied on top of them (see §6). Per the project's own principle — code is the source of truth — this document reflects the code, not the plan.
+**Important correction to the narrative in `docs/scope/scope&readmap-rev2.md`:** that document describes a "Sprint 4 — Typed Client Layer" as "🔶 In Progress." The code shows no `models/` or `endpoints/` package under `simpro_client` yet — the typed layer has not been started in code. What *is* complete is the client foundation (Sprint 1) and the mock service (Sprint 3), plus a set of hardening fixes applied on top of them (see §6). Per the project's own principle — code is the source of truth — this document reflects the code, not the plan.
 
 ## 4. Architecture (as implemented)
 
@@ -94,7 +94,7 @@ When live Simpro access is enabled, `SIMPRO_BASE_URL` and `SIMPRO_TOKEN_URL` swa
 ## 6. Fixes Applied During Review
 
 A codebase review (run against the actual test suite, not static reading) found and fixed:
-1. A pytest-collection hazard: `tests/test_simpro_mock.py` was a script with module-level `assert` statements that ran at import time and required a live mock service, breaking collection whenever the mock wasn't running. A skip-gated version exists as `tests/test_simpro_mock_v2.py`. **Note:** the original `tests/test_simpro_mock.py` is still present in the tree alongside the new file — see `docs/known-issues.md`.
+1. A pytest-collection hazard: `tests/test_simpro_mock.py` was a script with module-level `assert` statements that ran at import time and required a live mock service, breaking collection whenever the mock wasn't running. A skip-gated version exists as `tests/test_simpro_mock_v2.py`. **Note:** the original `tests/test_simpro_mock.py` was deleted on 2026-09-04.
 2. A phantom-test hazard: helper functions in a manual diagnostic script were named `test_*`, which pytest tried to collect and run. The script now lives at `scripts/verify-simpro-mock.py`, outside `tests/`, explicitly documented as "not a pytest test."
 3. An unreachable branch in `client.py`'s correlation-ID handling was removed; the correlation ID is now generated once per request context and attached to the outgoing `X-Correlation-ID` header.
 4. `simpro_mock/models.py` was normalized to consistent SQLAlchemy 2.0 style (`Mapped[]` / `mapped_column`, `back_populates` on both sides of every relationship).

@@ -1,7 +1,7 @@
 # Phase 2 Project Design Document — Production RAG Knowledge Base (As-Built)
 
 **Status:** Complete (retrospective PDD — written after implementation, since none existed)
-**Source:** `docs/phase2.md`, `docker-compose.yml`, `configs/postgres/init-pgvector.sql`, `scripts/backup.sh`, `scripts/verify.sh`
+**Source:** `docs/phase2/summary.md`, `docker-compose.yml`, `configs/postgres/init-pgvector.sql`, `scripts/backup.sh`, `scripts/verify.sh`
 
 ## 1. Objective
 

@@ -1,6 +1,6 @@
 # CLIVE Changelog
 
-Reconstructed from `RevisedScope.txt`, chat history, and the current state of the codebase. Dates reflect the sprint/phase narrative where exact commit dates were not available from the shallow git history at review time.
+Reconstructed from `docs/scope/scope&readmap-rev2.md` (formerly `RevisedScope.txt`), chat history, and the current state of the codebase. Dates reflect the sprint/phase narrative where exact commit dates were not available from the shallow git history at review time.
 
 ## Phase 1 — Local AI Platform
 - Ubuntu 24.04 LTS development host provisioned
@@ -48,14 +48,19 @@ Reconstructed from `RevisedScope.txt`, chat history, and the current state of th
 - Normalized `simpro_mock/schemas.py` to consistent `str | None` typing (previously mixed with `Optional[str]`)
 - Cleaned git history: untracked an accidentally committed `.venv/`, amended the Sprint 1 commit, force-pushed with `--force-with-lease`
 
-### Documentation Catch-Up (this delivery)
-- Generated: Phase 3 as-built PDD, platform architecture doc, expanded `docs/phase3.md`, Simpro mock API reference, development standards, testing guide, installation guide, roadmap, known-issues log
--  `structure.txt` stale; `RevisedScope.txt`'s "Sprint 4" narrative ahead of what's in the code
-- `simpro_client/models/` and `simpro_client/endpoints/` (typed Pydantic models + endpoint modules)
-- Client-side pagination iterator and token-bucket rate limiter- STARTED
+### Documentation Catch-Up (2026-09-04)
+- Added ADR-001 to ADR-009 and `docs/ADR/ADR-index.md`, the four PDDs (`docs/PDDs/`), `architecture.md`, `development-standards.md`, `installation.md`, `known-issues.md`, `roadmap.md`, `testing.md`, `simpro-mock-api-reference.md`, `docs/scope/scope&readmap-rev2.md` and this changelog
+- Expanded the Phase 3 summary (then `docs/phase3.md`, now `docs/phase3/phase3-summary.md`)
+- Removed the legacy script-style test `tests/test_simpro_mock.py`
+
+### Sprint 4 — Typed Client Layer
+Implemented with deviations from ADR-010; see `src/simpro_client/CLAUDE.md`.
+- 2026-09-07: added ADR-010 (client-side resilience policy) and the Sprint 4 contract, preflight audit and architecture summary in `docs/phase3/`; moved the phase summaries into `docs/phase1/`, `docs/phase2/` and `docs/phase3/`
+- 2026-09-17: added twelve typed Pydantic resource models (`src/simpro_client/models/`) and endpoint modules (`src/simpro_client/endpoints/`); `endpoints/base.py` provides `fetch_page()` for single-page requests; registered the `integration` pytest marker; added `tests/test_models.py`, `tests/test_endpoints.py` and `tests/test_route_contract.py`
+- 2026-09-29: added `iter_all()` (iterates over all pages) to `endpoints/base.py`; added the token-bucket rate limiter (`src/simpro_client/rate_limiter.py`, settings `SIMPRO_LIMITER_CAPACITY` / `SIMPRO_LIMITER_REFILL_RATE`); `client.py` retries 429 responses up to `SIMPRO_MAX_RETRIES`; added `SimproClientError`, `SimproServerError` and `SimproProtocolError` to `exceptions.py`; added `tests/test_pagination.py`, `tests/test_rate_limiter.py` and `tests/test_retries.py`
 
 ## Not Yet Started
 
 
-- Phase 3 → Phase 4 handoff ADR (direct import vs. service wrapper)
+- Phase 3 → Phase 4 handoff decision (direct import vs. service wrapper): drafted as ADR-009 (Proposed), undecided
 - Phase 4 (Document Generation) — blocked on the above

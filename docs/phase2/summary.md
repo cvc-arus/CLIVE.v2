@@ -1,3 +1,5 @@
+> Historical record as of 2026-08-06, commit 49b071a. Not maintained.
+
 # CLIVE – Phase 2: Production RAG Infrastructure
 
 ## Overview

@@ -1,7 +1,5 @@
 # Architecture Decision Records — Index
 
-Place these files in `docs/ADR/` alongside the existing `adr-mock-simpro-api.md`.
-
 | # | Title | Phase | Status |
 |---|---|---|---|
 | 001 | Self-Hosted Local LLM Stack (Ollama + Open WebUI) | 1 | Accepted, implemented |
@@ -15,9 +13,3 @@ Place these files in `docs/ADR/` alongside the existing `adr-mock-simpro-api.md`
 | 008 | Rate Limiting — token bucket at 8 req/sec | 3 | Withdrawn (duplicate of ADR-010) |
 | 009 | Phase 3 → Phase 4 Handoff Mechanism | 3→4 | **Proposed, open decision — needs CVC sign-off** |
 | 010 |  Client-Side Resilience, Rate Limiting, and Error Handling  | 3→4| **Approved** |
-
-
-Two items need your attention, not just filing:
-- **ADR-008** was withdrawn on 2026-09-29 as a duplicate of ADR-010, which covers the implemented rate limiter.
-- **ADR-009** is a genuine open decision (direct import vs. service wrapper for Phase 4). I've laid out both options with a non-binding recommendation, but this is the one that needs an actual answer from you before Phase 4 scoping starts — everything else in this batch documents decisions already made in code.
-- **ADR-010** 

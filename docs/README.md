@@ -30,14 +30,14 @@ to date. If a document is not listed here, either add it here or delete it.
 
 | Document | Owns | Current state (re-verify before relying on this) |
 |---|---|---|
-| `../README.md` | Project overview, links into `docs/` | Stale: Phase 3 shown as Planned; out-of-date tree |
-| `roadmap.md` | Phase list and phase status (the only place phase status is stated) | Stale: says typed layer not started |
-| `architecture.md` | Services, ports, containers, `simpro_client` and `simpro_mock` design | Stale: typed layer and rate limiter listed as absent |
-| `installation.md` | Setting up and running the stack | Not yet reviewed against current code |
-| `development-standards.md` | Coding, tooling, Git, sprint template | Stale: 18 tests, deleted test file |
-| `testing.md` | Test layers, markers, how to run them | Stale: 18 tests, deleted test file |
-| `known-issues.md` | Open discrepancies and defects | Stale: #6 contradicted by code; resolved items mixed with open ones |
-| `CHANGELOG.md` | What changed, per sprint | Needs Sprint 4 entries |
+| `../README.md` | Project overview, links into `docs/` | Fixed 2026-10-02 (`doc-audit.md`): status, tree and sprint template are now links to their owners |
+| `roadmap.md` | Phase list and phase status (the only place phase status is stated) | Fixed 2026-10-02 (`doc-audit.md`): Phase 3 typed layer shown as implemented; remaining work is ADR-009 and sign-off |
+| `architecture.md` | Services, ports, containers, `simpro_client` and `simpro_mock` design | Fixed 2026-10-02 (`doc-audit.md`): typed layer, rate limiter, exception hierarchy and response handling match `client.py` |
+| `installation.md` | Setting up and running the stack | Fixed 2026-10-02 (`doc-audit.md`). Docker steps not re-run |
+| `development-standards.md` | Coding, tooling, Git, sprint template | Fixed 2026-10-02 (`doc-audit.md`) |
+| `testing.md` | Test layers, markers, how to run them | Fixed 2026-10-02 (`doc-audit.md`): all test modules listed, no counts |
+| `known-issues.md` | Open discrepancies and defects | Fixed 2026-10-02 (`doc-audit.md`): stale Sprint 4 entry removed; unused mock settings and lint debt added |
+| `CHANGELOG.md` | What changed, per sprint | Fixed 2026-10-02 (`doc-audit.md`): Sprint 4 entry added |
 
 ## 4. Reference documents (regenerate, don't hand-edit)
 
@@ -45,10 +45,10 @@ to date. If a document is not listed here, either add it here or delete it.
 |---|---|
 | `simpro-mock-api-reference.md` | `services/simpro_mock/simpro_mock/routers.py`, `schemas.py`, `filtering.py`, `middleware.py` |
 | `../services/simpro_mock/configuration.md` | `services/simpro_mock/simpro_mock/config.py` |
-| `../structure.txt` | Tracked files only. Regenerate from the repo root after adding, moving or deleting files (needs `tree` ≥ 2.0 for `--fromfile`): |
+| `../structure.txt` | Tracked files only. Regenerate from the repo root after adding, moving or deleting files (needs `tree` ≥ 2.0): |
 
 ```bash
-{ echo "# Generated from 'git ls-files'. Do not edit by hand; regenerate with the command in docs/README.md."; git ls-files | tree --fromfile -L 4 . ; } > structure.txt
+{ echo "# Generated from 'git ls-files'. Do not edit by hand; regenerate with the command in docs/README.md."; git ls-files | grep -vE '__pycache__|\.egg-info/' | tree --fromfile . --charset=utf-8 -a; } > structure.txt
 ```
 
 ## 5. Decision documents
@@ -69,7 +69,7 @@ to date. If a document is not listed here, either add it here or delete it.
 | `ADR/adr-008-rate-limiting-strategy.md` | Withdrawn 2026-09-29 (duplicate of ADR-010). Kept for history |
 | `PDDs/PDD-phase1.md`, `PDD-phase2.md` | Phases complete |
 | `PDDs/PDD-phase3.md` | "As-built" at 2026-09-04; predates Sprint 4. **To do: revise now** (decided 2026-09-29) |
-| `PDDs/PDD-phase4.md` | Draft. Links to a non-existent `adr-006-phase3-phase4-handoff.md` (should be ADR-009) |
+| `PDDs/PDD-phase4.md` | Draft. Handoff link fixed 2026-10-02 (now ADR-009) |
 
 ## 6. Historical documents
 
@@ -89,7 +89,9 @@ separate from living documents. Each gets a one-line header:
 | `phase3/phase3-sprint4-2-typed-python-SDK-endpoint-layer.md` | Move to `phase3/sprints/`; add correction note (claims don't match the repository) |
 | `phase3/phase3-sprint4-4-pagination-and-retries.md` | Renamed (no spaces, typo fixed). Move to `phase3/sprints/` |
 | `phase3/phase3-sprint4.md` | Chat fragment duplicating the contract's test sequence. Delete after checking nothing unique is lost |
-| `doc-audit.md` | Keep as historical. Full `/doc-check all` report of 2026-10-01; its findings are not yet fixed |
+| `doc-audit.md` | Keep as historical. Full `/doc-check all` report of 2026-10-01, with a 2026-10-02 correction note. All findings fixed 2026-10-02, except `PDD-phase3.md` content, which waits for its planned revision (section 5) |
+| `scope/clive-scope.md` | Keep as historical. Original `Clive_Scope.txt`, added 2026-10-01 (decision 1) |
+| `scope/master-project-document.md` | Keep as historical. Original master project document, added 2026-10-01 (decision 1) |
 | `scope/scope&readmap-rev2.md` | Keep as historical (superseded by `roadmap.md`). Rename to `scope/scope-rev2.md` (no `&` in filenames) |
 
 ## 7. Content to relocate
@@ -109,6 +111,18 @@ separate from living documents. Each gets a one-line header:
 | `structure.txt` | Regenerate from tracked files | Yes |
 | `scope/initial.md` | Delete (was empty) | Yes |
 | `PDD-phase3.md` | Revise now, not at sign-off | To do |
+
+### Decisions from the documentation audit (2026-10-01, Alex)
+
+Source: `docs/doc-audit.md`, "Needs your decision".
+
+| # | Decision | Outcome | Done |
+|---|---|---|---|
+| 1 | Scope source files | `RevisedScope.txt` is `docs/scope/scope&readmap-rev2.md`; cite that file. Add `Clive_Scope.txt` and the master project document to `docs/scope/` as historical records with kebab-case names. | Yes (2026-10-02): `scope/clive-scope.md`, `scope/master-project-document.md` |
+| 2 | Postgres keys | Add `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` to `.env.example` with placeholder values. `.env.example` lists every key needed to install the system. | To do |
+| 3 | `README.md` | Overview with links; status, tree and sprint template are linked from `roadmap.md`, `structure.txt` and `development-standards.md` §8. | To do |
+| 4 | Ruff rules | Root `CLAUDE.md` §7 wins. Docs say new code must be lint-clean and existing debt is tracked. Clearing the existing lint errors is a later code task. | To do |
+| 5 | Unused mock settings | `SIMPRO_MOCK_MOCK_CLIENT_ID` / `_SECRET` documented as unused in `known-issues.md`. Removing them is a later code task. | To do |
 
 Still open, but not a documentation decision: ADR-009 (Phase 3 → 4
 handoff).

@@ -20,22 +20,13 @@ git checkout develop
 
 ## 3. Root Environment File
 
-Create `.env` at the repo root from `.env.example` and fill in real values for the Postgres/PGVector section. The Simpro section can be left at its mock defaults for local development:
+Create `.env` at the repo root from `.env.example`, which lists every key needed to install the system:
 
-```env
-# Simpro Connection Config (mock defaults — safe to leave as-is until live access is enabled)
-SIMPRO_BASE_URL=http://simpro-mock:8000/api/v1.0
-SIMPRO_TOKEN_URL=http://simpro-mock:8000/oauth2/token
-SIMPRO_CLIENT_ID=your-client-id-here
-SIMPRO_CLIENT_SECRET=your-client-secret-here
-SIMPRO_AUTH_MODE=client_credentials
-SIMPRO_COMPANY_ID_SERVICE=1
-SIMPRO_COMPANY_ID_PROJECTS=2
-SIMPRO_TIMEOUT=30.0
-SIMPRO_MAX_RETRIES=3
+```bash
+cp .env.example .env
 ```
 
-Plus the Phase 1/2 Postgres/PGVector variables (`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`) that `docker-compose.yml` references directly.
+Fill in real values for the Phase 1/2 PGVector keys (`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`), which `docker-compose.yml` references directly. The `SIMPRO_` keys can be left at their mock defaults for local development.
 
 ## 4. Start the Full Stack
 
@@ -77,32 +68,27 @@ python scripts/verify-simpro-mock.py
 ## 7. Install `simpro_client` for Local Development
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
+uv sync
 ```
 
-**Note:** the root `pyproject.toml` currently defines `[dependency-groups] dev = [...]` (PEP 735 style) rather than `[project.optional-dependencies]`, so `pip install -e ".[dev]"` will warn `does not provide the extra 'dev'` and skip the dev dependencies. Install them explicitly if needed:
+`uv sync` creates `.venv/` and installs the package plus the `dev` dependency group.
 
-```bash
-pip install -e .
-pip install pytest respx ruff pytest-cov
-```
-
-(Or use `uv sync` / `uv pip install -e ".[dev]"`, which understands `[dependency-groups]` natively.)
+**Note:** the root `pyproject.toml` defines `[dependency-groups] dev = [...]` (PEP 735 style) rather than `[project.optional-dependencies]`, so `pip install -e ".[dev]"` and `uv pip install -e ".[dev]"` warn that there is no `dev` extra and skip the dev dependencies. Use `uv sync`.
 
 ## 8. Run the Test Suite
 
 ```bash
-pytest tests/ -v
+uv run pytest -q -m "not integration"
 ```
 
-18 tests pass offline (no live services required). To also run the live mock smoke test:
+This runs the offline suite (no live services required). To also run the live mock smoke test:
 
 ```bash
 docker compose up -d simpro-mock
-pytest tests/test_simpro_mock_v2.py -v
+uv run pytest tests/test_simpro_mock_v2.py -v
 ```
+
+Test layers and markers are described in `docs/testing.md`.
 
 ## 9. Backups
 
@@ -116,8 +102,10 @@ Dumps, compresses, and verifies the PGVector database (Phase 2). The mock's data
 
 ```bash
 docker compose down            # stop all services, keep volumes
-docker compose down -v         # stop all services AND remove volumes (destroys all data)
+docker compose down -v         # stop all services AND remove the named volumes in docker-compose.yml
 ```
+
+`-v` removes the named volumes declared in `docker-compose.yml` (`simpro-mock-db-data`, which holds the mock's database, plus the unused `ollama_data`, `openwebui_data` and `pgvector_data`). It does not remove the Phase 1/2 bind mounts under `/data/` (`/data/ollama`, `/data/openwebui_data`, `/data/pgvector_data`). Get Alex's approval before running it.
 
 For `simpro-mock` specifically, since its data is fully reproducible from `seed.py`:
 
@@ -133,6 +121,5 @@ docker compose up -d simpro-mock-db simpro-mock
 |---|---|---|
 | `simpro-mock` serves old code after an edit | Dockerfile bakes source at build time | `docker compose build simpro-mock` then `up -d`, not just a restart |
 | `uv run ENV_VAR=... command` fails, tries to exec the env var | Argument order | Use `ENV_VAR=... uv run command` |
-| `pip install -e ".[dev]"` warns "does not provide the extra 'dev'" | Root `pyproject.toml` uses `[dependency-groups]`, not `[project.optional-dependencies]` | Install dev deps explicitly, or use `uv sync` |
-| `pytest` fails to even collect tests | An old script-style test file with module-level asserts requiring a live service | Confirm `tests/test_simpro_mock.py` (legacy) isn't being run standalone; prefer `test_simpro_mock_v2.py` |
+| `pip install -e ".[dev]"` warns "does not provide the extra 'dev'" | Root `pyproject.toml` uses `[dependency-groups]`, not `[project.optional-dependencies]` | Use `uv sync` |
 | 401 from the mock | Missing/incorrect `Authorization: Bearer <token>` header, or token doesn't match `SIMPRO_MOCK_MOCK_ACCESS_TOKEN` | Re-fetch a token from `/oauth2/token` |

@@ -1,34 +1,35 @@
 # CLIVE Development Standards (As Applied in Phase 3)
 
-Consolidates the standards declared in `Clive_Scope.txt` / `__CLIVE_Enterprise_AI_Platform.txt` with how they are actually applied in the current codebase.
+Consolidates the standards declared in `docs/scope/clive-scope.md` / `docs/scope/master-project-document.md` with how they are actually applied in the current codebase.
 
 ## 1. Python
 
 | Standard | Enforcement |
 |---|---|
 | PEP8 | `ruff` (`select = ["E", "F", "I", "N", "W", "UP", "B", "A", "SIM"]`) |
-| Formatting | `ruff format` / `black` |
+| Formatting | `ruff format` |
 | Type hints | Used throughout (`str \| None` union syntax, not `Optional[]`) |
-| Docstrings | Present on all public classes/functions in `simpro_client` and `simpro_mock` |
+| Docstrings | Required on new or modified public classes/functions (root `CLAUDE.md` §7); older code, e.g. `src/simpro_client/client.py`, has few |
 | Line length | 88 (`[tool.ruff] line-length = 88`) |
 | Target version | `py312` |
 | Logging | Structured JSON via stdlib `logging` + custom `JSONFormatter`, not print statements |
 | Configuration | `pydantic-settings`, `.env`-driven, never hardcoded secrets |
 | Error handling | Typed exception hierarchies per package (`simpro_client.exceptions`) |
 
-Run locally:
+Run locally, on the paths you changed:
 ```bash
-ruff check src/ --fix
-ruff format src/
+uv run ruff check <paths>
+uv run ruff format --check <paths>
 ```
+
+New files must pass both checks, and modified files must not gain new violations. The repository has existing lint debt (`uv run ruff check .` does not pass), tracked in `docs/known-issues.md`; clearing it is a later code task. Do not run `ruff --fix` or `ruff format` on files outside your change (root `CLAUDE.md` §7).
 
 ## 2. Testing
 
 - **Framework:** `pytest`, with `respx` for mocking `httpx` traffic in `simpro_client` tests.
-- **No live dependency in unit tests:** all 18 tests in `tests/test_auth.py`, `test_client.py`, `test_config.py`, `test_logging.py` run fully offline.
-- **Live/integration tests are explicitly separated and skip-gated:** `tests/test_simpro_mock_v2.py` checks reachability of `http://localhost:8100/health` first and applies `pytest.mark.skipif` so the suite never fails just because the mock isn't running.
+- **No live dependency in unit tests:** everything except the `integration`-marked tests runs fully offline. Test layers and how to run them: `docs/testing.md`.
+- **Live/integration tests are explicitly separated and skip-gated:** `tests/test_simpro_mock_v2.py` checks reachability of `http://localhost:8100/health` in an autouse fixture and calls `pytest.skip()` at runtime, so the suite never fails just because the mock isn't running.
 - **Manual diagnostic scripts are kept outside `tests/`:** `scripts/verify-simpro-mock.py` deliberately lives outside the `tests/` directory and is documented as "not a pytest test," specifically because its helper functions are named `test_list_endpoint`, `test_single_endpoint`, etc., which pytest would otherwise try to collect and run.
-- **Anti-pattern to avoid going forward:** `tests/test_simpro_mock.py` (the original script-style file with module-level `assert`s) is still present in the tree even though its replacement (`test_simpro_mock_v2.py`) exists. This should be deleted — see `docs/known-issues.md`.
 - **Run tests, don't just read code:** codebase reviews in this project run `pytest tests/ -v` rather than relying on static inspection, since that's what actually surfaces pytest-collection bugs.
 
 Run locally:
@@ -53,7 +54,7 @@ pytest tests/test_simpro_mock_v2.py -v  # skip-gated integration test
 
 - All Simpro-related settings load from `.env` with the `SIMPRO_` prefix (client) or `SIMPRO_MOCK_` prefix (mock service), via `pydantic-settings`.
 - `extra="ignore"` on `SimproSettings` lets Simpro keys coexist in the same root `.env` as unrelated PGVector/Postgres credentials without validation errors.
-- `.env.example` documents every required key without values; `.env` itself is gitignored.
+- `.env.example` lists every key needed to install the system, with placeholder values; `.env` itself is gitignored.
 - No secrets are committed. The mock's static bearer token is a development convenience, not a production credential.
 
 ## 5. Package & Dependency Management
@@ -72,7 +73,7 @@ pytest tests/test_simpro_mock_v2.py -v  # skip-gated integration test
 ## 7. Git
 
 - Work happens on `develop`; force-pushes use `git push --force-with-lease`, never a plain `--force`, when history is rewritten (this project's `.venv/` accidental-commit cleanup is the precedent).
-- Every sprint ends with a git commit and a documentation update, per the project's own sprint template (see `docs/development-standards.md` §8 for the template itself, reproduced from `Clive_Scope.txt`).
+- Every sprint ends with a git commit and a documentation update, per the project's own sprint template (see `docs/development-standards.md` §8 for the template itself, reproduced from `docs/scope/clive-scope.md`).
 
 ## 8. Sprint / Task Template
 
@@ -97,4 +98,4 @@ Work proceeds one sprint at a time; the next sprint does not start until the cur
 
 ## 9. Documentation Principle
 
-**Code is the sole source of truth.** Project documentation (this file included) is generated from the actual codebase — by reading source, running the test suite, and inspecting the running containers — not from planning transcripts or prior chat summaries. This avoids drift between what the docs claim and what the code actually does. Where a planning document (e.g. `RevisedScope.txt`) and the code disagree, the code wins, and the discrepancy should be called out explicitly rather than silently reconciled in the doc's favor.
+**Code is the sole source of truth.** Project documentation (this file included) is generated from the actual codebase — by reading source, running the test suite, and inspecting the running containers — not from planning transcripts or prior chat summaries. This avoids drift between what the docs claim and what the code actually does. Where a planning document (e.g. `docs/scope/scope&readmap-rev2.md`, formerly `RevisedScope.txt`) and the code disagree, the code wins, and the discrepancy should be called out explicitly rather than silently reconciled in the doc's favor.

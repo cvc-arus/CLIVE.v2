@@ -1,3 +1,5 @@
+> Historical record as of 2026-10-01, commit f2795e2. Not maintained.
+
 # Doc check: all documents
 
 **The check found 47 problems:**
@@ -99,3 +101,9 @@
 3. **`README.md` content.** Should it keep its own status, tree and template sections? Under the "one fact, one home" rule they should become links to `roadmap.md`, `structure.txt` and `development-standards.md`.
 4. **Ruff rules.** `development-standards.md` and `testing.md` tell people to run `ruff --fix` / `ruff format` and expect zero lint errors. Root `CLAUDE.md` §7 forbids both, and the lint debt is real (83 errors). Which rule wins?
 5. **Unused mock settings.** `SIMPRO_MOCK_MOCK_CLIENT_ID` and `_SECRET` are never read. Should I document them as unused, or open a task to remove them? Removing them is a code change.
+
+> **Correction (2026-10-02):** The CHANGELOG finding credits pagination, retries
+> and the rate limiter to `d83b568` and `d6723d8`. Per git, `d83b568` added none
+> of them. `d6723d8` added single-page `fetch_page()` in `endpoints/base.py`.
+> `58b9dbd` added `iter_all()`, 429 retries and `rate_limiter.py`. The CHANGELOG
+> follows git.

@@ -1,3 +1,5 @@
+> Historical record as of 2026-09-04, commit 9b7cf3d. Not maintained.
+
 # CLIVE Enterprise AI Platform — Scope & Roadmap (Revision 2)
 
 **Company:** CVC · **Industry:** CCTV and Security
