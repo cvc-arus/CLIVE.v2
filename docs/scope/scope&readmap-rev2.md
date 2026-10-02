@@ -1,4 +1,4 @@
-> Historical record as of 2026-09-04, commit 9b7cf3d. Not maintained.
+> Historical record as of 2026-09-04, commit 7d39a02. Not maintained.
 
 # CLIVE Enterprise AI Platform — Scope & Roadmap (Revision 2)
 

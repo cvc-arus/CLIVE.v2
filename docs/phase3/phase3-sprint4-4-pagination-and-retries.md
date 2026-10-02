@@ -1,4 +1,4 @@
-> Historical record as of 2026-09-29, commit 58b9dbd. Not maintained.
+> Historical record as of 2026-09-29, commit 7094e0d. Not maintained.
 
 # CLIVE-I HTTP Client: Resilience, Pagination, and Retries Upgrade
 

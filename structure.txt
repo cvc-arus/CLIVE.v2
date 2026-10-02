@@ -1,7 +1,5 @@
 # Generated from 'git ls-files'. Do not edit by hand; regenerate with the command in docs/README.md.
 .
-├── backups
-│   └── clive_pgvector_20260805_160501.sql.gz
 ├── .claude
 │   ├── commands
 │   │   └── doc-check.md
@@ -150,4 +148,4 @@
 │   └── test_simpro_mock_v2.py
 └── uv.lock
 
-24 directories, 126 files
+23 directories, 125 files

@@ -1,4 +1,4 @@
-> Historical record as of 2026-10-01, commit f2795e2. Not maintained.
+> Historical record as of 2026-10-01, commit 8ea065a. Not maintained.
 
 # Doc check: all documents
 
@@ -103,7 +103,8 @@
 5. **Unused mock settings.** `SIMPRO_MOCK_MOCK_CLIENT_ID` and `_SECRET` are never read. Should I document them as unused, or open a task to remove them? Removing them is a code change.
 
 > **Correction (2026-10-02):** The CHANGELOG finding credits pagination, retries
-> and the rate limiter to `d83b568` and `d6723d8`. Per git, `d83b568` added none
-> of them. `d6723d8` added single-page `fetch_page()` in `endpoints/base.py`.
-> `58b9dbd` added `iter_all()`, 429 retries and `rate_limiter.py`. The CHANGELOG
-> follows git.
+> and the rate limiter to `b03d024` and `395e06d`. Per git, `b03d024` added none
+> of them. `395e06d` added single-page `fetch_page()` in `endpoints/base.py`.
+> `7094e0d` added `iter_all()`, 429 retries and `rate_limiter.py`. The CHANGELOG
+> follows git. (Hashes in this note were updated after the 2026-10-02 history
+> rewrite that removed `backups/`; hashes elsewhere in this record predate it.)
