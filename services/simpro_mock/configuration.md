@@ -16,12 +16,12 @@ The application leverages Pydantic Settings to automatically resolve configurati
 ### 2. `SIMPRO_MOCK_MOCK_CLIENT_ID`
 * **Type**: `string`
 * **Default Value**: `"mock-client-id"`
-* **Description**: The OAuth2 Client ID expected by the token authorization issuer route (`/oauth2/token`). Since this is a localized development tool, the endpoint is configured to bypass strict credential validation, but this property defines standard expectations.
+* **Description**: **Unused.** Defined in `config.py` but never read: the `/oauth2/token` route (`issue_token` in `routers.py`) accepts any client ID. See `docs/known-issues.md`.
 
 ### 3. `SIMPRO_MOCK_MOCK_CLIENT_SECRET`
 * **Type**: `string`
 * **Default Value**: `"mock-client-secret"`
-* **Description**: The companion OAuth2 Client Secret used during the form-encoded client credential handshake to acquire a mock bearer token.
+* **Description**: **Unused.** Defined in `config.py` but never read: the `/oauth2/token` route (`issue_token` in `routers.py`) accepts any client secret. See `docs/known-issues.md`.
 
 ### 4. `SIMPRO_MOCK_MOCK_ACCESS_TOKEN`
 * **Type**: `string`
@@ -37,7 +37,7 @@ The application leverages Pydantic Settings to automatically resolve configurati
 
 ## Overriding Configurations Locally
 
-To override these default settings on your host machine or within container contexts, you can define them under your compose orchestration file or establish a localized `.env` file inside `services/simpro_mock/`:
+To override these default settings, set them as real environment variables, or under the `simpro-mock` service's `environment:` in `docker-compose.yml`. `Settings` has no `env_file`, so a `.env` file is not read:
 
 ```env
 SIMPRO_MOCK_DATABASE_URL=postgresql://<db-user>:<db-password>@localhost:5433/simpro_mock

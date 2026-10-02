@@ -1,6 +1,6 @@
 # ADR-008: Client-Side Resilience, Rate Limiting, and Error Handling
 
-*   **Status:** Approved
+*   **Status:** Withdrawn (2026-09-29). This file duplicates ADR-010, which is the authoritative record of this decision. Kept for history only; do not implement from it.
 *   **Deciders:** ARus
 *   **Date:** 2026-09-04 UTC
 

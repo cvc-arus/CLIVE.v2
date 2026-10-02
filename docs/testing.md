@@ -4,17 +4,23 @@ There are three distinct layers of testing in Phase 3, deliberately kept separat
 
 ## 1. Unit Tests (`tests/*.py`, offline, always run)
 
-| File | Tests | What it covers |
-|---|---|---|
-| `test_auth.py` | 5 | Token obtained on first call, cached on second, expiry triggers refresh, invalid credentials raise `SimproAuthError`, API-key mode returns the static token |
-| `test_client.py` | 5 | Successful GET, 401 triggers refresh-and-retry, 404 raises `SimproNotFoundError`, 429 raises `SimproRateLimitError`, context-manager close behaviour |
-| `test_config.py` | 3 | Settings load from explicit values, missing required field raises, defaults apply correctly |
-| `test_logging.py` | 5 | Correlation ID set/get, auto-generation when unset, `JSONFormatter` includes correlation ID, `JSONFormatter` includes HTTP fields, `configure_logging()` returns a usable logger |
+| File | What it covers |
+|---|---|
+| `test_auth.py` | Token obtained on first call, cached on second, expiry triggers refresh, invalid credentials raise `SimproAuthError`, API-key mode returns the static token |
+| `test_client.py` | Successful GET, 401 triggers refresh-and-retry, 404 raises `SimproNotFoundError`, 429 raises `SimproRateLimitError`, context-manager close behaviour |
+| `test_config.py` | Settings load from explicit values, missing required field raises, defaults apply correctly |
+| `test_logging.py` | Correlation ID set/get, auto-generation when unset, `JSONFormatter` includes correlation ID, `JSONFormatter` includes HTTP fields, `configure_logging()` returns a usable logger |
+| `test_models.py` | Typed resource models accept PascalCase aliases, ignore unknown fields, and convert date/datetime fields |
+| `test_endpoints.py` | Typed endpoints use the exact route and model, keep pagination headers and filters, and reject a missing nested scope before any request |
+| `test_pagination.py` | `iter_all()` is lazy, walks multiple pages, and raises `SimproProtocolError` on bad pagination metadata |
+| `test_rate_limiter.py` | `TokenBucket` burst, refill and wait; lock released before sleeping |
+| `test_retries.py` | `Retry-After` forms and backoff fallback, independent 401 and 429 budgets, retry exhaustion and typed errors |
+| `test_route_contract.py` | The read-only route inventory matches the committed contract |
 
-**Total: 18 tests, all passing, fully offline** (verified by running `pytest tests/ -v`, not just reading the files). All HTTP traffic is intercepted with `respx`; no network or live service is required.
+All tests except those marked `integration` run fully offline. All HTTP traffic is intercepted with `respx`; no network or live service is required. Run the offline suite with:
 
 ```bash
-pytest tests/ -v
+uv run pytest -q -m "not integration"
 ```
 
 `tests/conftest.py` supplies two fixtures: `mock_settings` (Client Credentials mode) and `api_key_settings` (API Key mode), both fully synthetic — no `.env` file needed to run the suite.
@@ -29,14 +35,13 @@ python tests/test_manual_logging.py
 
 ## 3. Live Integration / Smoke Tests Against the Mock Service
 
-Two files exercise the running `simpro-mock` container over real HTTP:
+One file exercises the running `simpro-mock` container over real HTTP:
 
-- **`tests/test_simpro_mock_v2.py`** — the current, correct version. It checks `GET http://localhost:8100/health` first; if the mock isn't reachable, every test in the file is skipped via `pytest.mark.skipif`, so `pytest tests/` never fails just because nobody started the mock. Covers: PascalCase field casing + pagination headers on `/companies/`, and a 401 on an unauthenticated request.
-- **`tests/test_simpro_mock.py`** — the original script-style predecessor. It runs module-level `assert` statements at import time, unconditionally requiring `http://localhost:8100` to be up. **This file should be deleted** now that `test_simpro_mock_v2.py` supersedes it — see `docs/known-issues.md`. Until it's removed, be aware that a plain `pytest tests/` will fail this specific file if the mock isn't running (it does not skip).
+- **`tests/test_simpro_mock_v2.py`** — marked `integration` (`pytestmark`). An autouse fixture checks `GET http://localhost:8100/health`; if the mock isn't reachable, it calls `pytest.skip()` at runtime, so a full `pytest` run never fails just because nobody started the mock. Covers: PascalCase field casing + pagination headers on `/companies/`, and a 401 on an unauthenticated request.
 
 ```bash
 docker compose up -d simpro-mock
-pytest tests/test_simpro_mock_v2.py -v
+uv run pytest tests/test_simpro_mock_v2.py -v
 ```
 
 ## 4. Manual Diagnostic Script
@@ -50,12 +55,14 @@ python scripts/verify-simpro-mock.py
 
 ## 5. Linting (part of the test/verification pipeline)
 
+Run on the paths you changed:
+
 ```bash
-ruff check src/ --fix
-ruff format src/
+uv run ruff check <paths>
+uv run ruff format --check <paths>
 ```
 
-Zero-error linting is expected before any change is considered verified, per the project's development standards.
+New files must pass both checks, and modified files must not gain new violations (root `CLAUDE.md` §7). The repository has existing lint debt, tracked in `docs/known-issues.md`, so `uv run ruff check .` does not pass yet. Do not run `ruff --fix` or `ruff format` on files outside your change.
 
 ## 6. What "Sprint Complete" Means in This Project
 

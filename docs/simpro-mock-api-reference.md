@@ -170,8 +170,10 @@ Two companies are seeded on container start (`simpro_mock/seed.py`, run via the 
 
 | Company | ID | Approx. seeded volume |
 |---|---|---|
-| CVC Service | 1 | 8 customers, 8 jobs, plus proportional sites/contacts/assets/projects/notes/attachments/statuses |
-| CVC Projects | 2 | 8 customers, 8 jobs, plus proportional sites/contacts/assets/projects/notes/attachments/statuses |
+| CVC Service | 1 | 8 customers, 8 jobs, plus proportional sites/contacts/assets/projects/notes/statuses |
+| CVC Projects | 2 | 8 customers, 8 jobs, plus proportional sites/contacts/assets/projects/notes/statuses |
+
+Attachments are not seeded per company: `seed.py` adds 1–3 attachments to each of the first 10 jobs returned by its job query (`jobs[:10]`).
 
 `truncate_tables()` runs first and resets identity sequences, so re-running the seed script is idempotent (safe to run repeatedly).
 

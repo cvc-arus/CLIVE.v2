@@ -1,7 +1,7 @@
 # ADR-009: Phase 3 → Phase 4 Handoff Mechanism
 
 ## Status
-**Proposed — open decision.** This is the ADR flagged as a gap in `RevisedScope.txt` and `docs/PDD-phase3.md`. It has not been decided yet; this document lays out the options so a decision can be made and recorded before Phase 4 scoping begins, rather than defaulting to one silently.
+**Proposed — open decision.** This is the ADR flagged as a gap in `docs/scope/scope&readmap-rev2.md` (formerly `RevisedScope.txt`) and `docs/PDDs/PDD-phase3.md`. It has not been decided yet; this document lays out the options so a decision can be made and recorded before Phase 4 scoping begins, rather than defaulting to one silently.
 
 ## Context
 Phase 4 (Document Generation) needs to read Simpro data (Customers, Sites, Contacts, Jobs, Quotes, Projects, Assets, Employees) from `simpro_client`. ADR-006 already established a general library-first principle for `simpro_client`, but that decision was made before Phase 4's actual requirements were known. This ADR asks the same question specifically for the Phase 3 → Phase 4 boundary.

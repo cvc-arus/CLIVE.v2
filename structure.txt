@@ -1,11 +1,13 @@
+# Generated from 'git ls-files'. Do not edit by hand; regenerate with the command in docs/README.md.
 .
-├── backups
-│   └── clive_pgvector_20260805_160501.sql.gz
+├── .claude
+│   ├── commands
+│   │   └── doc-check.md
+│   └── settings.json
+├── CLAUDE.md
 ├── configs
 │   └── postgres
 │       └── init-pgvector.sql
-├── dock
-│   └── phase1
 ├── docker-compose.yml
 ├── docs
 │   ├── ADR
@@ -18,11 +20,14 @@
 │   │   ├── adr-007-configuration-management.md
 │   │   ├── adr-008-rate-limiting-strategy.md
 │   │   ├── adr-009-phase3-phase4-handoff.md
+│   │   ├── adr-010-resilience-policy.md
 │   │   ├── ADR-index.md
 │   │   └── adr-mock-simpro-api.md
 │   ├── architecture.md
 │   ├── CHANGELOG.md
+│   ├── CLAUDE.md
 │   ├── development-standards.md
+│   ├── doc-audit.md
 │   ├── installation.md
 │   ├── known-issues.md
 │   ├── PDDs
@@ -36,17 +41,23 @@
 │   │   └── summary.md
 │   ├── phase3
 │   │   ├── logging.md
+│   │   ├── phase3-sprint4-2-typed-python-SDK-endpoint-layer.md
+│   │   ├── phase3-sprint4-4-pagination-and-retries.md
+│   │   ├── phase3-sprint4-architecture-summary.md
+│   │   ├── phase3-sprint4-contract.md
 │   │   ├── phase3-sprint4.md
-│   │   ├── sprint4-architecture-summary.md
-│   │   ├── sprint4-contract.md
-│   │   ├── sprint4-preflight-audit.md
-│   │   └── summary.md
+│   │   ├── phase3-sprint4-preflight-audit.md
+│   │   └── phase3-summary.md
+│   ├── README.md
 │   ├── roadmap.md
 │   ├── scope
-│   │   ├── initial.md
+│   │   ├── clive-scope.md
+│   │   ├── master-project-document.md
 │   │   └── scope&readmap-rev2.md
 │   ├── simpro-mock-api-reference.md
 │   └── testing.md
+├── .env.example
+├── .gitignore
 ├── pyproject.toml
 ├── README.md
 ├── scripts
@@ -56,36 +67,85 @@
 ├── services
 │   └── simpro_mock
 │       ├── alembic
+│       │   ├── env.py
+│       │   ├── script.py.mako
+│       │   └── versions
+│       │       ├── 27082026_add_simpro_resources.py
+│       │       └── 876a0e057b67_init_db.py
 │       ├── alembic.ini
+│       ├── CLAUDE.md
 │       ├── configuration.md
 │       ├── Dockerfile
 │       ├── pyproject.toml
 │       ├── simpro_mock
+│       │   ├── config.py
+│       │   ├── database.py
+│       │   ├── filtering.py
+│       │   ├── __init__.py
+│       │   ├── main.py
+│       │   ├── middleware.py
+│       │   ├── models.py
+│       │   ├── routers.py
+│       │   ├── schemas.py
+│       │   └── seed.py
 │       └── uv.lock
 ├── src
-│   ├── simpro_client
-│   │   ├── auth.py
-│   │   ├── client.py
-│   │   ├── config.py
-│   │   ├── exceptions.py
-│   │   ├── __init__.py
-│   │   └── logging.py
-│   └── simpro_client.egg-info
-│       ├── dependency_links.txt
-│       ├── PKG-INFO
-│       ├── requires.txt
-│       ├── SOURCES.txt
-│       └── top_level.txt
+│   └── simpro_client
+│       ├── auth.py
+│       ├── CLAUDE.md
+│       ├── client.py
+│       ├── config.py
+│       ├── endpoints
+│       │   ├── asset.py
+│       │   ├── attachment.py
+│       │   ├── base.py
+│       │   ├── company.py
+│       │   ├── contact.py
+│       │   ├── customer.py
+│       │   ├── employee.py
+│       │   ├── __init__.py
+│       │   ├── job_note.py
+│       │   ├── job.py
+│       │   ├── project.py
+│       │   ├── quote.py
+│       │   ├── site.py
+│       │   └── status.py
+│       ├── exceptions.py
+│       ├── __init__.py
+│       ├── logging.py
+│       ├── models
+│       │   ├── asset.py
+│       │   ├── attachment.py
+│       │   ├── base.py
+│       │   ├── company.py
+│       │   ├── contact.py
+│       │   ├── customer.py
+│       │   ├── employee.py
+│       │   ├── __init__.py
+│       │   ├── job_note.py
+│       │   ├── job.py
+│       │   ├── project.py
+│       │   ├── quote.py
+│       │   ├── site.py
+│       │   └── status.py
+│       └── rate_limiter.py
 ├── structure.txt
 ├── tests
+│   ├── CLAUDE.md
 │   ├── conftest.py
 │   ├── __init__.py
 │   ├── test_auth.py
 │   ├── test_client.py
 │   ├── test_config.py
+│   ├── test_endpoints.py
 │   ├── test_logging.py
 │   ├── test_manual_logging.py
+│   ├── test_models.py
+│   ├── test_pagination.py
+│   ├── test_rate_limiter.py
+│   ├── test_retries.py
+│   ├── test_route_contract.py
 │   └── test_simpro_mock_v2.py
 └── uv.lock
 
-22 directories, 67 files
+23 directories, 125 files

@@ -4,9 +4,12 @@ Guidance for Claude Code in this repository. This root file holds project-wide
 rules. Directory files add narrower rules and are loaded when you work there:
 
 - `docs/CLAUDE.md` — documentation, ADRs, verification evidence
-- `services/CLAUDE.md` — `simpro_mock` FastAPI service, PostgreSQL, Alembic, Docker
-- `src/CLAUDE.md` — `simpro_client` library architecture and rules
+- `services/simpro_mock/CLAUDE.md` — mock FastAPI service, PostgreSQL, Alembic, Docker
+- `src/simpro_client/CLAUDE.md` — `simpro_client` library architecture and rules
 - `tests/CLAUDE.md` — test layers, pytest conventions, determinism
+
+The documentation index (`docs/README.md`) lists every document and whether
+it is maintained. These files must be named exactly `CLAUDE.md`.
 
 If a directory file and this file seem to conflict, stop and ask. Do not pick one.
 
@@ -60,7 +63,7 @@ it. When documents and code disagree, say so explicitly. Do not quietly
 - **Self-hosted.** No cloud AI providers or external SaaS calls unless Alex
   explicitly approves. Code and tests must never contact `*.simprosuite.com`.
 
-## 4. ADR status (verified against code at commit `87139ef`)
+## 4. ADR status (snapshot; re-verify before relying on this)
 
 | ADR | Topic | Status |
 |---|---|---|
@@ -70,9 +73,9 @@ it. When documents and code disagree, say so explicitly. Do not quietly
 | 005 | Client Credentials + API key fallback; Authorization Code deferred | Accepted, implemented |
 | 006 | Library-first `simpro_client` | Accepted, implemented |
 | 007 | pydantic-settings, `SIMPRO_` / `SIMPRO_MOCK_` prefixes | Accepted, implemented |
-| 008 | Rate limiting | **Unresolved:** file text duplicates ADR-010; `ADR-index.md` lists it as Proposed |
+| 008 | Rate limiting | Withdrawn 2026-09-29 as a duplicate of ADR-010; kept for history |
 | 009 | Phase 3 → 4 handoff | **Open. Do not decide or assume.** |
-| 010 | Resilience: token bucket, 401/429 budgets, error hierarchy | Approved; implemented with deviations (see `src/CLAUDE.md`) |
+| 010 | Resilience: token bucket, 401/429 budgets, error hierarchy | Approved; implemented with deviations (see `src/simpro_client/CLAUDE.md`) |
 
 Re-verify this table before relying on it; it is a snapshot.
 
@@ -114,7 +117,8 @@ uv run ruff format --check <paths>
   live in `[dependency-groups]`. Use `uv sync`.
 - Env vars go before `uv run`: `VAR=x uv run cmd`, not `uv run VAR=x cmd`.
 
-Mock and full stack: see `services/CLAUDE.md`. Test layers: `tests/CLAUDE.md`.
+Mock and full stack: see `services/simpro_mock/CLAUDE.md`. Test layers:
+`tests/CLAUDE.md`.
 
 ## 7. Coding standards
 
@@ -128,15 +132,15 @@ Mock and full stack: see `services/CLAUDE.md`. Test layers: `tests/CLAUDE.md`.
 - Exact-pinned dependencies (`==`). Adding any runtime dependency needs a
   stated justification; adding a new category of dependency needs an ADR.
 
-**Lint baseline:** at `87139ef`, `ruff check .` and `ruff format --check .`
-do not pass (existing debt in `src/`, `tests/`, `services/`, `scripts/`,
-and Markdown code blocks). Therefore:
+**Lint baseline** (re-verify before relying on this): `ruff check .` and
+`ruff format --check .` do not pass (existing debt in `src/`, `tests/`,
+`services/`, `scripts/`, and Markdown code blocks). Therefore:
 
 - New files must pass `ruff check` and `ruff format --check`.
 - Modified files must not gain new violations. Code you add or rewrite must
   be clean. Pre-existing violations elsewhere in the file are reported, not
   fixed, unless the task asks for it. (Some are intentional; see
-  `services/CLAUDE.md` §4 for `B008`/`N803` in `routers.py`.)
+  `services/simpro_mock/CLAUDE.md` §4 for `B008`/`N803` in `routers.py`.)
 - Do not run `ruff --fix` or `ruff format` on files outside your change.
 - Report pre-existing lint failures; do not silently fix them in unrelated work.
 
@@ -150,9 +154,9 @@ and Markdown code blocks). Therefore:
   message and wait. One logical change per commit, with a descriptive
   message (existing history uses `feat:`, `fix:`, `chore:`, `refactor:`).
 - Never commit `.env`, `.venv/`, `__pycache__/`, `*.egg-info/`, `backups/`,
-  or coverage output. Some bytecode and `egg-info` files are still tracked at
-  `87139ef`, so running tests can make them appear modified. Restore them
-  with `git checkout -- <path>`; never stage them.
+  or coverage output. Some bytecode and `egg-info` files are still tracked
+  (re-verify before relying on this), so running tests can make them appear
+  modified. Restore them with `git checkout -- <path>`; never stage them.
 - A sprint is complete only after its documentation update and commit.
 
 ## 9. Security

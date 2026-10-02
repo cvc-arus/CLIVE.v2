@@ -21,36 +21,7 @@ The platform is designed to be modular, reproducible, scalable, and built entire
 
 ## Current Status
 
-### ✅ Phase 1 – Complete
-
-- Ubuntu 24.04 LTS
-- Docker & Docker Compose
-- Ollama
-- Open WebUI
-- Local LLM inference
-
-### ✅ Phase 2 – Complete
-
-Production RAG infrastructure
-
-- PostgreSQL + PGVector
-- Apache Tika
-- Local Ollama embeddings (`nomic-embed-text`)
-- Open WebUI Knowledge Base
-- Hybrid Search
-- Tuned chunking
-- Automated backup & restore verification
-
-### ⏳ Planned
-
-- Phase 3 – Simpro API Integration
-- Phase 4 – Document Generation
-- Phase 5 – Security & Reverse Proxy
-- Phase 6 – AI Sales Agent
-- Phase 7 – Public Tender Agent
-- Phase 8 – Customer Intelligence
-- Phase 9 – Multi-Agent Architecture
-- Phase 10 – Monitoring, Backup & Disaster Recovery
+Phase status is kept in one place: [`docs/roadmap.md`](docs/roadmap.md).
 
 ---
 
@@ -109,45 +80,13 @@ The platform is designed to scale without requiring architectural changes.
 
 # Repository Structure
 
-```text
-ai-platform/
-│
-├── phase1/
-│   ├── README.md
-│   ├── docker-compose.yml
-│   └── structure.txt
-│
-├── phase2/
-│   ├── README.md
-│   ├── docker-compose.yml
-│   ├── configs/
-│   ├── scripts/
-│   ├── backups/
-│   └── docs/
-│
-├── docs/
-│
-├── CHANGELOG.md
-├── ROADMAP.md
-└── README.md
-```
+The tracked file tree is in [`structure.txt`](structure.txt), generated with the command in [`docs/README.md`](docs/README.md) §4.
 
 ---
 
 # Roadmap
 
-| Phase | Description | Status |
-|--------|-------------|--------|
-| 1 | Local AI Platform | ✅ Complete |
-| 2 | Production RAG Knowledge Base | ✅ Complete |
-| 3 | Simpro API Integration | Planned |
-| 4 | AI Document Generation | Planned |
-| 5 | Security & Reverse Proxy | Planned |
-| 6 | AI Sales Agent | Planned |
-| 7 | Public Tender Agent | Planned |
-| 8 | Customer Intelligence | Planned |
-| 9 | Multi-Agent Architecture | Planned |
-| 10 | Monitoring & Disaster Recovery | Planned |
+Phase list and phase status: [`docs/roadmap.md`](docs/roadmap.md).
 
 ---
 
@@ -184,19 +123,7 @@ Every phase follows the same workflow:
 8. Documentation Update
 9. Git Commit
 
-Each sprint includes:
-
-- Goal
-- Business Value
-- Tasks
-- Commands
-- Configuration
-- Folder Structure
-- Files Created
-- Verification
-- Common Issues
-- Rollback Procedure
-- Acceptance Criteria
+Each sprint plan follows the sprint template in [`docs/development-standards.md` §8](docs/development-standards.md#8-sprint--task-template).
 
 ---
 
