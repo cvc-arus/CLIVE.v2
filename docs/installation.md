@@ -26,7 +26,16 @@ Create `.env` at the repo root from `.env.example`, which lists every key needed
 cp .env.example .env
 ```
 
-Fill in real values for the Phase 1/2 PGVector keys (`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`), which `docker-compose.yml` references directly. The `SIMPRO_` keys can be left at their mock defaults for local development.
+Fill in real values for the keys that `docker-compose.yml` references directly:
+
+- Phase 1/2 PGVector: `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`.
+- Phase 3 mock database: `SIMPRO_MOCK_DB_USER`, `SIMPRO_MOCK_DB_PASSWORD`, `SIMPRO_MOCK_DB_NAME`. Compose builds the mock's `SIMPRO_MOCK_DATABASE_URL` from them, so use URL-safe characters only (no `@`, `:`, `/`, `%`). `docker compose` refuses to start if any of them is unset.
+
+Postgres applies `SIMPRO_MOCK_DB_*` only when it first creates the `simpro-mock-db-data` volume. If you change them later, recreate that volume (section 10).
+
+The `SIMPRO_` client keys can be left at their mock defaults for local development.
+
+All published ports bind to `127.0.0.1` and are reachable only from the host.
 
 ## 4. Start the Full Stack
 
@@ -36,7 +45,7 @@ docker compose up -d
 
 This brings up, in dependency order:
 1. `postgres` (PGVector) — waits for healthy before `open-webui` starts
-2. `simpro-mock-db` — waits for healthy before `simpro-mock` starts
+2. `simpro-mock-db` — waits for healthy before `simpro-mock` starts (`simpro-mock` has its own healthcheck on `GET /health`)
 3. `ollama`, `tika` — no dependencies
 4. `open-webui` — depends on `postgres` (healthy), `tika`, `ollama`
 5. `simpro-mock` — depends on `simpro-mock-db` (healthy); its container `CMD` runs `alembic upgrade head`, then `python -m simpro_mock.seed`, then `uvicorn` — so the mock is fully migrated and seeded by the time it's reachable
@@ -105,7 +114,7 @@ docker compose down            # stop all services, keep volumes
 docker compose down -v         # stop all services AND remove the named volumes in docker-compose.yml
 ```
 
-`-v` removes the named volumes declared in `docker-compose.yml` (`simpro-mock-db-data`, which holds the mock's database, plus the unused `ollama_data`, `openwebui_data` and `pgvector_data`). It does not remove the Phase 1/2 bind mounts under `/data/` (`/data/ollama`, `/data/openwebui_data`, `/data/pgvector_data`). Get Alex's approval before running it.
+`-v` removes the named volumes declared in `docker-compose.yml` (only `simpro-mock-db-data`, which holds the mock's database). It does not remove the Phase 1/2 bind mounts under `/data/` (`/data/ollama`, `/data/openwebui_data`, `/data/pgvector_data`). Get Alex's approval before running it.
 
 For `simpro-mock` specifically, since its data is fully reproducible from `seed.py`:
 

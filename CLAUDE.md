@@ -164,9 +164,10 @@ Mock and full stack: see `services/simpro_mock/CLAUDE.md`. Test layers:
 - Never read, print, edit, or summarise `.env` or `.env.*` (denied in
   `.claude/settings.json`). Use `.env.example` to learn variable names.
 - Never hardcode secrets or log tokens, client secrets, or API keys.
-- The mock's static bearer token and the mock DB credentials in
-  `docker-compose.yml` are development-only. Do not copy that pattern into
-  new services or into `simpro_client`.
+- The mock's static bearer token (a default in its `config.py`) is
+  development-only. Do not copy that pattern into new services or into
+  `simpro_client`. Mock DB credentials come from `.env`
+  (`SIMPRO_MOCK_DB_*`).
 - New ports bind to `127.0.0.1` unless there is a stated reason not to.
   Keep exposed ports to a minimum.
 - Least privilege: Phase 3 is read-only against Simpro.
