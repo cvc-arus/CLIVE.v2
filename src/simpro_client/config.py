@@ -54,7 +54,7 @@ class SimproSettings(BaseSettings):
     )
     limiter_capacity: int = Field(default=8)
     limiter_refill_rate: float = Field(default=8.0)
-    
+
 
 
 @lru_cache

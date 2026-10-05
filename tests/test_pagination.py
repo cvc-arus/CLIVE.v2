@@ -1,4 +1,3 @@
-from typing import Generator
 
 import pytest
 from httpx import Response
@@ -64,12 +63,12 @@ def test_pagination_lazy_evaluation(respx_mock, client: SimproClient):
 
     # Call the generator method. This should NOT trigger a request.
     iterator = endpoint.iter_all(company_id=123)
-    
+
     assert route.call_count == 0
 
     # Trigger evaluation by pulling the first element
     first_item = next(iterator)
-    
+
     assert route.call_count == 1
     assert first_item.id == 1
     assert first_item.name == "Item 1"
@@ -84,20 +83,20 @@ def test_pagination_multi_page_success(respx_mock, client: SimproClient):
     p1_route = respx_mock.get(f"{base_url}/companies/123/mock-resources/").mock(
         side_effect=[
             Response(
-                200, 
-                json=[{"id": 1, "name": "Item A"}], 
+                200,
+                json=[{"id": 1, "name": "Item A"}],
                 headers={"Result-Pages": "2"}
             ),
             Response(
-                200, 
-                json=[{"id": 2, "name": "Item B"}], 
+                200,
+                json=[{"id": 2, "name": "Item B"}],
                 headers={"Result-Pages": "2"}
             )
         ]
     )
 
     endpoint = MockEndpoint(client)
-    
+
     results = list(endpoint.iter_all(company_id=123, page_size=1))
 
     assert len(results) == 2
