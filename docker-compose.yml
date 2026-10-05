@@ -4,7 +4,7 @@ services:
     container_name: clive-ollama
     restart: unless-stopped
     ports:
-      - "11435:11434"
+      - "127.0.0.1:11435:11434"
     volumes:
       - /data/ollama:/root/.ollama
     deploy:
@@ -20,7 +20,7 @@ services:
     container_name: clive-webui
     restart: unless-stopped
     ports:
-      - "3000:8080"
+      - "127.0.0.1:3000:8080"
     volumes:
       - /data/openwebui_data:/app/backend/data
     environment:
@@ -65,15 +65,15 @@ services:
     container_name: clive-simpro-mock-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: clive
-      POSTGRES_PASSWORD: clive
-      POSTGRES_DB: simpro_mock
+      POSTGRES_USER: ${SIMPRO_MOCK_DB_USER:?set SIMPRO_MOCK_DB_USER in .env}
+      POSTGRES_PASSWORD: ${SIMPRO_MOCK_DB_PASSWORD:?set SIMPRO_MOCK_DB_PASSWORD in .env}
+      POSTGRES_DB: ${SIMPRO_MOCK_DB_NAME:?set SIMPRO_MOCK_DB_NAME in .env}
     volumes:
       - simpro-mock-db-data:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U clive -d simpro_mock"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -85,9 +85,15 @@ services:
     container_name: clive-simpro-mock
     restart: unless-stopped
     ports:
-      - "8100:8000"
+      - "127.0.0.1:8100:8000"
     environment:
-       SIMPRO_MOCK_DATABASE_URL: postgresql://<db-user>:<db-password>@simpro-mock-db:5432/simpro_mock
+       SIMPRO_MOCK_DATABASE_URL: postgresql://${SIMPRO_MOCK_DB_USER}:${SIMPRO_MOCK_DB_PASSWORD}@simpro-mock-db:5432/${SIMPRO_MOCK_DB_NAME}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       simpro-mock-db:
         condition: service_healthy
@@ -100,7 +106,4 @@ services:
       - "127.0.0.1:9998:9998"
 
 volumes:
-  ollama_data:
-  openwebui_data:
-  pgvector_data:
   simpro-mock-db-data:

@@ -108,7 +108,7 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
   not mass-migrate to `select()` as a side effect of other work.
 - The mock uses its own Compose service `simpro-mock-db` (container name
   `clive-simpro-mock-db`, so `docker exec` needs that name;
-  `postgres:16-alpine`, host port 5433, database `simpro_mock`, default
+  `postgres:16-alpine`, host port 5433, database from `SIMPRO_MOCK_DB_NAME`, default
   `public` schema). Never point the mock, its migrations or its seed at the Phase 2 `postgres`
   container (port 5432).
 
@@ -124,7 +124,9 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
   working `downgrade()`, and keep one head (`alembic heads`).
 - Migrations run from `services/simpro_mock/`. From the host, point them at
   the mapped port:
-  `SIMPRO_MOCK_DATABASE_URL=postgresql://<db-user>:<db-password>@localhost:5433/simpro_mock uv run alembic upgrade head`
+  `SIMPRO_MOCK_DATABASE_URL=postgresql://<user>:<password>@localhost:5433/<db-name> uv run alembic upgrade head`,
+  using the `SIMPRO_MOCK_DB_*` values from `.env` (ask Alex; never read `.env`).
+  `database_url` has no default, so it must be set.
 - Never edit a migration that has already been applied or committed. Add a
   new one.
 
@@ -145,14 +147,17 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
 - The `Dockerfile` copies source into the image. After editing anything under
   `services/simpro_mock/`, rebuild: `docker compose up -d --build simpro-mock`.
   A plain restart serves stale code.
-- Compose: `simpro-mock` is on host port 8100 (container 8000);
-  `simpro-mock-db` is on host 5433 with a `pg_isready` healthcheck. Both use
-  `restart: unless-stopped`; the DB uses the named volume
+- Compose: `simpro-mock` is on host port `127.0.0.1:8100` (container 8000)
+  with a Python `urllib` healthcheck on `/health` (the image has no `curl`);
+  `simpro-mock-db` is on `127.0.0.1:5433` with a `pg_isready` healthcheck.
+  Both use `restart: unless-stopped`; the DB uses the named volume
   `simpro-mock-db-data`.
 - Inside the Compose network the API is `http://simpro-mock:8000`; from the
   host it is `http://localhost:8100`.
-- Hardcoded `clive`/`clive` DB credentials in `docker-compose.yml` are a known
-  dev-only exception. Do not replicate the pattern.
+- Mock DB credentials come from the root `.env` keys `SIMPRO_MOCK_DB_USER`,
+  `SIMPRO_MOCK_DB_PASSWORD` and `SIMPRO_MOCK_DB_NAME` (placeholders in
+  `.env.example`). Postgres applies them only when the volume is first
+  created; changing them means recreating `simpro-mock-db-data`.
 - Do not modify Phase 1/2 services (`ollama`, `open-webui`, `postgres`,
   `tika`) as part of Phase 3 work.
 - Never run `docker compose down -v` or delete volumes without Alex's explicit

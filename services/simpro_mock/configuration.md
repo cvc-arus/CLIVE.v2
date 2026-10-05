@@ -10,8 +10,8 @@ The application leverages Pydantic Settings to automatically resolve configurati
 
 ### 1. `SIMPRO_MOCK_DATABASE_URL`
 * **Type**: `string`
-* **Default Value**: `"postgresql://<db-user>:<db-password>@simpro-mock-db:5432/simpro_mock"`
-* **Description**: The connection string pointing the FastAPI service to its backing PostgreSQL database. When deploying via Docker Compose, the database server is resolved using the internal DNS hostname `simpro-mock-db`.
+* **Default Value**: none (required). `Settings()` raises a validation error at import if it is unset.
+* **Description**: The connection string pointing the FastAPI service to its backing PostgreSQL database. Under Docker Compose it is built from the root `.env` keys `SIMPRO_MOCK_DB_USER`, `SIMPRO_MOCK_DB_PASSWORD` and `SIMPRO_MOCK_DB_NAME`, with the internal DNS hostname `simpro-mock-db`.
 
 ### 2. `SIMPRO_MOCK_MOCK_CLIENT_ID`
 * **Type**: `string`
@@ -40,6 +40,6 @@ The application leverages Pydantic Settings to automatically resolve configurati
 To override these default settings, set them as real environment variables, or under the `simpro-mock` service's `environment:` in `docker-compose.yml`. `Settings` has no `env_file`, so a `.env` file is not read:
 
 ```env
-SIMPRO_MOCK_DATABASE_URL=postgresql://<db-user>:<db-password>@localhost:5433/simpro_mock
+SIMPRO_MOCK_DATABASE_URL=postgresql://<user>:<password>@localhost:5433/<db-name>
 SIMPRO_MOCK_MOCK_ACCESS_TOKEN=my-custom-debug-token
 ```
