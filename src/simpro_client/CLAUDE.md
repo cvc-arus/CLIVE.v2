@@ -128,7 +128,7 @@ failures. (Missing route parameters currently raise `ValueError` from
 - Every field has an explicit PascalCase `alias` and a snake_case attribute.
 - Required vs optional must match the mock response schema
   (`services/simpro_mock/simpro_mock/schemas.py`) and
-  `docs/phase3/phase3-sprint4-contract.md`. Where they disagree, report it.
+  `docs/phase3/sprints/phase3-sprint4-contract.md`. Where they disagree, report it.
 - Dates are `datetime.date`; timestamps are `datetime.datetime`.
 - Do not add fields the mock does not return unless they are optional and
   you can cite real Simpro documentation for them.

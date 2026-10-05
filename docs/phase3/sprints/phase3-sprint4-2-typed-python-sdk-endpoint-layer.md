@@ -79,3 +79,13 @@ The boundary established by this sprint leaves the repository ideally configured
 - **Lazy Pagination:** Extending the `fetch_page()` single-page model to yield automatic, generator-driven record retrieval across multiple API pages.
 - **Resilience Integration:** Embedding rate-limiters (token bucket) and retry policies natively into the typed client layer.
 - **Production Release Packaging:** Configuring build workflows to compile and ship the validated SDK client to package indexes.
+
+> **Correction (2026-10-05):** Three claims in this report do not match the
+> repository. Checked at commit `e69c836`:
+>
+> - `src/simpro_client/models.py` (section 2) does not exist. The typed models
+>   are a package, `src/simpro_client/models/`, with one module per resource.
+> - `uv run ruff check .` (section 3) does not pass: it reports
+>   `Found 83 errors.` The lint debt is tracked in `docs/known-issues.md`.
+> - `31 passed, 18 deselected` (section 3) is not reproducible:
+>   `uv run pytest -q -m "not integration"` gives `56 passed, 2 deselected`.

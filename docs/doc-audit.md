@@ -80,7 +80,7 @@
 | `ADR-index.md` | 3, 20–23 | — | Leftover chat text ("Place these files…", "Two items need your attention…") and a dangling "**ADR-010**" | structure | Delete lines 3 and 20–23 |
 | PDDs | `PDD-phase1:4`, `PDD-phase2:4`, `PDD-phase3:97,117–118`, `PDD-phase4:12` | Links | `docs/phase1.md`, `docs/phase2.md`, `tests/test_simpro_mock.py`, `test_simpro_integration.py` and `adr-006-phase3-phase4-handoff.md` don't exist | structure | Fix the paths (e.g. `docs/phase1/summary.md`, `adr-009-…`) |
 | Historical (11 files) | line 1 | `> Historical record as of …` header | Missing from all 11 (grep finds 0 in each) | structure | Already a to-do in `docs/README.md` §6 |
-| `phase3/phase3-summary.md` | 3, 58, 63, 164 | Links | `docs/phase3.md`, `docs/phase3-logging.md` and `docs/PDD-phase3.md` don't exist (actual: `docs/phase3/logging.md`, `docs/PDDs/PDD-phase3.md`); `scope/scope&readmap-rev2.md:66` also links `docs/phase3.md` | structure | Add a dated correction note when asked |
+| `phase3/phase3-summary.md` | 3, 58, 63, 164 | Links | `docs/phase3.md`, `docs/phase3-logging.md` and `docs/PDD-phase3.md` don't exist (actual: `docs/phase3/logging.md`, `docs/PDDs/PDD-phase3.md`); `scope/scope-rev2.md:66` also links `docs/phase3.md` | structure | Add a dated correction note when asked |
 
 ## Summary
 

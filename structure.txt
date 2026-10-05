@@ -41,19 +41,20 @@
 │   │   └── summary.md
 │   ├── phase3
 │   │   ├── logging.md
-│   │   ├── phase3-sprint4-2-typed-python-SDK-endpoint-layer.md
-│   │   ├── phase3-sprint4-4-pagination-and-retries.md
-│   │   ├── phase3-sprint4-architecture-summary.md
-│   │   ├── phase3-sprint4-contract.md
-│   │   ├── phase3-sprint4.md
-│   │   ├── phase3-sprint4-preflight-audit.md
-│   │   └── phase3-summary.md
+│   │   ├── phase3-summary.md
+│   │   └── sprints
+│   │       ├── phase3-sprint4-2-typed-python-sdk-endpoint-layer.md
+│   │       ├── phase3-sprint4-4-pagination-and-retries.md
+│   │       ├── phase3-sprint4-architecture-summary.md
+│   │       ├── phase3-sprint4-contract.md
+│   │       ├── phase3-sprint4.md
+│   │       └── phase3-sprint4-preflight-audit.md
 │   ├── README.md
 │   ├── roadmap.md
 │   ├── scope
 │   │   ├── clive-scope.md
 │   │   ├── master-project-document.md
-│   │   └── scope&readmap-rev2.md
+│   │   └── scope-rev2.md
 │   ├── simpro-mock-api-reference.md
 │   └── testing.md
 ├── .env.example
@@ -148,4 +149,4 @@
 │   └── test_simpro_mock_v2.py
 └── uv.lock
 
-23 directories, 125 files
+24 directories, 125 files

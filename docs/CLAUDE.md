@@ -86,7 +86,7 @@ phase or ADR complete without evidence.
 
 - New files are Markdown with a `.md` extension and lowercase kebab-case
   names without spaces. Phase documents are prefixed with the phase, as in
-  `docs/phase3/phase3-sprint4-contract.md`.
+  `docs/phase3/sprints/phase3-sprint4-contract.md`.
 
 - Sprint reports are historical records. Do not rewrite them to match later
   code. If one contains a factual error, add a dated correction note at the

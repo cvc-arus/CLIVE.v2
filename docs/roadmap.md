@@ -1,6 +1,6 @@
 # CLIVE Roadmap
 
-Consolidated from `docs/scope/master-project-document.md` (master roadmap) and `docs/scope/scope&readmap-rev2.md` (Phase 3 revision, formerly `RevisedScope.txt`), cross-checked against the codebase.
+Consolidated from `docs/scope/master-project-document.md` (master roadmap) and `docs/scope/scope-rev2.md` (Phase 3 revision, formerly `RevisedScope.txt`), cross-checked against the codebase.
 
 | Phase | Name | Status | Notes |
 |---|---|---|---|
@@ -26,7 +26,7 @@ Done:
 - Rate limiter: `src/simpro_client/rate_limiter.py` (token bucket, default 8 req/sec), per ADR-010.
 - Legacy `tests/test_simpro_mock.py` removed; `structure.txt` regenerated from tracked files.
 
-## Phase 4 Entry Criteria (unchanged from `docs/scope/scope&readmap-rev2.md`)
+## Phase 4 Entry Criteria (unchanged from `docs/scope/scope-rev2.md`)
 
 1. Phase 3 typed client layer signed off with test coverage.
 2. Phase 3 → Phase 4 handoff ADR (ADR-009) finalised.

@@ -1,6 +1,7 @@
 # CLIVE Documentation Index
 
-> **Status: adopted 2026-09-29.** Structure agreed by Alex. Section 6 and 7
+> **Status: adopted 2026-09-29.** Structure agreed by Alex. Section 6 actions
+> are done (2026-10-05) except the `phase3-summary.md` merge; section 7
 > actions are still to do; section 8 records the decisions made.
 
 This index lists every document, what it is for, and whether it is kept up
@@ -78,21 +79,21 @@ Phase 3 documents use a `phase3-` prefix. Sprint records move into
 separate from living documents. Each gets a one-line header:
 `> Historical record as of <date>, commit <hash>. Not maintained.`
 
-| Current path | Action (to do) |
+| Current path | Action / status |
 |---|---|
-| `phase1/summary.md` | Keep as historical. Its `docker exec -it ollama` commands fail (container is `clive-ollama`); add a correction note or move usable commands into `installation.md` |
+| `phase1/summary.md` | Keep as historical. Done 2026-10-05: correction note added (container is `clive-ollama`; original commands unchanged) |
 | `phase2/summary.md` | Keep as historical |
-| `phase3/phase3-summary.md` | Merge anything still current into `architecture.md` / `testing.md`, then keep as the Phase 3 historical summary |
-| `phase3/phase3-sprint4-contract.md` | Move to `phase3/sprints/`. Still the reference spec for Sprint 4 |
-| `phase3/phase3-sprint4-preflight-audit.md` | Move to `phase3/sprints/` |
-| `phase3/phase3-sprint4-architecture-summary.md` | Move to `phase3/sprints/` (baseline snapshot) |
-| `phase3/phase3-sprint4-2-typed-python-SDK-endpoint-layer.md` | Move to `phase3/sprints/`; add correction note (claims don't match the repository) |
-| `phase3/phase3-sprint4-4-pagination-and-retries.md` | Renamed (no spaces, typo fixed). Move to `phase3/sprints/` |
-| `phase3/phase3-sprint4.md` | Chat fragment duplicating the contract's test sequence. Delete after checking nothing unique is lost |
+| `phase3/phase3-summary.md` | Keep as the Phase 3 historical summary. Checked 2026-10-05 for content still current and not in `architecture.md` / `testing.md`; merging waits for Alex's decision |
+| `phase3/sprints/phase3-sprint4-contract.md` | Done 2026-10-05: moved to `phase3/sprints/`. Still the reference spec for Sprint 4 |
+| `phase3/sprints/phase3-sprint4-preflight-audit.md` | Done 2026-10-05: moved to `phase3/sprints/` |
+| `phase3/sprints/phase3-sprint4-architecture-summary.md` | Done 2026-10-05: moved to `phase3/sprints/` (baseline snapshot) |
+| `phase3/sprints/phase3-sprint4-2-typed-python-sdk-endpoint-layer.md` | Done 2026-10-05: moved to `phase3/sprints/`, renamed (lowercase `sdk`), correction note added (claims don't match the repository) |
+| `phase3/sprints/phase3-sprint4-4-pagination-and-retries.md` | Done 2026-10-05: moved to `phase3/sprints/` |
+| `phase3/sprints/phase3-sprint4.md` | Done 2026-10-05: moved to `phase3/sprints/` and kept as historical (not deleted). Chat fragment duplicating the contract's test sequence |
 | `doc-audit.md` | Keep as historical. Full `/doc-check all` report of 2026-10-01, with a 2026-10-02 correction note. All findings fixed 2026-10-02, except `PDD-phase3.md` content, which waits for its planned revision (section 5) |
 | `scope/clive-scope.md` | Keep as historical. Original `Clive_Scope.txt`, added 2026-10-01 (decision 1) |
 | `scope/master-project-document.md` | Keep as historical. Original master project document, added 2026-10-01 (decision 1) |
-| `scope/scope&readmap-rev2.md` | Keep as historical (superseded by `roadmap.md`). Rename to `scope/scope-rev2.md` (no `&` in filenames) |
+| `scope/scope-rev2.md` | Keep as historical (superseded by `roadmap.md`). Done 2026-10-05: renamed from `scope/scope&readmap-rev2.md` (no `&` in filenames) |
 
 ## 7. Content to relocate
 
@@ -106,7 +107,7 @@ separate from living documents. Each gets a one-line header:
 
 | Decision | Outcome | Done |
 |---|---|---|
-| Living/historical split (sections 3–7) | Accepted | Index adopted; section 6–7 moves to do |
+| Living/historical split (sections 3–7) | Accepted | Index adopted; section 6 done 2026-10-05 (except `phase3-summary.md` merge); section 7 to do |
 | ADR-008 | Withdrawn as a duplicate of ADR-010 | Yes |
 | `structure.txt` | Regenerate from tracked files | Yes |
 | `scope/initial.md` | Delete (was empty) | Yes |
@@ -118,7 +119,7 @@ Source: `docs/doc-audit.md`, "Needs your decision".
 
 | # | Decision | Outcome | Done |
 |---|---|---|---|
-| 1 | Scope source files | `RevisedScope.txt` is `docs/scope/scope&readmap-rev2.md`; cite that file. Add `Clive_Scope.txt` and the master project document to `docs/scope/` as historical records with kebab-case names. | Yes (2026-10-02): `scope/clive-scope.md`, `scope/master-project-document.md` |
+| 1 | Scope source files | `RevisedScope.txt` is `docs/scope/scope-rev2.md` (renamed from `scope&readmap-rev2.md` 2026-10-05); cite that file. Add `Clive_Scope.txt` and the master project document to `docs/scope/` as historical records with kebab-case names. | Yes (2026-10-02): `scope/clive-scope.md`, `scope/master-project-document.md` |
 | 2 | Postgres keys | Add `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` to `.env.example` with placeholder values. `.env.example` lists every key needed to install the system. | To do |
 | 3 | `README.md` | Overview with links; status, tree and sprint template are linked from `roadmap.md`, `structure.txt` and `development-standards.md` §8. | To do |
 | 4 | Ruff rules | Root `CLAUDE.md` §7 wins. Docs say new code must be lint-clean and existing debt is tracked. Clearing the existing lint errors is a later code task. | To do |

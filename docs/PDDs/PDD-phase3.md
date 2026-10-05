@@ -16,7 +16,7 @@ Build a reusable, typed Python integration layer for the Simpro REST API that wi
 
 The original PDD assumed live Simpro sandbox access and planned to build typed endpoint modules early (Sprint 2), tested against a thin mock. Once it was confirmed CVC has **no live Simpro API access**, the team made an architecture decision (`docs/ADR/adr-mock-simpro-api.md`) to build a **high-fidelity mock service first**, covering all 12 target resources with realistic pagination, filtering, and PascalCase field fidelity. This means only `SIMPRO_BASE_URL` (and `SIMPRO_TOKEN_URL`) need to change when live access arrives — no client code changes.
 
-This is documented in full in `docs/scope/scope&readmap-rev2.md` (formerly `RevisedScope.txt`), which supersedes the original 6-sprint plan.
+This is documented in full in `docs/scope/scope-rev2.md` (formerly `RevisedScope.txt`), which supersedes the original 6-sprint plan.
 
 ## 3. Current State of the Codebase (verified by running the test suite, not just reading it)
 
@@ -27,7 +27,7 @@ This is documented in full in `docs/scope/scope&readmap-rev2.md` (formerly `Revi
 | `simpro_client/models/` and `simpro_client/endpoints/` (typed Pydantic models + endpoint modules) | ❌ Not yet started | These directories do not exist in the current tree; only the foundation client (`client.py`, `auth.py`, `config.py`) is present |
 | `pagination.py`, `rate_limiter.py` on the client side | ❌ Not yet started | Not present in `src/simpro_client/` |
 
-**Important correction to the narrative in `docs/scope/scope&readmap-rev2.md`:** that document describes a "Sprint 4 — Typed Client Layer" as "🔶 In Progress." The code shows no `models/` or `endpoints/` package under `simpro_client` yet — the typed layer has not been started in code. What *is* complete is the client foundation (Sprint 1) and the mock service (Sprint 3), plus a set of hardening fixes applied on top of them (see §6). Per the project's own principle — code is the source of truth — this document reflects the code, not the plan.
+**Important correction to the narrative in `docs/scope/scope-rev2.md`:** that document describes a "Sprint 4 — Typed Client Layer" as "🔶 In Progress." The code shows no `models/` or `endpoints/` package under `simpro_client` yet — the typed layer has not been started in code. What *is* complete is the client foundation (Sprint 1) and the mock service (Sprint 3), plus a set of hardening fixes applied on top of them (see §6). Per the project's own principle — code is the source of truth — this document reflects the code, not the plan.
 
 ## 4. Architecture (as implemented)
 

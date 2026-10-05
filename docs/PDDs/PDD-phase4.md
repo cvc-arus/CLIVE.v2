@@ -1,6 +1,6 @@
 # Phase 4 Project Design Document — Document Generation (Draft, Pre-Implementation)
 
-**Status:** Draft — no code exists yet. This PDD captures the planned scope from `docs/scope/master-project-document.md` and `docs/scope/scope&readmap-rev2.md` so planning is recorded before implementation starts, per the project's own "design before implementation" principle. It should be revisited and confirmed once Phase 3 signs off.
+**Status:** Draft — no code exists yet. This PDD captures the planned scope from `docs/scope/master-project-document.md` and `docs/scope/scope-rev2.md` so planning is recorded before implementation starts, per the project's own "design before implementation" principle. It should be revisited and confirmed once Phase 3 signs off.
 
 ## 1. Objective
 

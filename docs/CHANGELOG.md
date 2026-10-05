@@ -1,6 +1,6 @@
 # CLIVE Changelog
 
-Reconstructed from `docs/scope/scope&readmap-rev2.md` (formerly `RevisedScope.txt`), chat history, and the current state of the codebase. Dates reflect the sprint/phase narrative where exact commit dates were not available from the shallow git history at review time.
+Reconstructed from `docs/scope/scope-rev2.md` (formerly `RevisedScope.txt`), chat history, and the current state of the codebase. Dates reflect the sprint/phase narrative where exact commit dates were not available from the shallow git history at review time.
 
 ## Phase 1 — Local AI Platform
 - Ubuntu 24.04 LTS development host provisioned
@@ -49,7 +49,7 @@ Reconstructed from `docs/scope/scope&readmap-rev2.md` (formerly `RevisedScope.tx
 - Cleaned git history: untracked an accidentally committed `.venv/`, amended the Sprint 1 commit, force-pushed with `--force-with-lease`
 
 ### Documentation Catch-Up (2026-09-04)
-- Added ADR-001 to ADR-009 and `docs/ADR/ADR-index.md`, the four PDDs (`docs/PDDs/`), `architecture.md`, `development-standards.md`, `installation.md`, `known-issues.md`, `roadmap.md`, `testing.md`, `simpro-mock-api-reference.md`, `docs/scope/scope&readmap-rev2.md` and this changelog
+- Added ADR-001 to ADR-009 and `docs/ADR/ADR-index.md`, the four PDDs (`docs/PDDs/`), `architecture.md`, `development-standards.md`, `installation.md`, `known-issues.md`, `roadmap.md`, `testing.md`, `simpro-mock-api-reference.md`, `docs/scope/scope-rev2.md` and this changelog
 - Expanded the Phase 3 summary (then `docs/phase3.md`, now `docs/phase3/phase3-summary.md`)
 - Removed the legacy script-style test `tests/test_simpro_mock.py`
 
