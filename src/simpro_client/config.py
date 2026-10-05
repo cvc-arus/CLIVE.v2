@@ -23,7 +23,7 @@ class SimproSettings(BaseSettings):
     )
 
     base_url: str = Field(
-        description="Base URL of the Simpro API (e.g. http://simpro-mock:8000/api/v1.0)"
+        description="Base URL of the Simpro API (e.g. http://localhost:8100/api/v1.0)"
     )
     token_url: str = Field(description="OAuth2 token endpoint URL")
     client_id: str = Field(description="OAuth2 Client ID")
@@ -54,7 +54,7 @@ class SimproSettings(BaseSettings):
     )
     limiter_capacity: int = Field(default=8)
     limiter_refill_rate: float = Field(default=8.0)
-    
+
 
 
 @lru_cache

@@ -32,13 +32,13 @@ to date. If a document is not listed here, either add it here or delete it.
 | Document | Owns | Current state (re-verify before relying on this) |
 |---|---|---|
 | `../README.md` | Project overview, links into `docs/` | Rewritten 2026-10-05 as the project overview (purpose, modules, architecture, services, documentation map); status, tree and install steps are links to their owners |
-| `roadmap.md` | Phase list and phase status (the only place phase status is stated) | Fixed 2026-10-02 (`doc-audit.md`): Phase 3 typed layer shown as implemented; remaining work is ADR-009 and sign-off |
+| `roadmap.md` | Phase list and phase status (the only place phase status is stated) | Fixed 2026-10-02 (`doc-audit.md`): Phase 3 typed layer shown as implemented; remaining work is ADR-009 and sign-off. 2026-10-05: Phase 4 handoff mechanism now deferred to ADR-009 |
 | `architecture.md` | Services, ports, containers, `simpro_client` and `simpro_mock` design | Fixed 2026-10-02 (`doc-audit.md`): typed layer, rate limiter, exception hierarchy and response handling match `client.py` |
 | `installation.md` | Setting up and running the stack | Fixed 2026-10-02 (`doc-audit.md`). Docker steps not re-run |
 | `development-standards.md` | Coding, tooling, Git, sprint template | Fixed 2026-10-02 (`doc-audit.md`) |
 | `testing.md` | Test layers, markers, how to run them | Fixed 2026-10-02 (`doc-audit.md`): all test modules listed, no counts |
-| `known-issues.md` | Open discrepancies and defects | Fixed 2026-10-02 (`doc-audit.md`): stale Sprint 4 entry removed; unused mock settings and lint debt added |
-| `CHANGELOG.md` | What changed, per sprint | Fixed 2026-10-02 (`doc-audit.md`): Sprint 4 entry added |
+| `known-issues.md` | Open discrepancies and defects | Fixed 2026-10-02 (`doc-audit.md`): stale Sprint 4 entry removed; unused mock settings and lint debt added. 2026-10-05: date removed from title (each entry keeps its own) |
+| `CHANGELOG.md` | What changed, per sprint | Fixed 2026-10-02 (`doc-audit.md`): Sprint 4 entry added. 2026-10-05: shallow-history caveat removed from intro |
 
 ## 4. Reference documents (regenerate, don't hand-edit)
 
@@ -65,7 +65,7 @@ to date. If a document is not listed here, either add it here or delete it.
 | `ADR/adr-006-library-first-architecture.md` | Phase 3 |
 | `ADR/adr-007-configuration-management.md` | Phase 3 |
 | `ADR/adr-009-phase3-phase4-handoff.md` | Open decision |
-| `ADR/adr-010-resilience-policy.md` | Approved; implemented with deviations (see `../src/simpro_client/CLAUDE.md`) |
+| `ADR/adr-010-resilience-policy.md` | Accepted, implemented with deviations (see `../src/simpro_client/CLAUDE.md`) |
 | `ADR/adr-mock-simpro-api.md` | Capability list predates the 12-resource mock |
 | `ADR/adr-008-rate-limiting-strategy.md` | Withdrawn 2026-09-29 (duplicate of ADR-010). Kept for history |
 | `PDDs/PDD-phase1.md`, `PDD-phase2.md` | Phases complete |
@@ -120,8 +120,8 @@ Source: `docs/doc-audit.md`, "Needs your decision".
 | # | Decision | Outcome | Done |
 |---|---|---|---|
 | 1 | Scope source files | `RevisedScope.txt` is `docs/scope/scope-rev2.md` (renamed from `scope&readmap-rev2.md` 2026-10-05); cite that file. Add `Clive_Scope.txt` and the master project document to `docs/scope/` as historical records with kebab-case names. | Yes (2026-10-02): `scope/clive-scope.md`, `scope/master-project-document.md` |
-| 2 | Postgres keys | Add `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` to `.env.example` with placeholder values. `.env.example` lists every key needed to install the system. | To do |
-| 3 | `README.md` | Overview with links; status, tree and sprint template are linked from `roadmap.md`, `structure.txt` and `development-standards.md` §8. | Yes |
+| 2 | Postgres keys | Add `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` to `.env.example` with placeholder values. `.env.example` lists every key needed to install the system. | Yes (verified 2026-10-05): `.env.example` has all three keys with placeholder values |
+| 3 | `README.md` | Overview with links; status, tree and sprint template are linked from `roadmap.md`, `structure.txt` and `development-standards.md` §8. | Yes (verified 2026-10-05): `../README.md` is the overview and links to all three |
 | 4 | Ruff rules | Root `CLAUDE.md` §7 wins. Docs say new code must be lint-clean and existing debt is tracked. Clearing the existing lint errors is a later code task. | To do |
 | 5 | Unused mock settings | `SIMPRO_MOCK_MOCK_CLIENT_ID` / `_SECRET` documented as unused in `known-issues.md`. Removing them is a later code task. | To do |
 

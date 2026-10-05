@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import respx
 from httpx import Response
@@ -49,7 +49,7 @@ def test_retry_after_forms_and_fallback(mock_settings):
     delays.clear()
     with SimproClient(mock_settings) as client:
         client._sleep = delays.append
-        client._now = lambda: datetime(2026, 1, 1, tzinfo=timezone.utc)
+        client._now = lambda: datetime(2026, 1, 1, tzinfo=UTC)
         client.get("/jobs")
     assert delays == [5.0]
 

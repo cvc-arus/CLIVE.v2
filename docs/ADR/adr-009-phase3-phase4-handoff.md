@@ -3,12 +3,14 @@
 ## Status
 **Proposed — open decision.** This is the ADR flagged as a gap in `docs/scope/scope-rev2.md` (formerly `RevisedScope.txt`) and `docs/PDDs/PDD-phase3.md`. It has not been decided yet; this document lays out the options so a decision can be made and recorded before Phase 4 scoping begins, rather than defaulting to one silently.
 
+**Revised 2026-10-05:** wording updated to reflect that the typed endpoint and model modules now exist (`src/simpro_client/endpoints/`, `src/simpro_client/models/`). Status, options and recommendation are unchanged.
+
 ## Context
 Phase 4 (Document Generation) needs to read Simpro data (Customers, Sites, Contacts, Jobs, Quotes, Projects, Assets, Employees) from `simpro_client`. ADR-006 already established a general library-first principle for `simpro_client`, but that decision was made before Phase 4's actual requirements were known. This ADR asks the same question specifically for the Phase 3 → Phase 4 boundary.
 
 ## Option A: Direct Python Import
 
-Phase 4 code does `from simpro_client import SimproClient` (or the future typed endpoint modules) directly, in-process.
+Phase 4 code does `from simpro_client import SimproClient` directly, in-process, and uses the typed endpoints it exposes (for example `client.customers`, defined in `simpro_client.endpoints`) and the typed models (`simpro_client.models`).
 
 **Pros:**
 - Zero network hop, zero extra container, zero extra auth boundary
