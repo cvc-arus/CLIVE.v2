@@ -1,3 +1,5 @@
+> Historical record as of 2026-09-07, commit b03d024. Not maintained.
+
 ### Summary of Our Verification & Quality Gates
 
 To lock in this step's contract, ensure that your design document (docs/phase3-sprint4.md) records the exact execution sequence we defined in the previous steps:

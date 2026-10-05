@@ -6,13 +6,7 @@ Generated from the codebase in `git@github.com:cvc-arus/CLIVE-I.git` (branch `de
 
 ## 1. Overview
 
-CLIVE is a self-hosted Enterprise AI Platform for CVC (CCTV and Security), deployed via Docker Compose on a single Ubuntu 24.04 development host. As of this document, three phases have shipped code:
-
-| Phase | Name | State |
-|---|---|---|
-| 1 | Local AI Platform (Ollama + Open WebUI) | Complete |
-| 2 | Production RAG (PGVector + Tika) | Complete |
-| 3 | Simpro API Integration | Client foundation + mock service complete; typed client layer not started |
+CLIVE is a self-hosted Enterprise AI Platform for CVC (CCTV and Security), deployed via Docker Compose on a single Ubuntu 24.04 development host. Phase list and phase status: `docs/roadmap.md`.
 
 ## 2. Container Topology
 
@@ -59,19 +53,23 @@ Library-first design: importable by any future phase without requiring a network
 |---|---|
 | `config.py` | `SimproSettings` (pydantic-settings), env prefix `SIMPRO_`, loads from `.env`, `extra="ignore"` so it coexists with unrelated Postgres/PGVector keys in the same `.env` file. `get_settings()` is `lru_cache`d. |
 | `auth.py` | `AuthManager` — OAuth2 Client Credentials with in-memory token caching (60-second early-refresh buffer) and refresh, plus a static API Key fallback mode. |
-| `client.py` | `SimproClient` — thin `httpx.Client` wrapper. `get/post/patch/delete` all funnel through `_request()`, which attaches `Authorization: Bearer <token>` and `X-Correlation-ID` headers, times the call, logs it, and hands the response to `_handle_response()`. |
-| `exceptions.py` | Typed hierarchy: `SimproError` → `SimproAuthError`; `SimproAPIError(status_code, response_body)` → `SimproRateLimitError(retry_after)`, `SimproNotFoundError`. |
+| `client.py` | `SimproClient` — thin `httpx.Client` wrapper. `get/post/patch/delete` all funnel through `_request()`, which calls `_request_response()`: it waits on the rate limiter, attaches `Authorization: Bearer <token>` and `X-Correlation-ID` headers, times the call, logs it, and handles the status code (below). `_request()` then returns `None` for `204`, otherwise the parsed JSON body. |
+| `exceptions.py` | Typed hierarchy: `SimproError` → `SimproAuthError`, `SimproProtocolError` (bad or missing pagination headers), `SimproAPIError(status_code, response_body)`; `SimproAPIError` → `SimproClientError` (4xx) and `SimproServerError` (5xx); `SimproClientError` → `SimproRateLimitError(retry_after)`, `SimproNotFoundError`. |
 | `logging.py` | `ContextVar`-based correlation IDs (`get_correlation_id`/`set_correlation_id`), a `JSONFormatter` that emits single-line JSON logs to `stderr`, and a `RequestTimer` context manager for millisecond-precision timing. |
 
 **Response handling in `client.py`:**
 - `401` → invalidate cached token, retry exactly once (`_retry_on_401` flag prevents infinite loops)
+- `429` → retry up to `max_retries` (`SIMPRO_MAX_RETRIES`), waiting for `Retry-After` if present, else exponential backoff; then `SimproRateLimitError`
 - `404` → `SimproNotFoundError`
-- `429` → `SimproRateLimitError`, reading `Retry-After` if present
-- any other `>=400` → `SimproAPIError`
+- any other `4xx` → `SimproClientError`
+- `5xx` → `SimproServerError` (not retried)
+- network error → `SimproAPIError` with `status_code` 0
 - `204` → `None`
 - otherwise → parsed JSON body
 
-Not yet present: `models/` (typed Pydantic resource models), `endpoints/` (resource-specific endpoint modules), `pagination.py`, `rate_limiter.py`. These were planned in the original PDD but have not been started in code.
+This is implemented with deviations from ADR-010; they are listed in `src/simpro_client/CLAUDE.md`.
+
+Typed client layer: `models/` (one Pydantic model per resource, PascalCase-aliased), `endpoints/` (generic `ResourceEndpoint` in `base.py`, with `get()`, `fetch_page()` and `iter_all()` for pagination, plus one module per resource, exposed as attributes such as `client.jobs`), and `rate_limiter.py` (`TokenBucket`, configured by `SIMPRO_LIMITER_CAPACITY` / `SIMPRO_LIMITER_REFILL_RATE`). There is no separate `pagination.py`.
 
 ### 5.2 `simpro_mock` (FastAPI service, `services/simpro_mock/`)
 
@@ -90,7 +88,7 @@ services/simpro_mock/
     ├── filtering.py       # Simpro-style operator query filtering
     ├── models.py          # 12 SQLAlchemy 2.0 ORM models
     ├── schemas.py          # 12 Pydantic PascalCase response schemas
-    ├── routers.py          # 25 routes (health, token, 12 resources)
+    ├── routers.py          # 26 routes (health, token, 24 GET routes for 12 resources)
     └── seed.py            # Seeds two companies + representative data
 ```
 
@@ -142,4 +140,4 @@ Write operations (POST/PATCH/DELETE) are out of scope for both the mock and `sim
 
 ## 6. Planned but Not Yet Decided
 
-The Phase 3 → Phase 4 handoff mechanism — whether Phase 4 imports `simpro_client` directly as a Python library, or talks to it through a thin FastAPI service wrapper — has not been recorded as an ADR yet. The library-first architecture decision from the original PDD favors direct import, but this needs to be formally confirmed before Phase 4 scoping begins.
+The Phase 3 → Phase 4 handoff mechanism — whether Phase 4 imports `simpro_client` directly as a Python library, or talks to it through a thin FastAPI service wrapper — is recorded as ADR-009 (`docs/ADR/adr-009-phase3-phase4-handoff.md`, Proposed, open). The library-first architecture decision from the original PDD favors direct import, but this needs to be formally confirmed before Phase 4 scoping begins.

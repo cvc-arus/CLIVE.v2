@@ -1,3 +1,5 @@
+> Historical record as of 2026-09-04, commit 7d39a02. Not maintained.
+
 # CLIVE-I: Phase 3 — Simpro API Integration
 
 **Replaces** the previous `docs/phase3.md`, which documented only the `simpro_client` foundation (Sprint 1) and made no mention of the mock service. This version covers both halves of Phase 3 as they currently exist in the codebase.
@@ -162,3 +164,11 @@ Every outgoing request from `SimproClient` carries this ID on the `X-Correlation
 | Phase 3 → Phase 4 handoff ADR | ❌ Not written |
 
 See `docs/PDD-phase3.md` for the full as-built design document, `docs/known-issues.md` for discrepancies found during this review, and `docs/roadmap.md` for what's next.
+
+> **Correction (2026-10-02):** Several paths in this record no longer resolve.
+> `docs/phase3.md` (line 5) is this file, since renamed to
+> `docs/phase3/phase3-summary.md`. `docs/phase3-logging.md` (lines 51 and 60) is
+> now `docs/phase3/logging.md`. `docs/PDD-phase3.md` (lines 65 and 166) is now
+> `docs/PDDs/PDD-phase3.md`. `docs/known-issues.md` #5 (line 73) no longer
+> exists as a numbered item; see the `pip install -e ".[dev]"` entry in
+> `docs/known-issues.md`.

@@ -1,3 +1,5 @@
+> Historical record as of 2026-09-07, commit b03d024. Not maintained.
+
 # Sprint 4 Implementation Contract: Typed Client Layer
 
 This document forms the official implementation contract for Sprint 4. It provides the exact specifications, routes, and validation parameters required to construct the synchronous, type-safe Simpro client layer against the completed high-fidelity mock service.

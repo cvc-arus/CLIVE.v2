@@ -1,7 +1,7 @@
 # Phase 1 Project Design Document — Local AI Platform (As-Built)
 
 **Status:** Complete (retrospective PDD — written after implementation, since none existed)
-**Source:** `docs/phase1.md`, `docker-compose.yml`, `Clive_Scope.txt`
+**Source:** `docs/phase1/summary.md`, `docker-compose.yml`, `docs/scope/clive-scope.md`
 
 ## 1. Objective
 

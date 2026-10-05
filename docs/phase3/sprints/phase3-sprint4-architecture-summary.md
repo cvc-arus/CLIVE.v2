@@ -1,3 +1,5 @@
+> Historical record as of 2026-09-07, commit b03d024. Not maintained.
+
 # Phase 3 Architecture Summary
 
 This summary preserves the repository baseline, environmental parameters, and emergency recovery vectors for Sprint 4.

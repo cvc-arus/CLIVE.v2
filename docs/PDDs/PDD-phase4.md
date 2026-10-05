@@ -1,6 +1,6 @@
 # Phase 4 Project Design Document — Document Generation (Draft, Pre-Implementation)
 
-**Status:** Draft — no code exists yet. This PDD captures the planned scope from `# CLIVE Enterprise AI Platform.txt` and `RevisedScope.txt` so planning is recorded before implementation starts, per the project's own "design before implementation" principle. It should be revisited and confirmed once Phase 3 signs off.
+**Status:** Draft — no code exists yet. This PDD captures the planned scope from `docs/scope/master-project-document.md` and `docs/scope/scope-rev2.md` so planning is recorded before implementation starts, per the project's own "design before implementation" principle. It should be revisited and confirmed once Phase 3 signs off.
 
 ## 1. Objective
 
@@ -9,7 +9,7 @@ Generate CVC's core business documents — Quotes, RAMS, Contracts, Equipment sp
 ## 2. Entry Criteria (not yet met)
 
 1. Phase 3's typed client layer (`simpro_client.models`, `simpro_client.endpoints`) signed off with test coverage.
-2. The Phase 3 → Phase 4 handoff ADR finalised (direct import vs. thin service wrapper — see `docs/ADR/adr-006-phase3-phase4-handoff.md`, currently Proposed/open).
+2. The Phase 3 → Phase 4 handoff ADR finalised (direct import vs. thin service wrapper — see `docs/ADR/adr-009-phase3-phase4-handoff.md`, currently Proposed/open).
 
 **Phase 4 should not begin implementation until both are satisfied.**
 
@@ -24,7 +24,7 @@ Generate CVC's core business documents — Quotes, RAMS, Contracts, Equipment sp
 
 **Out of scope (initial delivery, per the master roadmap):**
 - Automated document delivery/e-signature workflows
-- Fine-tuning a local model on CVC's own documentation (explicitly flagged as a *future* objective in the master document, not initial scope)
+- Fine-tuning a local model on CVC's own documentation (explicitly flagged as a *future* objective in the master document, `docs/scope/master-project-document.md`, not initial scope)
 - Any write-back to Simpro (Phase 3 remains read-only)
 
 ## 4. Proposed Architecture

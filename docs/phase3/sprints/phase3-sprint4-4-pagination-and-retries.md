@@ -1,3 +1,5 @@
+> Historical record as of 2026-09-29, commit 7094e0d. Not maintained.
+
 # CLIVE-I HTTP Client: Resilience, Pagination, and Retries Upgrade
 
 This repository houses the hardened, production-grade Python SDK for the Simpro API (code-named **CLIVE-I**). It introduces lazy, type-safe multi-page iteration, a thread-safe token bucket rate limiter, a centralized synchronous request recovery loop with independent budgets, and a robust typed exception hierarchy.

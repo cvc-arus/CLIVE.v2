@@ -1,326 +1,219 @@
-# CLIVE – Enterprise AI Platform
+# CLIVE — Enterprise AI Platform for CVC
 
-A production-ready, fully self-hosted Enterprise AI Platform for a CCTV and security company (CVC).
+CLIVE is a self-hosted AI platform built for **CVC**, a CCTV and security
+company. It brings large language models, document search and business-system
+integration together on hardware CVC owns, so that company knowledge,
+customer data and commercial documents never leave the building.
 
-The platform is designed to be modular, reproducible, scalable, and built entirely using free and open-source software. It provides a secure on-premises AI environment capable of document retrieval, knowledge management, business automation, and future multi-agent workflows.
+The long-term aim is for CLIVE to support CVC's whole operational workflow:
+finding answers in company documents, drafting quotes, RAMS, contracts and
+tender responses from real project data, and later helping with sales and
+tender discovery through AI agents.
 
----
-
-## Project Goals
-
-- Build a fully self-hosted AI platform
-- Keep all company data on-premises
-- Use Docker-first deployment
-- Support Retrieval-Augmented Generation (RAG)
-- Integrate with Simpro via API
-- Generate company-specific documentation
-- Scale from a single workstation to enterprise hardware
-- Maintain production-quality documentation and architecture
+> **Status:** CLIVE is built in phases. The current status of every phase is
+> kept in one place: [`docs/roadmap.md`](docs/roadmap.md).
 
 ---
 
-## Current Status
+## Why CLIVE exists
 
-### ✅ Phase 1 – Complete
+CVC produces a large volume of technical and commercial documents (RAMS,
+quotes, contracts, tender responses, equipment specifications), and much of
+the knowledge needed to write them lives in past documents and in Simpro,
+the company's job-management system. CLIVE is designed to:
 
-- Ubuntu 24.04 LTS
-- Docker & Docker Compose
-- Ollama
-- Open WebUI
-- Local LLM inference
-
-### ✅ Phase 2 – Complete
-
-Production RAG infrastructure
-
-- PostgreSQL + PGVector
-- Apache Tika
-- Local Ollama embeddings (`nomic-embed-text`)
-- Open WebUI Knowledge Base
-- Hybrid Search
-- Tuned chunking
-- Automated backup & restore verification
-
-### ⏳ Planned
-
-- Phase 3 – Simpro API Integration
-- Phase 4 – Document Generation
-- Phase 5 – Security & Reverse Proxy
-- Phase 6 – AI Sales Agent
-- Phase 7 – Public Tender Agent
-- Phase 8 – Customer Intelligence
-- Phase 9 – Multi-Agent Architecture
-- Phase 10 – Monitoring, Backup & Disaster Recovery
+- make roughly 5,000+ company documents searchable and usable by an AI
+  assistant
+- connect AI tools to live business data from Simpro
+- generate first drafts of company documents from that knowledge and data
+- do all of this **on-premises**, with open-source software and no cloud AI
+  provider unless explicitly approved
 
 ---
 
-# Objectives
+## Platform modules
 
-The completed platform will provide:
+| Module | What it does | Phase |
+|---|---|---|
+| Local AI platform | Runs open-source LLMs locally (Ollama) with a chat interface (Open WebUI) | 1 |
+| Knowledge base (RAG) | Extracts text from company documents (Apache Tika), embeds it (`nomic-embed-text`) and stores it in PostgreSQL + PGVector for hybrid search | 2 |
+| Simpro integration | A typed Python client (`simpro_client`) for Simpro's REST API, plus a local mock of that API for development | 3 |
+| Document generation | Drafts quotes, RAMS, contracts, equipment specifications, tender responses and technical documents from Simpro data and the knowledge base | 4 |
+| Security & reverse proxy | Nginx, HTTPS, firewall and authentication | 5 |
+| AI sales agent | Prospect discovery, company research, lead qualification and scoring | 6 |
+| Public tender agent | Monitors tender portals, extracts requirements, analyses bid fit | 7 |
+| Customer intelligence | Analyses existing customers to build ideal customer profiles and qualification criteria | 8 |
+| Multi-agent architecture | Orchestrates the agents above into combined workflows | 9 |
+| Monitoring & disaster recovery | Health monitoring, backups and recovery | 10 |
 
-- Local AI inference
-- Enterprise document search
-- Knowledge Base for 5,000+ documents
-- Technical document generation
-- API integrations
-- AI-assisted engineering
-- AI-assisted sales
-- Tender analysis
-- Customer intelligence
-- Future multi-agent workflows
-
----
-
-# Hardware
-
-## Current Development Server
-
-- Intel i5-10400
-- NVIDIA RTX 3080 (10 GB)
-- 32 GB RAM
-- Ubuntu Desktop 24.04 LTS
-- 2 × 223 GB SSD
-
-## Future Production Hardware
-
-- AMD Threadripper
-- NVIDIA RTX 5090
-- 128–256 GB RAM
-
-The platform is designed to scale without requiring architectural changes.
+See [`docs/roadmap.md`](docs/roadmap.md) for which phases are complete, in
+progress or planned.
 
 ---
 
-# Technology Stack
-
-| Component | Purpose |
-|----------|---------|
-| Ubuntu 24.04 LTS | Operating System |
-| Docker | Container platform |
-| Docker Compose | Service orchestration |
-| Ollama | Local LLM runtime |
-| Open WebUI | AI interface |
-| PostgreSQL | Database |
-| PGVector | Vector database |
-| Apache Tika | Document extraction |
-| Git | Version control |
-
----
-
-# Repository Structure
+## How it fits together
 
 ```text
-ai-platform/
-│
-├── phase1/
-│   ├── README.md
-│   ├── docker-compose.yml
-│   └── structure.txt
-│
-├── phase2/
-│   ├── README.md
-│   ├── docker-compose.yml
-│   ├── configs/
-│   ├── scripts/
-│   ├── backups/
-│   └── docs/
-│
-├── docs/
-│
-├── CHANGELOG.md
-├── ROADMAP.md
-└── README.md
+                         ┌──────────────────────────────┐
+   Users ──────────────► │  Open WebUI  (chat + RAG UI) │
+                         └──────┬───────────┬───────────┘
+                                │           │
+                  LLM + embeddings          document text + vectors
+                                │           │
+                     ┌──────────▼──┐   ┌────▼───────────────┐   ┌──────────────┐
+                     │   Ollama    │   │ PostgreSQL+PGVector│   │ Apache Tika  │
+                     │ (local LLMs)│   │  (knowledge base)  │◄──│ (extraction) │
+                     └─────────────┘   └────────────────────┘   └──────────────┘
+
+   simpro_client (Python library) ── HTTP ──►  simpro-mock  (FastAPI + own Postgres)
+                                        └──►  real Simpro API (when access is enabled)
 ```
 
----
+**Why a Simpro mock?** CVC does not yet have Simpro API access. The mock
+reproduces Simpro's API (12 resources, pagination headers, filtering, bearer
+auth) so the client can be built and tested now. When real access arrives,
+the client is pointed at Simpro by changing configuration only; no client
+code changes are needed. The reasoning is recorded in
+[`docs/ADR/adr-mock-simpro-api.md`](docs/ADR/adr-mock-simpro-api.md).
 
-# Roadmap
-
-| Phase | Description | Status |
-|--------|-------------|--------|
-| 1 | Local AI Platform | ✅ Complete |
-| 2 | Production RAG Knowledge Base | ✅ Complete |
-| 3 | Simpro API Integration | Planned |
-| 4 | AI Document Generation | Planned |
-| 5 | Security & Reverse Proxy | Planned |
-| 6 | AI Sales Agent | Planned |
-| 7 | Public Tender Agent | Planned |
-| 8 | Customer Intelligence | Planned |
-| 9 | Multi-Agent Architecture | Planned |
-| 10 | Monitoring & Disaster Recovery | Planned |
+Full detail: [`docs/architecture.md`](docs/architecture.md).
 
 ---
 
-# Engineering Principles
+## Services
 
-- Open Source First
-- Self Hosted
-- Docker First
-- API First
-- Infrastructure as Code
-- Git Version Controlled
-- Modular Architecture
-- Production Ready
-- Enterprise Quality
-- Fully Documented
-- Reproducible
-- Future Scalable
+All services run in Docker Compose ([`docker-compose.yml`](docker-compose.yml)).
 
-No cloud AI providers unless explicitly approved.
+| Service | Container | Purpose | Host port |
+|---|---|---|---|
+| `ollama` | `clive-ollama` | Local LLM and embedding runtime | 11435 |
+| `open-webui` | `clive-webui` | Chat and knowledge-base interface | 3000 |
+| `postgres` | `clive-postgres` | PostgreSQL + PGVector knowledge base | 5432 (localhost only) |
+| `tika` | `clive-tika` | Document text extraction | 9998 (localhost only) |
+| `simpro-mock` | `clive-simpro-mock` | Mock Simpro REST API | 8100 |
+| `simpro-mock-db` | `clive-simpro-mock-db` | Database for the mock only | 5433 |
 
 ---
 
-# Development Standards
+## Technology
 
-Every phase follows the same workflow:
+| Area | Tools |
+|---|---|
+| Host | Ubuntu 24.04 LTS, Docker, Docker Compose |
+| AI | Ollama, Open WebUI, `nomic-embed-text` embeddings |
+| Data | PostgreSQL 16, PGVector, Apache Tika |
+| Simpro client | Python 3.12, httpx, Pydantic, pydantic-settings (synchronous) |
+| Simpro mock | FastAPI, SQLAlchemy 2.0 (synchronous), Alembic, PostgreSQL |
+| Quality | pytest, respx, ruff, uv |
 
-1. Design
-2. Architecture
-3. Documentation
-4. Trade-off Analysis
-5. Implementation
-6. Verification
-7. Rollback Procedure
-8. Documentation Update
-9. Git Commit
-
-Each sprint includes:
-
-- Goal
-- Business Value
-- Tasks
-- Commands
-- Configuration
-- Folder Structure
-- Files Created
-- Verification
-- Common Issues
-- Rollback Procedure
-- Acceptance Criteria
+Architecture decisions and their reasons are recorded as ADRs in
+[`docs/ADR/`](docs/ADR/ADR-index.md).
 
 ---
 
-# Planned Features
+## Getting started
 
-## Local LLM Platform
+You need an Ubuntu 24.04 machine with Docker and Docker Compose, Git,
+Python 3.12 and `uv`. For GPU inference you also need NVIDIA drivers and the
+NVIDIA Container Toolkit. The full list is in
+[`docs/installation.md`](docs/installation.md) §1.
 
-- Self-hosted inference
-- Multi-model support
-- Local APIs
-- Future multi-agent orchestration
+```bash
+git clone https://github.com/cvc-arus/CLIVE-I.git
+cd CLIVE-I
+```
 
-## Knowledge Base
+Then follow [`docs/installation.md`](docs/installation.md). It covers the
+`.env` file, starting the stack, verifying each phase, setting up
+`simpro_client` for development, backups and rollback.
 
-Supports:
+Run the offline test suite (no Docker or network needed):
 
-- PDFs
-- Word documents
-- RAMS
-- Contracts
-- Tender responses
-- Drawings
-- Equipment specifications
-- Certificates
-- Templates
-- Case studies
+```bash
+uv sync
+uv run pytest -q -m "not integration"
+```
 
-Features:
-
-- Metadata
-- Versioning
-- Hybrid Search
-- Local vector storage
-
-## Simpro Integration
-
-- Project data
-- Customer data
-- Equipment data
-- Reporting
-- Analytics
-- API integration
-
-## Document Generation
-
-Generate:
-
-- Quotes
-- RAMS
-- Contracts
-- Equipment specifications
-- Tender responses
-- Technical documentation
-- Compliance documentation
-
-## AI Sales Agent
-
-- Prospect discovery
-- Company research
-- Lead qualification
-- Lead scoring
-- CRM-ready summaries
-
-## Public Tender Agent
-
-- Monitor tender portals
-- Analyse opportunities
-- Prioritise bids
-- Prepare supporting documentation
-
-## Customer Intelligence
-
-Analyse:
-
-- Industries
-- Geography
-- Company size
-- Technology stack
-- Pain points
-- Buying triggers
-- Decision makers
-
-Generate:
-
-- Ideal Customer Profile (ICP)
-- Negative ICP
-- Sales documentation
-- Qualification criteria
+Testing layers and options: [`docs/testing.md`](docs/testing.md).
 
 ---
 
-# Security
+## Repository layout
 
-- Docker isolation
-- Least privilege
-- Environment variables
-- SSH keys
-- HTTPS (planned)
-- Nginx reverse proxy (planned)
-- Firewall (planned)
-- Minimal exposed ports
+| Path | Contents |
+|---|---|
+| `src/simpro_client/` | Simpro API client library |
+| `services/simpro_mock/` | Mock Simpro API service (own `pyproject.toml`, Dockerfile, migrations) |
+| `tests/` | Test suite for `simpro_client` |
+| `configs/` | Service configuration (PostgreSQL / PGVector init) |
+| `scripts/` | Backup and verification scripts |
+| `docs/` | All project documentation |
+| `docker-compose.yml` | The full service stack |
 
----
-
-# Documentation
-
-The project maintains documentation for:
-
-- Project Design Document (PDD)
-- Architecture
-- Architecture Decision Records (ADRs)
-- Docker
-- Networking
-- Security
-- Knowledge Base
-- Installation Guide
-- Backup Strategy
-- Disaster Recovery
-- Development Standards
-- Roadmap
-- Change Log
+Complete file tree: [`structure.txt`](structure.txt).
 
 ---
 
-# Long-Term Vision
+## Documentation
 
-CLIVE aims to become a fully self-hosted Enterprise AI Platform capable of supporting engineering, operations, sales, document management, and business intelligence while ensuring all company data remains private and under local control.
+Start with the documentation index, [`docs/README.md`](docs/README.md). It
+lists every document, what it covers and whether it is kept up to date.
+
+| Document | Covers |
+|---|---|
+| [`docs/roadmap.md`](docs/roadmap.md) | Phases and their status |
+| [`docs/architecture.md`](docs/architecture.md) | How the platform is built |
+| [`docs/installation.md`](docs/installation.md) | Setting up and running the stack |
+| [`docs/development-standards.md`](docs/development-standards.md) | Coding, tooling, Git and the sprint template |
+| [`docs/testing.md`](docs/testing.md) | How the code is tested |
+| [`docs/ADR/ADR-index.md`](docs/ADR/ADR-index.md) | Architecture decisions |
+| [`docs/known-issues.md`](docs/known-issues.md) | Open issues and discrepancies |
+| [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | What changed, sprint by sprint |
+
+---
+
+## How the project is run
+
+CLIVE is designed, documented and built one phase and one sprint at a time.
+
+- **Design before code.** Each phase has a design document
+  ([`docs/PDDs/`](docs/PDDs/)) and each sprint has an approved plan before
+  implementation.
+- **Decisions are recorded** as ADRs, with the alternatives considered.
+- **Everything is reproducible:** Docker Compose, pinned dependencies,
+  configuration through `.env` files, and no secrets in Git.
+- **Documentation is part of done:** a sprint is complete only after its
+  documentation update and commit.
+
+Engineering principles: open source first, self-hosted, Docker first,
+API first, modular, fully documented, and designed to scale.
+
+### Working with Claude Code
+
+The repository includes instructions for Claude Code: a root
+[`CLAUDE.md`](CLAUDE.md) plus directory-specific `CLAUDE.md` files in
+`docs/`, `src/simpro_client/`, `services/simpro_mock/` and `tests/`. The
+`/doc-check` command (`.claude/commands/doc-check.md`) checks the
+documentation against the code without editing anything.
+
+---
+
+## Hardware
+
+| | Current development server | Planned production |
+|---|---|---|
+| CPU | Intel i5-10400 | AMD Threadripper |
+| GPU | NVIDIA RTX 3080 (10 GB) | NVIDIA RTX 5090 |
+| RAM | 32 GB | 128–256 GB |
+| Storage | 2 × 223 GB SSD | — |
+| OS | Ubuntu Desktop 24.04 LTS | — |
+
+The architecture is designed to move to the production hardware without
+redesign.
+
+---
+
+## Ownership
+
+CLIVE is an internal CVC project. No licence has been published for this
+repository.
