@@ -33,7 +33,7 @@ Done:
 
 ## Phase 4 Planned Scope (unchanged from the master roadmap, `docs/scope/master-project-document.md`)
 
-- Consumes `simpro_client` directly as a Python library
+- Consumes `simpro_client`; whether by direct Python import or through a thin service wrapper depends on ADR-009 (open)
 - Feeder endpoints: Customers, Sites, Contacts, Jobs, Quotes, Projects, Assets, Employees
 - Generates: Quotes, RAMS, Contracts, Equipment specifications, Tender responses, Technical documentation
 - Phase 2's PGVector knowledge base is a candidate RAG source for boilerplate clauses/templates
