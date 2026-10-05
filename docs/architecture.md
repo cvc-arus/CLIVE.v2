@@ -14,18 +14,24 @@ All services are defined in the single root `docker-compose.yml`:
 
 | Service | Image / Build | Container name | Port mapping | Depends on |
 |---|---|---|---|---|
-| `ollama` | `ollama/ollama` | `clive-ollama` | `11435:11434` | — |
-| `open-webui` | `ghcr.io/open-webui/open-webui:main` | `clive-webui` | `3000:8080` | `postgres` (healthy), `tika`, `ollama` |
+| `ollama` | `ollama/ollama` | `clive-ollama` | `127.0.0.1:11435:11434` | — |
+| `open-webui` | `ghcr.io/open-webui/open-webui:main` | `clive-webui` | `127.0.0.1:3000:8080` | `postgres` (healthy), `tika`, `ollama` |
 | `postgres` | `pgvector/pgvector:0.8.6-pg16` | `clive-postgres` | `127.0.0.1:5432:5432` | — |
 | `tika` | `apache/tika:3.3.1.0-full` | `clive-tika` | `127.0.0.1:9998:9998` | — |
-| `simpro-mock-db` | `postgres:16-alpine` | `clive-simpro-mock-db` | `5433:5432` | — |
-| `simpro-mock` | built from `./services/simpro_mock` | `clive-simpro-mock` | `8100:8000` | `simpro-mock-db` (healthy) |
+| `simpro-mock-db` | `postgres:16-alpine` | `clive-simpro-mock-db` | `127.0.0.1:5433:5432` | — |
+| `simpro-mock` | built from `./services/simpro_mock` | `clive-simpro-mock` | `127.0.0.1:8100:8000` | `simpro-mock-db` (healthy) |
 
 `ollama` requests one NVIDIA GPU device via the Compose `deploy.resources.reservations.devices` block, matching the RTX 3080 development hardware.
 
 **Two separate Postgres instances by design:** `postgres` (Phase 2, PGVector-enabled, holds the RAG knowledge base) and `simpro-mock-db` (Phase 3, plain Postgres 16, holds the mock Simpro schema) are intentionally kept apart, on different ports (5432 vs 5433), so that Phase 3 development and testing can never touch production knowledge-base data.
 
-**Observed inconsistency:** the Compose file declares named volumes `ollama_data`, `openwebui_data`, and `pgvector_data` at the bottom, but the corresponding services actually use host bind-mounts (`/data/ollama`, `/data/openwebui_data`, `/data/pgvector_data`) rather than those named volumes. Only `simpro-mock-db-data` is an actively used named volume. This doesn't break anything (the declared-but-unused volumes are simply idle) but is worth cleaning up for clarity.
+Every published port binds to `127.0.0.1`, so no service is reachable from the LAN. To reach Open WebUI from another machine, use an SSH tunnel (for example `ssh -L 3000:localhost:3000 <host>`).
+
+**Volumes:** `ollama`, `open-webui` and `postgres` use host bind mounts (`/data/ollama`, `/data/openwebui_data`, `/data/pgvector_data`). The only named volume is `simpro-mock-db-data`.
+
+**Mock database credentials:** `simpro-mock-db` takes `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` from the `.env` keys `SIMPRO_MOCK_DB_USER`, `SIMPRO_MOCK_DB_PASSWORD` and `SIMPRO_MOCK_DB_NAME`, and `simpro-mock`'s `SIMPRO_MOCK_DATABASE_URL` is built from the same keys. `docker compose` refuses to start if any of them is unset.
+
+**Healthchecks:** `postgres` and `simpro-mock-db` use `pg_isready`; `simpro-mock` calls its own `GET /health` with Python's `urllib` (the `python:3.12-slim` image has no `curl`).
 
 ## 3. Phase 1 — Local AI Platform
 
