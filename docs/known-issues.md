@@ -1,4 +1,4 @@
-# Known Issues & Discrepancies (Observed 2026-09-04)
+# Known Issues & Discrepancies
 
 Found by reading the actual codebase and running the test suite, per the project's "code is the source of truth" principle. None of these are fixed here — this is a documentation pass, not a code change — but they should be triaged before Phase 3 sign-off.
 

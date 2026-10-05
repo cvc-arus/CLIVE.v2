@@ -1,6 +1,6 @@
 # CLIVE Changelog
 
-Reconstructed from `docs/scope/scope-rev2.md` (formerly `RevisedScope.txt`), chat history, and the current state of the codebase. Dates reflect the sprint/phase narrative where exact commit dates were not available from the shallow git history at review time.
+Reconstructed from `docs/scope/scope-rev2.md` (formerly `RevisedScope.txt`), chat history, and the current state of the codebase.
 
 ## Phase 1 — Local AI Platform
 - Ubuntu 24.04 LTS development host provisioned
