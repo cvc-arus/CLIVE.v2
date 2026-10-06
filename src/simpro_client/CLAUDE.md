@@ -217,10 +217,15 @@ caching/ORM libraries. Upgrade pins only as a deliberate, stated change.
 
 ## 12. Code quality note
 
-`client.py` lacks most type hints and docstrings. `rate_limiter.py` is typed
-but has no class or method docstrings. In `endpoints/base.py` only
-`_route_values` and `_render` lack type hints; it has no docstrings.
-`endpoints/base.py` has lines over 88 characters. When
-you modify a function in these files, give it type hints and a docstring and
-keep it within the line length. Do not reformat the whole file as a side
-effect.
+`client.py` is fully type-hinted and every function has a docstring.
+`ruff check` passes on it; `ruff format --check` does not, because of four
+pre-existing compressed call sites (the `SimproNotFoundError`,
+`SimproClientError` and `SimproServerError` raises in `_request_response`,
+and the `logging.LogRecord(...)` call in `_log_request`). Leave them unless a
+task asks for them.
+
+`rate_limiter.py` is typed but has no class or method docstrings. In
+`endpoints/base.py` only `_route_values` and `_render` lack type hints; it has
+no docstrings, and it has lines over 88 characters. When you modify a
+function in these files, give it type hints and a docstring and keep it within
+the line length. Do not reformat the whole file as a side effect.
