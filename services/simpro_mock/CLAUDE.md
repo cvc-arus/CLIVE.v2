@@ -149,6 +149,12 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
 - The `Dockerfile` copies source into the image. After editing anything under
   `services/simpro_mock/`, rebuild: `docker compose up -d --build simpro-mock`.
   A plain restart serves stale code.
+- The image is two-stage on `python:3.12.3-slim-bookworm` (matches the host
+  Python). The build stage runs `uv sync --locked` (uv `0.12.15`) into
+  `/opt/venv`, so dependencies come from `uv.lock` exactly, and the build
+  fails if `uv.lock` is out of date with `pyproject.toml` (run `uv lock`
+  here after changing dependencies). The runtime stage has no uv and runs
+  as the non-root user `app` (uid 10001).
 - Compose: `simpro-mock` is on host port `127.0.0.1:8100` (container 8000)
   with a Python `urllib` healthcheck on `/health` (the image has no `curl`);
   `simpro-mock-db` is on `127.0.0.1:5433` with a `pg_isready` healthcheck.

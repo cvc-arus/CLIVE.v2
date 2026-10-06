@@ -31,7 +31,7 @@ Every published port binds to `127.0.0.1`, so no service is reachable from the L
 
 **Mock database credentials:** `simpro-mock-db` takes `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` from the `.env` keys `SIMPRO_MOCK_DB_USER`, `SIMPRO_MOCK_DB_PASSWORD` and `SIMPRO_MOCK_DB_NAME`, and `simpro-mock`'s `SIMPRO_MOCK_DATABASE_URL` is built from the same keys. `docker compose` refuses to start if any of them is unset.
 
-**Healthchecks:** `postgres` and `simpro-mock-db` use `pg_isready`; `simpro-mock` calls its own `GET /health` with Python's `urllib` (the `python:3.12-slim` image has no `curl`).
+**Healthchecks:** `postgres` and `simpro-mock-db` use `pg_isready`; `simpro-mock` calls its own `GET /health` with Python's `urllib` (the `python:3.12.3-slim-bookworm` image has no `curl`).
 
 ## 3. Phase 1 — Local AI Platform
 
