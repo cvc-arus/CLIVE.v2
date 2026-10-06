@@ -57,6 +57,10 @@ Do not create `pagination.py` unless a task asks for it.
 - `auth_mode` is `Literal["client_credentials", "api_key"]`. An unrecognised
   value raises `ValidationError` when settings are constructed; it no longer
   falls through to the OAuth path.
+- `company_id_service` / `company_id_projects` are **reserved**: no library
+  code reads them (see §8). They record CVC's company mapping for callers and
+  for Phase 4. Leave them in place; do not wire them into endpoint defaults
+  without a task.
 - Every new setting needs a type, a default only if a safe default exists, a
   `Field(description=...)`, and a matching entry in `.env.example`.
 - `SimproClient(settings=...)` must keep accepting explicit settings, so

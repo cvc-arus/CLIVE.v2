@@ -47,11 +47,17 @@ class SimproSettings(BaseSettings):
     )
     company_id_service: int = Field(
         default=1,
-        description="Company ID for CVC Service",
+        description=(
+            "Company ID for CVC Service. Reserved: nothing reads this. "
+            "Endpoints take an explicit company_id argument."
+        ),
     )
     company_id_projects: int = Field(
         default=2,
-        description="Company ID for CVC Projects",
+        description=(
+            "Company ID for CVC Projects. Reserved: nothing reads this. "
+            "Endpoints take an explicit company_id argument."
+        ),
     )
     timeout: float = Field(
         default=30.0,
