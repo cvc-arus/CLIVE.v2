@@ -70,3 +70,36 @@ def test_api_key_mode_returns_static_token(api_key_settings: SimproSettings):
     token = auth.get_token()
     assert token == "test_static_token"
     auth.close()
+
+
+class CountingLimiter:
+    def __init__(self):
+        self.call_count = 0
+
+    def acquire(self):
+        self.call_count += 1
+
+
+@respx.mock
+def test_token_requests_acquire_from_limiter(mock_settings: SimproSettings):
+    route = respx.post(mock_settings.token_url).mock(
+        return_value=Response(200, json={"access_token": "tok", "expires_in": 3600})
+    )
+    limiter = CountingLimiter()
+    auth = AuthManager(mock_settings, limiter=limiter)
+    auth.get_token()
+    auth.get_token()
+    assert limiter.call_count == 1
+    auth.invalidate()
+    auth.get_token()
+    assert limiter.call_count == 2
+    assert route.call_count == 2
+    auth.close()
+
+
+def test_api_key_mode_does_not_acquire(api_key_settings: SimproSettings):
+    limiter = CountingLimiter()
+    auth = AuthManager(api_key_settings, limiter=limiter)
+    auth.get_token()
+    assert limiter.call_count == 0
+    auth.close()

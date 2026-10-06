@@ -49,15 +49,15 @@ def _utc_now() -> datetime:
 class SimproClient:
     def __init__(self, settings: SimproSettings | None = None) -> None:
         self._settings = settings or get_settings()
-        self._auth = AuthManager(self._settings)
+        self._limiter = TokenBucket(
+            self._settings.limiter_refill_rate, self._settings.limiter_capacity
+        )
+        self._auth = AuthManager(self._settings, limiter=self._limiter)
         self._logger = configure_logging()
         self._http = httpx.Client(
             base_url=self._settings.base_url,
             timeout=self._settings.timeout,
             headers={"Content-Type": "application/json", "Accept": "application/json"},
-        )
-        self._limiter = TokenBucket(
-            self._settings.limiter_refill_rate, self._settings.limiter_capacity
         )
         self._sleep = time.sleep
         self._random = random.random

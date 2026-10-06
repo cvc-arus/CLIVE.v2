@@ -60,6 +60,9 @@ Do not create `pagination.py` unless a task asks for it.
   token cached in memory, refreshed 60 s before `expires_in`.
 - `auth_mode="api_key"`: static token from settings.
 - `invalidate()` forces a refresh. The client uses it on a 401.
+- `SimproClient` passes its `TokenBucket` to `AuthManager(settings,
+  limiter=...)`, so each token POST acquires from the same budget as API
+  calls (ADR-010 §2.1). API-key mode makes no token request.
 - Tokens live in memory only. Never write them to disk or logs.
 - Authorization Code Grant ("Log in with Simpro") is deferred. Do not add it
   without a new ADR.
@@ -169,7 +172,8 @@ failures. (Missing route parameters currently raise `ValueError` from
 
 - `TokenBucket(refill_rate, capacity, *, clock, sleeper)`. It is created once
   per `SimproClient` from `limiter_refill_rate` / `limiter_capacity`.
-- `acquire()` is called for every attempt, including retries.
+- `acquire()` is called for every attempt, including retries, and before
+  every OAuth token request (`AuthManager` holds the same bucket).
 - The lock covers only the token arithmetic. It must be released before
   sleeping. Keep `clock` and `sleeper` injectable for tests.
 - Limitation: the budget is per client instance, not per process or per
@@ -188,7 +192,7 @@ caching/ORM libraries. Upgrade pins only as a deliberate, stated change.
 `client.py` lacks most type hints and docstrings. `rate_limiter.py` is typed
 but has no class or method docstrings. In `endpoints/base.py` only
 `_route_values` and `_render` lack type hints; it has no docstrings.
-`client.py` and `endpoints/base.py` have lines over 88 characters. When
+`endpoints/base.py` has lines over 88 characters. When
 you modify a function in these files, give it type hints and a docstring and
 keep it within the line length. Do not reformat the whole file as a side
 effect.

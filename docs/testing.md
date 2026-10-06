@@ -6,7 +6,7 @@ There are three distinct layers of testing in Phase 3, deliberately kept separat
 
 | File | What it covers |
 |---|---|
-| `test_auth.py` | Token obtained on first call, cached on second, expiry triggers refresh, invalid credentials raise `SimproAuthError`, API-key mode returns the static token |
+| `test_auth.py` | Token obtained on first call, cached on second, expiry triggers refresh, invalid credentials raise `SimproAuthError`, API-key mode returns the static token, token requests acquire from the rate limiter |
 | `test_client.py` | Successful GET, 401 triggers refresh-and-retry, 404 raises `SimproNotFoundError`, 429 raises `SimproRateLimitError`, context-manager close behaviour |
 | `test_config.py` | Settings load from explicit values, missing required field raises, defaults apply correctly |
 | `test_logging.py` | Correlation ID set/get, auto-generation when unset, `JSONFormatter` includes correlation ID, `JSONFormatter` includes HTTP fields, `configure_logging()` returns a usable logger |

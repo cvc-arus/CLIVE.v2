@@ -84,6 +84,11 @@ def test_401_then_429_keeps_independent_budgets(mock_settings):
     assert [call.request.headers["X-Correlation-ID"] for call in route.calls] == ["stable-retry-id"] * 3
 
 
+def test_client_shares_one_limiter_with_auth(mock_settings):
+    with SimproClient(mock_settings) as client:
+        assert client._auth._limiter is client._limiter
+
+
 @respx.mock
 def test_exhaustion_and_typed_errors(mock_settings):
     settings = mock_settings.model_copy(update={"max_retries": 2})
