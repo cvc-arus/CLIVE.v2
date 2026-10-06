@@ -35,10 +35,11 @@ uv run pytest tests/test_retries.py -v         # one module
 uv run pytest -q --durations=5                 # spot slow tests
 ```
 
-Baseline (re-verify before relying on this): the offline gate
-(`-m "not integration"`) gives 56 passed, 2 deselected; plain `pytest -q`
-gives 56 passed, 2 skipped (mock not running). Either takes about 17 s, about
-15 s of which is one test (see §4).
+Baseline (re-verify before relying on this; measured 2026-10-06 on
+`fix/config-auth-mode-validation`): the offline gate (`-m "not integration"`)
+gives 81 passed, 2 deselected. Plain `uv run pytest -q` gives 83 passed when
+the mock is up, and 81 passed, 2 skipped when it is not. Either takes about
+17 s, about 15 s of which is one test (see §4).
 
 ## 3. Fixtures and settings
 

@@ -45,10 +45,22 @@ Do not create `pagination.py` unless a task asks for it.
 
 - `SimproSettings`: pydantic-settings, prefix `SIMPRO_`, `env_file=".env"`,
   `extra="ignore"` (required so it can share `.env` with Phase 2 keys).
-- Required: `base_url`, `token_url`, `client_id`, `client_secret`.
+- Always required: `base_url`, `token_url`.
+- Required per `auth_mode`, enforced by a `model_validator(mode="after")`:
+  `client_credentials` needs `client_id` and `client_secret`; `api_key` needs
+  `api_key`. Fields the mode does not use may be left unset, and an empty
+  value counts as unset. Misconfiguration raises `ValidationError` at
+  construction rather than `SimproAuthError` at the first request.
 - Optional with defaults: `api_key`, `auth_mode`, `company_id_service` (1),
   `company_id_projects` (2), `timeout`, `max_retries` (3),
   `limiter_capacity` (8), `limiter_refill_rate` (8.0).
+- `auth_mode` is `Literal["client_credentials", "api_key"]`. An unrecognised
+  value raises `ValidationError` when settings are constructed; it no longer
+  falls through to the OAuth path.
+- `company_id_service` / `company_id_projects` are **reserved**: no library
+  code reads them (see §8). They record CVC's company mapping for callers and
+  for Phase 4. Leave them in place; do not wire them into endpoint defaults
+  without a task.
 - Every new setting needs a type, a default only if a safe default exists, a
   `Field(description=...)`, and a matching entry in `.env.example`.
 - `SimproClient(settings=...)` must keep accepting explicit settings, so
@@ -58,7 +70,20 @@ Do not create `pagination.py` unless a task asks for it.
 
 - Default `auth_mode="client_credentials"`: form-encoded POST to `token_url`,
   token cached in memory, refreshed 60 s before `expires_in`.
-- `auth_mode="api_key"`: static token from settings.
+- `auth_mode="api_key"`: static token from settings. `config.py` now
+  guarantees `api_key` is set in this mode, so `_get_api_key_token()`'s
+  `SimproAuthError` guard is unreachable via validated settings. It is kept
+  as defence in depth; do not remove it without a task.
+- **`client_id` / `client_secret` are `str | None` at the type level.** The
+  `model_validator` in `config.py` guarantees they are non-empty whenever
+  `auth_mode="client_credentials"`, which is the only mode that reaches
+  `_refresh_token()`, so passing them into the token payload is safe at
+  runtime and no narrowing is needed for correctness. The project configures
+  no type checker (`pyproject.toml` dev group is pytest, respx, ruff,
+  pytest-cov), so nothing flags this today. If one is ever added, expect
+  `arg-type`/`reportArgumentType` on the `client_id` and `client_secret`
+  entries of the `_refresh_token()` payload; narrow there (an `assert` or an
+  explicit raise), not by widening the validator or retyping the fields.
 - `invalidate()` forces a refresh. The client uses it on a 401. If that
   refresh fails, the client raises `SimproAuthRefreshError`; a failure on
   the first token fetch still raises plain `SimproAuthError`.
@@ -202,10 +227,15 @@ caching/ORM libraries. Upgrade pins only as a deliberate, stated change.
 
 ## 12. Code quality note
 
-`client.py` lacks most type hints and docstrings. `rate_limiter.py` is typed
-but has no class or method docstrings. In `endpoints/base.py` only
-`_route_values` and `_render` lack type hints; it has no docstrings.
-`endpoints/base.py` has lines over 88 characters. When
-you modify a function in these files, give it type hints and a docstring and
-keep it within the line length. Do not reformat the whole file as a side
-effect.
+`client.py` is fully type-hinted and every function has a docstring.
+`ruff check` passes on it; `ruff format --check` does not, because of four
+pre-existing compressed call sites (the `SimproNotFoundError`,
+`SimproClientError` and `SimproServerError` raises in `_request_response`,
+and the `logging.LogRecord(...)` call in `_log_request`). Leave them unless a
+task asks for them.
+
+`rate_limiter.py` is typed but has no class or method docstrings. In
+`endpoints/base.py` only `_route_values` and `_render` lack type hints; it has
+no docstrings, and it has lines over 88 characters. When you modify a
+function in these files, give it type hints and a docstring and keep it within
+the line length. Do not reformat the whole file as a side effect.

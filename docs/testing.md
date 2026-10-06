@@ -8,7 +8,7 @@ There are three distinct layers of testing in Phase 3, deliberately kept separat
 |---|---|
 | `test_auth.py` | Token obtained on first call, cached on second, expiry triggers refresh, invalid credentials raise `SimproAuthError` with the token endpoint's status (`None` on a transport error), API-key mode returns the static token, token requests acquire from the rate limiter |
 | `test_client.py` | Successful GET, 401 triggers refresh-and-retry, 404 raises `SimproNotFoundError`, 429 raises `SimproRateLimitError`, context-manager close behaviour |
-| `test_config.py` | Settings load from explicit values, missing required field raises, defaults apply correctly |
+| `test_config.py` | Settings load from explicit values, missing required field raises, defaults apply correctly, unknown `auth_mode` values are rejected, each `auth_mode` requires its own credentials (an empty value counts as missing) |
 | `test_logging.py` | Correlation ID set/get, auto-generation when unset, `JSONFormatter` includes correlation ID, `JSONFormatter` includes HTTP fields, `configure_logging()` returns a usable logger |
 | `test_models.py` | Typed resource models accept PascalCase aliases, ignore unknown fields, and convert date/datetime fields |
 | `test_endpoints.py` | Typed endpoints use the exact route and model, keep pagination headers and filters, and reject a missing nested scope before any request |
@@ -40,7 +40,7 @@ One file exercises the running `simpro-mock` container over real HTTP:
 - **`tests/test_simpro_mock_v2.py`** — marked `integration` (`pytestmark`). An autouse fixture checks `GET http://localhost:8100/health`; if the mock isn't reachable, it calls `pytest.skip()` at runtime, so a full `pytest` run never fails just because nobody started the mock. Covers: PascalCase field casing + pagination headers on `/companies/`, and a 401 on an unauthenticated request.
 
 ```bash
-docker compose up -d simpro-mock
+docker compose up -d --build simpro-mock
 uv run pytest tests/test_simpro_mock_v2.py -v
 ```
 
@@ -49,8 +49,8 @@ uv run pytest tests/test_simpro_mock_v2.py -v
 `scripts/verify-simpro-mock.py` (521 lines) is a comprehensive manual diagnostic — not a pytest test, and deliberately kept outside `tests/` because its helper functions are named `test_list_endpoint`, `test_single_endpoint`, etc. If it lived inside `tests/`, pytest would try (and fail) to collect and run those helpers as real tests. It exercises every one of the mock's 12 resources plus auth and health, printing pass/fail diagnostics and exiting non-zero on any failure.
 
 ```bash
-docker compose up -d simpro-mock
-python scripts/verify-simpro-mock.py
+docker compose up -d --build simpro-mock
+uv run python scripts/verify-simpro-mock.py
 ```
 
 ## 5. Linting (part of the test/verification pipeline)

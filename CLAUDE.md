@@ -148,6 +148,13 @@ Mock and full stack: see `services/simpro_mock/CLAUDE.md`. Test layers:
 ## 8. Git
 
 - Work on `develop`; `main` is updated via pull request.
+- Branch names are `<type>/<kebab-case-topic>`, branched from an up-to-date
+  `develop`, where `<type>` is the same word the commit message would use
+  (`feat`, `fix`, `docs`, `chore`, `refactor`). Examples from history:
+  `fix/auth-error-context`, `docs/accept-adr-011`, `fix/mock-reproducibility`.
+  The older `feat-pagination-and-retries` uses a dash instead of a slash; it
+  is the one exception and not the pattern to copy. If Alex gives a branch
+  name, use it exactly; otherwise propose one in this form and wait.
 - Never push without Alex's explicit approval (`.claude/settings.json` asks on
   `git push`). If history must be rewritten, use `--force-with-lease`, never
   `--force`, and only when asked.
