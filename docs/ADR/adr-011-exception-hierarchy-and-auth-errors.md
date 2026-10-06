@@ -1,11 +1,11 @@
 # ADR-011: Exception Hierarchy and Authentication Error Context
 
-*   **Status:** Proposed
+*   **Status:** Accepted (2026-10-06, ARus)
 *   **Deciders:** ARus
 *   **Date:** 2026-10-06 UTC
 *   **Context/Phase:** Phase 3, `simpro_client`
-*   **Relates to:** ADR-005 (auth strategy), ADR-010 (resilience policy). If
-    accepted, this supersedes ADR-010 §2.5 only.
+*   **Relates to:** ADR-005 (auth strategy), ADR-010 (resilience policy).
+    Supersedes ADR-010 §2.5 only.
 
 ---
 
@@ -100,12 +100,12 @@ order, `SimproAuthError.__init__` would reset the API context to `None`.
     relies on the initialisation order in §2.3. This is covered by
     `tests/test_retries.py`.
 
-## 5. Follow-up on acceptance
+## 5. Follow-up on acceptance (done 2026-10-06)
 
-- `docs/ADR/adr-010-resilience-policy.md`: Status line only, to note that
+- `docs/ADR/adr-010-resilience-policy.md`: Status line only, noting that
   §2.5 is superseded by ADR-011.
 - `docs/ADR/ADR-index.md`, `docs/README.md` §5 and root `CLAUDE.md` §4:
-  change the status from Proposed to Accepted.
+  status changed from Proposed to Accepted.
 
 ## 6. Verification
 
