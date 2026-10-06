@@ -62,6 +62,7 @@ Implemented with deviations from ADR-010; see `src/simpro_client/CLAUDE.md`.
 - 2026-10-06: `AuthManager` token requests acquire from the client's `TokenBucket` (ADR-010 §2.1)
 - 2026-10-06: added `SimproAuthRefreshError(SimproClientError, SimproAuthError)` to `exceptions.py`, raised when the token refresh after a 401 fails (ADR-010 §2.2)
 - 2026-10-06: `SimproAuthError` carries optional `status_code` (token endpoint), `method`, `url` and `correlation_id`, filled in by the client (ADR-010 §2.4); `SimproAPIError` initialises its base first; drafted ADR-011 (Proposed) to correct the exception hierarchy in ADR-010 §2.5
+- 2026-10-06: ADR-011 accepted; ADR-010 §2.5 superseded (Status line only). The `SimproAPIError` layer is no longer listed as a deviation
 
 ## Not Yet Started
 

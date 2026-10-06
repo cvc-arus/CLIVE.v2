@@ -110,8 +110,6 @@ non-idempotent request is never re-sent after a timeout or 5xx.
 Known deviations from ADR-010 (report them; do not "fix" them without a task):
 - Decimal `Retry-After` values (e.g. `2.5`) are treated as unparseable and
   fall back to backoff. ADR-010 says they should be honoured.
-- The hierarchy keeps `SimproAPIError` between `SimproError` and
-  `SimproClientError` / `SimproServerError`, for backward compatibility.
 
 ## 6. Exceptions (`exceptions.py`)
 
@@ -130,9 +128,10 @@ SimproError
     └── SimproServerError        5xx
 ```
 
-The documented hierarchy is ADR-011 (Proposed), which would replace ADR-010
-§2.5. `SimproAPIError.__init__` must call `super().__init__()` before setting
-its attributes, or `SimproAuthError.__init__` resets them to `None` in
+The hierarchy above is the one ADR-011 (Accepted) defines; it supersedes
+ADR-010 §2.5, so the `SimproAPIError` layer is no longer a deviation.
+`SimproAPIError.__init__` must call `super().__init__()` before setting its
+attributes, or `SimproAuthError.__init__` resets them to `None` in
 `SimproAuthRefreshError`.
 
 New exceptions subclass the closest existing class. Raised API errors must

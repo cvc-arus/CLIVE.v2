@@ -33,7 +33,7 @@ to date. If a document is not listed here, either add it here or delete it.
 |---|---|---|
 | `../README.md` | Project overview, links into `docs/` | Rewritten 2026-10-05 as the project overview (purpose, modules, architecture, services, documentation map); status, tree and install steps are links to their owners |
 | `roadmap.md` | Phase list and phase status (the only place phase status is stated) | Fixed 2026-10-02 (`doc-audit.md`): Phase 3 typed layer shown as implemented; remaining work is ADR-009 and sign-off. 2026-10-05: Phase 4 handoff mechanism now deferred to ADR-009 |
-| `architecture.md` | Services, ports, containers, `simpro_client` and `simpro_mock` design | Fixed 2026-10-02 (`doc-audit.md`): typed layer, rate limiter, exception hierarchy and response handling match `client.py`. 2026-10-05: port table (all `127.0.0.1`), volumes, mock DB `.env` keys and healthchecks match `docker-compose.yml`. 2026-10-06: mock base image tag matches `services/simpro_mock/Dockerfile`. 2026-10-06: response handling updated for transient-error retries (ADR-010 §2.2); `auth.py` token requests go through the rate limiter; `SimproAuthRefreshError` added. 2026-10-06: `SimproAuthError` context fields (ADR-011) |
+| `architecture.md` | Services, ports, containers, `simpro_client` and `simpro_mock` design | Fixed 2026-10-02 (`doc-audit.md`): typed layer, rate limiter, exception hierarchy and response handling match `client.py`. 2026-10-05: port table (all `127.0.0.1`), volumes, mock DB `.env` keys and healthchecks match `docker-compose.yml`. 2026-10-06: mock base image tag matches `services/simpro_mock/Dockerfile`. 2026-10-06: response handling updated for transient-error retries (ADR-010 §2.2); `auth.py` token requests go through the rate limiter; `SimproAuthRefreshError` added. 2026-10-06: `SimproAuthError` context fields (ADR-011); ADR-011 accepted |
 | `installation.md` | Setting up and running the stack | Fixed 2026-10-02 (`doc-audit.md`). Docker steps not re-run. 2026-10-05: `SIMPRO_MOCK_DB_*` keys and localhost-only ports added |
 | `development-standards.md` | Coding, tooling, Git, sprint template | Fixed 2026-10-02 (`doc-audit.md`) |
 | `testing.md` | Test layers, markers, how to run them | Fixed 2026-10-02 (`doc-audit.md`): all test modules listed, no counts. 2026-10-06: `test_retries.py` row covers transient-error retries; `test_auth.py` row covers limiter use; `test_retries.py` row covers refresh failure. 2026-10-06: auth-error context in `test_auth.py` / `test_retries.py` rows |
@@ -65,8 +65,8 @@ to date. If a document is not listed here, either add it here or delete it.
 | `ADR/adr-006-library-first-architecture.md` | Phase 3 |
 | `ADR/adr-007-configuration-management.md` | Phase 3 |
 | `ADR/adr-009-phase3-phase4-handoff.md` | Open decision |
-| `ADR/adr-010-resilience-policy.md` | Accepted, implemented with deviations (see `../src/simpro_client/CLAUDE.md`) |
-| `ADR/adr-011-exception-hierarchy-and-auth-errors.md` | Proposed 2026-10-06 (would supersede ADR-010 §2.5); code implemented |
+| `ADR/adr-010-resilience-policy.md` | Accepted, implemented with deviations (see `../src/simpro_client/CLAUDE.md`); §2.5 superseded by ADR-011 |
+| `ADR/adr-011-exception-hierarchy-and-auth-errors.md` | Accepted 2026-10-06, implemented (supersedes ADR-010 §2.5) |
 | `ADR/adr-mock-simpro-api.md` | Capability list predates the 12-resource mock |
 | `ADR/adr-008-rate-limiting-strategy.md` | Withdrawn 2026-09-29 (duplicate of ADR-010). Kept for history |
 | `PDDs/PDD-phase1.md`, `PDD-phase2.md` | Phases complete |
