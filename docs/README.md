@@ -67,6 +67,7 @@ to date. If a document is not listed here, either add it here or delete it.
 | `ADR/adr-009-phase3-phase4-handoff.md` | Open decision |
 | `ADR/adr-010-resilience-policy.md` | Accepted, implemented with deviations (see `../src/simpro_client/CLAUDE.md`); §2.5 superseded by ADR-011 |
 | `ADR/adr-011-exception-hierarchy-and-auth-errors.md` | Accepted 2026-10-06, implemented (supersedes ADR-010 §2.5) |
+| `ADR/adr-012-retry-delay-ceiling-and-auth-concurrency.md` | Proposed 2026-10-06, open decision. Would supersede ADR-010 §2.3 and extend §2.1 |
 | `ADR/adr-mock-simpro-api.md` | Capability list predates the 12-resource mock |
 | `ADR/adr-008-rate-limiting-strategy.md` | Withdrawn 2026-09-29 (duplicate of ADR-010). Kept for history |
 | `PDDs/PDD-phase1.md`, `PDD-phase2.md` | Phases complete |

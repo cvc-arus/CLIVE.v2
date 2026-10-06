@@ -14,3 +14,4 @@
 | 009 | Phase 3 → Phase 4 Handoff Mechanism | 3→4 | **Proposed, open decision — needs CVC sign-off** |
 | 010 | Client-Side Resilience, Rate Limiting, and Error Handling | 3→4 | Accepted, implemented with deviations (see `src/simpro_client/CLAUDE.md`); §2.5 superseded by ADR-011 |
 | 011 | Exception Hierarchy and Authentication Error Context (supersedes ADR-010 §2.5) | 3 | Accepted 2026-10-06, implemented |
+| 012 | Retry Delay Ceiling and Token-Refresh Concurrency (would supersede ADR-010 §2.3, extend §2.1) | 3 | **Proposed, open decision — needs CVC sign-off** |
