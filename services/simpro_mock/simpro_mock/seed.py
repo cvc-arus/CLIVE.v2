@@ -1,7 +1,7 @@
 # simpro_mock/seed.py
 
 import random
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -21,6 +21,9 @@ from simpro_mock.models import (
     Site,
     Status,
 )
+
+# Fixed seed so every start produces identical data (same day; see seed_data).
+RANDOM_SEED = 42
 
 
 def truncate_tables(db: Session):
@@ -56,6 +59,9 @@ def get_or_create_company(db: Session, name: str) -> Company:
 
 
 def seed_data():
+    random.seed(RANDOM_SEED)
+    # Anchor timestamps to midnight today so restarts on the same day match.
+    seed_now = datetime.combine(date.today(), time.min)
     db = SessionLocal()
 
     # --- Clear existing data ---
@@ -228,7 +234,7 @@ def seed_data():
         ("Motion Sensor", "MS-200", "Bosch"),
         ("Card Reader", "CR-500", "HID"),
     ]
-    sites = db.query(Site).all()
+    sites = db.query(Site).order_by(Site.id).all()
     for site in sites:
         for _ in range(random.randint(2, 3)):
             asset_name, model, manufacturer = random.choice(asset_types)
@@ -329,8 +335,8 @@ def seed_data():
         "Update drawings accordingly.",
         "Final walkthrough completed.",
     ]
-    jobs = db.query(Job).all()
-    employees = db.query(Employee).all()
+    jobs = db.query(Job).order_by(Job.id).all()
+    employees = db.query(Employee).order_by(Employee.id).all()
     for job in jobs:
         for _ in range(2):
             note = JobNote(
@@ -338,7 +344,7 @@ def seed_data():
                 subject=random.choice(note_subjects),
                 note=random.choice(note_bodies),
                 created_by=random.choice(employees).id if employees else None,
-                created_at=datetime.now() - timedelta(days=random.randint(1, 90)),
+                created_at=seed_now - timedelta(days=random.randint(1, 90)),
             )
             db.add(note)
     db.commit()
@@ -365,7 +371,7 @@ def seed_data():
         "jpg": "image/jpeg",
         "dwg": "application/acad",
     }
-    jobs = db.query(Job).all()
+    jobs = db.query(Job).order_by(Job.id).all()
     for job in jobs[:10]:  # attach to first 10 jobs
         for _ in range(random.randint(1, 3)):
             fname = random.choice(file_names)
@@ -375,7 +381,7 @@ def seed_data():
                 filename=fname,
                 mime_type=mime_types.get(ext, "application/octet-stream"),
                 file_size=random.randint(50000, 5000000),
-                uploaded_at=datetime.now() - timedelta(days=random.randint(0, 60)),
+                uploaded_at=seed_now - timedelta(days=random.randint(0, 60)),
             )
             db.add(attach)
     db.commit()

@@ -135,11 +135,13 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
 - The container runs `alembic upgrade head && python -m simpro_mock.seed &&
   uvicorn ...` on **every start**. `seed.py` **truncates every table with
   `RESTART IDENTITY`** and reseeds. Mock data does not survive a restart.
-- Deterministic: two companies, `1` = "CVC Service", `2` = "CVC Projects",
-  with fixed per-company counts for most resources.
-- Not deterministic: `random` is unseeded (assets per site, notes per job,
-  names, values), and dates are relative to `date.today()`. Tests must not
-  assert exact random values.
+- Deterministic within a day: two companies, `1` = "CVC Service",
+  `2` = "CVC Projects". `random` is seeded with `RANDOM_SEED`, the
+  re-read queries are ordered by `id`, and timestamps are anchored to
+  midnight of `date.today()`, so every restart on the same day yields
+  identical data.
+- Changes daily: all dates and timestamps are relative to `date.today()`.
+  Tests must still not assert exact seeded values.
 - New seeded tables must be added to `truncate_tables()`.
 
 ## 8. Docker

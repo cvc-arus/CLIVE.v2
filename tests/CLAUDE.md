@@ -70,8 +70,9 @@ gives 56 passed, 2 skipped (mock not running). Either takes about 17 s, about
 - Tests that set a correlation ID must set it inside the test (for example
   `set_correlation_id("...")`), not at module level. The ID lives in a
   `ContextVar` shared across the run.
-- Integration tests must not assert exact seeded values. The seed uses
-  unseeded `random` and `date.today()`. Assert shapes, headers, status codes,
+- Integration tests must not assert exact seeded values. The seed uses a
+  fixed `random` seed, but its dates are relative to `date.today()`, and
+  the seed values are not a contract. Assert shapes, headers, status codes,
   and stable invariants (companies `1` and `2` exist, PascalCase keys,
   `Result-*` headers, 401 without a token).
 
