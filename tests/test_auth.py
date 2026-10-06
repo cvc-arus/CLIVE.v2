@@ -2,6 +2,7 @@
 
 import time
 
+import httpx
 import pytest
 import respx
 from httpx import Response
@@ -60,8 +61,20 @@ def test_invalid_credentials_raise_auth_error(mock_settings: SimproSettings):
         return_value=Response(401, text="Invalid client credentials")
     )
     auth = AuthManager(mock_settings)
-    with pytest.raises(SimproAuthError, match="401"):
+    with pytest.raises(SimproAuthError, match="401") as exc_info:
         auth.get_token()
+    assert exc_info.value.status_code == 401
+    auth.close()
+
+
+@respx.mock
+def test_token_transport_error_has_no_status_code(mock_settings: SimproSettings):
+    respx.post(mock_settings.token_url).mock(side_effect=httpx.ConnectError("down"))
+    auth = AuthManager(mock_settings)
+    with pytest.raises(SimproAuthError) as exc_info:
+        auth.get_token()
+    assert exc_info.value.status_code is None
+    assert isinstance(exc_info.value.__cause__, httpx.ConnectError)
     auth.close()
 
 

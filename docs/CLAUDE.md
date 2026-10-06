@@ -54,7 +54,7 @@ phase or ADR complete without evidence.
 ## 4. ADR rules
 
 - Location: `docs/ADR/`. Naming: `adr-NNN-kebab-title.md`. The next free
-  number is **011**. Add every ADR to `docs/ADR/ADR-index.md` in the same
+  number is **012**. Add every ADR to `docs/ADR/ADR-index.md` in the same
   change.
 - Minimum sections: Status, Context, Decision, Alternatives Considered,
   Consequences. Status is one of Proposed, Accepted / Approved, Superseded by

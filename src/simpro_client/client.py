@@ -110,7 +110,9 @@ class SimproClient:
 
         Every attempt acquires from the rate limiter and carries the same
         correlation ID. A 401 refreshes the token once (separate budget); if
-        that refresh fails, ``SimproAuthRefreshError`` is raised.
+        that refresh fails, ``SimproAuthRefreshError`` is raised; any other
+        token failure raises ``SimproAuthError`` carrying this request's
+        method, url and correlation ID.
         429 responses, and for GET also 502/503/504 responses and timeouts
         or network errors, share one retry budget of ``max_retries``.
         Other failures are mapped to the typed exceptions.
@@ -126,6 +128,9 @@ class SimproClient:
                 token = self._auth.get_token()
             except SimproAuthError as exc:
                 if not refreshing_after_401:
+                    exc.method = method
+                    exc.url = path
+                    exc.correlation_id = correlation_id
                     raise
                 raise SimproAuthRefreshError(
                     f"Token refresh after 401 failed: {exc.message}",

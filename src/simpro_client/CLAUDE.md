@@ -62,6 +62,10 @@ Do not create `pagination.py` unless a task asks for it.
 - `invalidate()` forces a refresh. The client uses it on a 401. If that
   refresh fails, the client raises `SimproAuthRefreshError`; a failure on
   the first token fetch still raises plain `SimproAuthError`.
+- `SimproAuthError` carries optional `status_code` (the **token endpoint's**
+  status; `None` for transport or configuration errors) and `method`, `url`,
+  `correlation_id` of the API request that needed the token. `auth.py` sets
+  `status_code`; `_request_response()` fills in the rest (ADR-011).
 - `SimproClient` passes its `TokenBucket` to `AuthManager(settings,
   limiter=...)`, so each token POST acquires from the same budget as API
   calls (ADR-010 §2.1). API-key mode makes no token request.
@@ -113,7 +117,8 @@ Known deviations from ADR-010 (report them; do not "fix" them without a task):
 
 ```
 SimproError
-├── SimproAuthError
+├── SimproAuthError              (status_code of token endpoint, method, url,
+│                                 correlation_id; ADR-011)
 ├── SimproProtocolError          (bad or missing pagination headers)
 └── SimproAPIError               (status_code, response_body, method, url,
     │                             correlation_id, retry_count)
@@ -124,6 +129,11 @@ SimproError
     │                             also a SimproAuthError (multiple inheritance)
     └── SimproServerError        5xx
 ```
+
+The documented hierarchy is ADR-011 (Proposed), which would replace ADR-010
+§2.5. `SimproAPIError.__init__` must call `super().__init__()` before setting
+its attributes, or `SimproAuthError.__init__` resets them to `None` in
+`SimproAuthRefreshError`.
 
 New exceptions subclass the closest existing class. Raised API errors must
 carry `method`, `url` and `correlation_id`. Do not raise bare `Exception`,

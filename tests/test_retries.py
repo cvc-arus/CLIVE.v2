@@ -243,6 +243,7 @@ def test_failed_refresh_after_401_raises_auth_refresh_error(mock_settings):
     assert error.url == "/jobs"
     assert error.correlation_id == "refresh-fail-id"
     assert isinstance(error.__cause__, SimproAuthError)
+    assert error.__cause__.status_code == 401
 
 
 @respx.mock
@@ -251,10 +252,15 @@ def test_failed_first_token_fetch_raises_plain_auth_error(mock_settings):
         return_value=Response(401, text="Invalid client credentials")
     )
     route = respx.get(f"{mock_settings.base_url}/jobs")
+    set_correlation_id("first-fetch-id")
     with SimproClient(mock_settings) as client:
         error = capture(SimproAuthError, lambda: client.get("/jobs"))
     assert not isinstance(error, SimproAuthRefreshError)
     assert route.call_count == 0
+    assert error.status_code == 401
+    assert error.method == "GET"
+    assert error.url == "/jobs"
+    assert error.correlation_id == "first-fetch-id"
 
 
 @respx.mock
