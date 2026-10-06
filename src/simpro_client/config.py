@@ -4,6 +4,7 @@
 # ensuring that the application has access to the necessary configuration parameters."""
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -32,7 +33,7 @@ class SimproSettings(BaseSettings):
         default=None,
         description="Static API key (fallback auth, optional)",
     )
-    auth_mode: str = Field(
+    auth_mode: Literal["client_credentials", "api_key"] = Field(
         default="client_credentials",
         description="Auth mode: 'client_credentials' or 'api_key'",
     )

@@ -49,6 +49,9 @@ Do not create `pagination.py` unless a task asks for it.
 - Optional with defaults: `api_key`, `auth_mode`, `company_id_service` (1),
   `company_id_projects` (2), `timeout`, `max_retries` (3),
   `limiter_capacity` (8), `limiter_refill_rate` (8.0).
+- `auth_mode` is `Literal["client_credentials", "api_key"]`. An unrecognised
+  value raises `ValidationError` when settings are constructed; it no longer
+  falls through to the OAuth path.
 - Every new setting needs a type, a default only if a safe default exists, a
   `Field(description=...)`, and a matching entry in `.env.example`.
 - `SimproClient(settings=...)` must keep accepting explicit settings, so
