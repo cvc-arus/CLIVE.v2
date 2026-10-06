@@ -58,6 +58,12 @@ Implemented with deviations from ADR-010; see `src/simpro_client/CLAUDE.md`.
 - 2026-09-07: added ADR-010 (client-side resilience policy) and the Sprint 4 contract, preflight audit and architecture summary in `docs/phase3/`; moved the phase summaries into `docs/phase1/`, `docs/phase2/` and `docs/phase3/`
 - 2026-09-17: added twelve typed Pydantic resource models (`src/simpro_client/models/`) and endpoint modules (`src/simpro_client/endpoints/`); `endpoints/base.py` provides `fetch_page()` for single-page requests; registered the `integration` pytest marker; added `tests/test_models.py`, `tests/test_endpoints.py` and `tests/test_route_contract.py`
 - 2026-09-29: added `iter_all()` (iterates over all pages) to `endpoints/base.py`; added the token-bucket rate limiter (`src/simpro_client/rate_limiter.py`, settings `SIMPRO_LIMITER_CAPACITY` / `SIMPRO_LIMITER_REFILL_RATE`); `client.py` retries 429 responses up to `SIMPRO_MAX_RETRIES`; added `SimproClientError`, `SimproServerError` and `SimproProtocolError` to `exceptions.py`; added `tests/test_pagination.py`, `tests/test_rate_limiter.py` and `tests/test_retries.py`
+- 2026-10-06: `client.py` retries GET requests on 502/503/504 and on timeouts/network errors, sharing the `SIMPRO_MAX_RETRIES` budget with 429 (ADR-010 §2.2); non-GET methods and other 5xx are not retried
+- 2026-10-06: `AuthManager` token requests acquire from the client's `TokenBucket` (ADR-010 §2.1)
+- 2026-10-06: added `SimproAuthRefreshError(SimproClientError, SimproAuthError)` to `exceptions.py`, raised when the token refresh after a 401 fails (ADR-010 §2.2)
+- 2026-10-06: `SimproAuthError` carries optional `status_code` (token endpoint), `method`, `url` and `correlation_id`, filled in by the client (ADR-010 §2.4); `SimproAPIError` initialises its base first; drafted ADR-011 (Proposed) to correct the exception hierarchy in ADR-010 §2.5
+- 2026-10-06: ADR-011 accepted; ADR-010 §2.5 superseded (Status line only). The `SimproAPIError` layer is no longer listed as a deviation
+- 2026-10-06: `SimproSettings.auth_mode` is a `Literal["client_credentials", "api_key"]`, and a validator requires `client_id` + `client_secret` or `api_key` according to the mode (an empty value counts as missing); `client_id` / `client_secret` are now optional in `api_key` mode. `company_id_service` / `company_id_projects` documented as reserved. `client.py` gained type hints and docstrings (no behaviour change)
 
 ## Not Yet Started
 

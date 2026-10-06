@@ -135,11 +135,13 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
 - The container runs `alembic upgrade head && python -m simpro_mock.seed &&
   uvicorn ...` on **every start**. `seed.py` **truncates every table with
   `RESTART IDENTITY`** and reseeds. Mock data does not survive a restart.
-- Deterministic: two companies, `1` = "CVC Service", `2` = "CVC Projects",
-  with fixed per-company counts for most resources.
-- Not deterministic: `random` is unseeded (assets per site, notes per job,
-  names, values), and dates are relative to `date.today()`. Tests must not
-  assert exact random values.
+- Deterministic within a day: two companies, `1` = "CVC Service",
+  `2` = "CVC Projects". `random` is seeded with `RANDOM_SEED`, the
+  re-read queries are ordered by `id`, and timestamps are anchored to
+  midnight of `date.today()`, so every restart on the same day yields
+  identical data.
+- Changes daily: all dates and timestamps are relative to `date.today()`.
+  Tests must still not assert exact seeded values.
 - New seeded tables must be added to `truncate_tables()`.
 
 ## 8. Docker
@@ -147,6 +149,12 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
 - The `Dockerfile` copies source into the image. After editing anything under
   `services/simpro_mock/`, rebuild: `docker compose up -d --build simpro-mock`.
   A plain restart serves stale code.
+- The image is two-stage on `python:3.12.3-slim-bookworm` (matches the host
+  Python). The build stage runs `uv sync --locked` (uv `0.12.15`) into
+  `/opt/venv`, so dependencies come from `uv.lock` exactly, and the build
+  fails if `uv.lock` is out of date with `pyproject.toml` (run `uv lock`
+  here after changing dependencies). The runtime stage has no uv and runs
+  as the non-root user `app` (uid 10001).
 - Compose: `simpro-mock` is on host port `127.0.0.1:8100` (container 8000)
   with a Python `urllib` healthcheck on `/health` (the image has no `curl`);
   `simpro-mock-db` is on `127.0.0.1:5433` with a `pg_isready` healthcheck.

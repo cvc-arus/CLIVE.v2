@@ -7,6 +7,7 @@ import httpx
 
 from simpro_client.config import SimproSettings
 from simpro_client.exceptions import SimproAuthError
+from simpro_client.rate_limiter import TokenBucket
 
 
 class AuthManager:
@@ -17,8 +18,16 @@ class AuthManager:
     - api_key: Uses a static Bearer token from configuration
     """
 
-    def __init__(self, settings: SimproSettings) -> None:
+    def __init__(
+        self, settings: SimproSettings, limiter: TokenBucket | None = None
+    ) -> None:
+        """Create the manager.
+
+        If ``limiter`` is given, every token request acquires from it first,
+        so token traffic shares the client's rate budget (ADR-010 §2.1).
+        """
         self._settings = settings
+        self._limiter = limiter
         self._access_token: str | None = None
         self._token_expiry: float = 0.0
         self._http_client = httpx.Client(timeout=settings.timeout)
@@ -48,6 +57,8 @@ class AuthManager:
             "client_id": self._settings.client_id,
             "client_secret": self._settings.client_secret,
         }
+        if self._limiter is not None:
+            self._limiter.acquire()
         try:
             response = self._http_client.post(
                 self._settings.token_url,
@@ -59,7 +70,8 @@ class AuthManager:
 
         if response.status_code != 200:
             raise SimproAuthError(
-                f"Token endpoint returned {response.status_code}: {response.text}"
+                f"Token endpoint returned {response.status_code}: {response.text}",
+                status_code=response.status_code,
             )
 
         data = response.json()
