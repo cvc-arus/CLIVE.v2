@@ -9,7 +9,7 @@ Consolidates the standards declared in `docs/scope/clive-scope.md` / `docs/scope
 | PEP8 | `ruff` (`select = ["E", "F", "I", "N", "W", "UP", "B", "A", "SIM"]`) |
 | Formatting | `ruff format` |
 | Type hints | Used throughout (`str \| None` union syntax, not `Optional[]`) |
-| Docstrings | Required on new or modified public classes/functions (root `CLAUDE.md` §7); older code, e.g. `src/simpro_client/client.py`, has few |
+| Docstrings | Required on new or modified public classes/functions (root `CLAUDE.md` §7) |
 | Line length | 88 (`[tool.ruff] line-length = 88`) |
 | Target version | `py312` |
 | Logging | Structured JSON via stdlib `logging` + custom `JSONFormatter`, not print statements |
@@ -73,7 +73,7 @@ uv run pytest -m integration -v              # skip-gated integration tests
 ## 7. Git
 
 - Work happens on `develop`; force-pushes use `git push --force-with-lease`, never a plain `--force`, when history is rewritten (this project's `.venv/` accidental-commit cleanup is the precedent).
-- **Branch naming:** `<type>/<kebab-case-topic>`, branched from an up-to-date `develop` and merged to `main` by pull request. `<type>` matches the commit-message prefix (`feat`, `fix`, `docs`, `chore`, `refactor`); `fix/` and `docs/` are the forms that appear in history (`fix/auth-error-context`, `docs/accept-adr-011`). `feat-pagination-and-retries` predates the convention and uses a dash; it is not the pattern to follow.
+- **Branch naming:** `<type>/<kebab-case-topic>`, branched from an up-to-date `develop` and merged back to `develop` by pull request; `develop` is merged to `main` by pull request. `<type>` matches the commit-message prefix (`feat`, `fix`, `docs`, `chore`, `refactor`); `fix/` and `docs/` are the forms that appear in history (`fix/auth-error-context`, `docs/accept-adr-011`). `feat-pagination-and-retries` predates the convention and uses a dash; it is not the pattern to follow.
 - Every sprint ends with a git commit and a documentation update, per the project's own sprint template (see `docs/development-standards.md` §8 for the template itself, reproduced from `docs/scope/clive-scope.md`).
 
 ## 8. Sprint / Task Template

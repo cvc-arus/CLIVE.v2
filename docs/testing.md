@@ -8,7 +8,7 @@ There are three distinct layers of testing in Phase 3, deliberately kept separat
 |---|---|
 | `test_auth.py` | Token obtained on first call, cached on second, expiry triggers refresh, invalid credentials raise `SimproAuthError` with the token endpoint's status (`None` on a transport error), API-key mode returns the static token, token requests acquire from the rate limiter |
 | `test_client.py` | Successful GET, 401 triggers refresh-and-retry, 404 raises `SimproNotFoundError`, 429 raises `SimproRateLimitError`, context-manager close behaviour |
-| `test_config.py` | Settings load from explicit values, missing required field raises, defaults apply correctly |
+| `test_config.py` | Settings load from explicit values, missing required field raises, defaults apply correctly, unknown `auth_mode` values are rejected, each `auth_mode` requires its own credentials (an empty value counts as missing) |
 | `test_logging.py` | Correlation ID set/get, auto-generation when unset, `JSONFormatter` includes correlation ID, `JSONFormatter` includes HTTP fields, `configure_logging()` returns a usable logger |
 | `test_models.py` | Typed resource models accept PascalCase aliases, ignore unknown fields, and convert date/datetime fields |
 | `test_endpoints.py` | Typed endpoints use the exact route and model, keep pagination headers and filters, and reject a missing nested scope before any request |
