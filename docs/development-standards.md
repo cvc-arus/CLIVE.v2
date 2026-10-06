@@ -73,6 +73,7 @@ pytest tests/test_simpro_mock_v2.py -v  # skip-gated integration test
 ## 7. Git
 
 - Work happens on `develop`; force-pushes use `git push --force-with-lease`, never a plain `--force`, when history is rewritten (this project's `.venv/` accidental-commit cleanup is the precedent).
+- **Branch naming:** `<type>/<kebab-case-topic>`, branched from an up-to-date `develop` and merged to `main` by pull request. `<type>` matches the commit-message prefix (`feat`, `fix`, `docs`, `chore`, `refactor`); `fix/` and `docs/` are the forms that appear in history (`fix/auth-error-context`, `docs/accept-adr-011`). `feat-pagination-and-retries` predates the convention and uses a dash; it is not the pattern to follow.
 - Every sprint ends with a git commit and a documentation update, per the project's own sprint template (see `docs/development-standards.md` §8 for the template itself, reproduced from `docs/scope/clive-scope.md`).
 
 ## 8. Sprint / Task Template
