@@ -1,6 +1,6 @@
 # CLIVE Platform Architecture (Phases 1–3, As-Built)
 
-Generated from the codebase in `git@github.com:cvc-arus/CLIVE-I.git` (branch `develop`) on 2026-09-04.
+First generated from the codebase in `git@github.com:cvc-arus/CLIVE-I.git` (branch `develop`) on 2026-09-04; maintained since (see `docs/README.md` §3).
 
 ---
 

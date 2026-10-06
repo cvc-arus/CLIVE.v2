@@ -6,7 +6,7 @@ There are three distinct layers of testing in Phase 3, deliberately kept separat
 
 | File | What it covers |
 |---|---|
-| `test_auth.py` | Token obtained on first call, cached on second, expiry triggers refresh, invalid credentials raise `SimproAuthError` with the token endpoint's status (`None` on a transport error), API-key mode returns the static token, token requests acquire from the rate limiter |
+| `test_auth.py` | Token obtained on first call, cached on second, expiry triggers refresh, invalid credentials raise `SimproAuthError` with the token endpoint's status (`None` on a transport error), API-key mode returns the static token, token requests acquire from the rate limiter (API-key mode does not) |
 | `test_client.py` | Successful GET, 401 triggers refresh-and-retry, 404 raises `SimproNotFoundError`, 429 raises `SimproRateLimitError`, context-manager close behaviour |
 | `test_config.py` | Settings load from explicit values, missing required field raises, defaults apply correctly, unknown `auth_mode` values are rejected, each `auth_mode` requires its own credentials (an empty value counts as missing) |
 | `test_logging.py` | Correlation ID set/get, auto-generation when unset, `JSONFormatter` includes correlation ID, `JSONFormatter` includes HTTP fields, `configure_logging()` returns a usable logger |
@@ -14,7 +14,7 @@ There are three distinct layers of testing in Phase 3, deliberately kept separat
 | `test_endpoints.py` | Typed endpoints use the exact route and model, keep pagination headers and filters, and reject a missing nested scope before any request |
 | `test_pagination.py` | `iter_all()` is lazy, walks multiple pages, and raises `SimproProtocolError` on bad pagination metadata |
 | `test_rate_limiter.py` | `TokenBucket` burst, refill and wait; lock released before sleeping |
-| `test_retries.py` | `Retry-After` forms and backoff fallback, independent 401 and 429 budgets, retry exhaustion and typed errors, GET-only retry of 502/503/504 and timeouts/network errors, one budget shared with 429, failed refresh after a 401 raises `SimproAuthRefreshError`, a failed first token fetch raises `SimproAuthError` carrying the request context |
+| `test_retries.py` | `Retry-After` forms and backoff fallback, independent 401 and 429 budgets, one limiter shared by client and auth, retry exhaustion and typed errors, GET-only retry of 502/503/504 and timeouts/network errors, one budget shared with 429, failed refresh after a 401 raises `SimproAuthRefreshError`, a failed first token fetch raises `SimproAuthError` carrying the request context, a second 401 after refresh raises `SimproClientError` |
 | `test_route_contract.py` | The read-only route inventory matches the committed contract |
 
 All tests except those marked `integration` run fully offline. All HTTP traffic is intercepted with `respx`; no network or live service is required. Run the offline suite with:
@@ -46,7 +46,7 @@ uv run pytest tests/test_simpro_mock_v2.py -v
 
 ## 4. Manual Diagnostic Script
 
-`scripts/verify-simpro-mock.py` (521 lines) is a comprehensive manual diagnostic — not a pytest test, and deliberately kept outside `tests/` because its helper functions are named `test_list_endpoint`, `test_single_endpoint`, etc. If it lived inside `tests/`, pytest would try (and fail) to collect and run those helpers as real tests. It exercises every one of the mock's 12 resources plus auth and health, printing pass/fail diagnostics and exiting non-zero on any failure.
+`scripts/verify-simpro-mock.py` is a comprehensive manual diagnostic — not a pytest test, and deliberately kept outside `tests/` because its helper functions are named `test_list_endpoint`, `test_single_endpoint`, etc. If it lived inside `tests/`, pytest would try (and fail) to collect and run those helpers as real tests. It exercises every one of the mock's 12 resources plus auth and health, printing pass/fail diagnostics and exiting non-zero on any failure.
 
 ```bash
 docker compose up -d --build simpro-mock

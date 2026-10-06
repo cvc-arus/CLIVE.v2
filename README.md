@@ -84,12 +84,12 @@ Full detail: [`docs/architecture.md`](docs/architecture.md).
 
 All services run in Docker Compose ([`docker-compose.yml`](docker-compose.yml)).
 
-| Service | Container | Purpose | Host port |
+| Service | Container | Purpose | Host port (localhost only) |
 |---|---|---|---|
 | `ollama` | `clive-ollama` | Local LLM and embedding runtime | 11435 |
 | `open-webui` | `clive-webui` | Chat and knowledge-base interface | 3000 |
-| `postgres` | `clive-postgres` | PostgreSQL + PGVector knowledge base | 5432 (localhost only) |
-| `tika` | `clive-tika` | Document text extraction | 9998 (localhost only) |
+| `postgres` | `clive-postgres` | PostgreSQL + PGVector knowledge base | 5432 |
+| `tika` | `clive-tika` | Document text extraction | 9998 |
 | `simpro-mock` | `clive-simpro-mock` | Mock Simpro REST API | 8100 |
 | `simpro-mock-db` | `clive-simpro-mock-db` | Database for the mock only | 5433 |
 
@@ -215,5 +215,4 @@ redesign.
 
 ## Ownership
 
-CLIVE is an internal CVC project. No licence has been published for this
-repository.
+CLIVE is an internal CVC project.
