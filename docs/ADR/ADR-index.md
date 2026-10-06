@@ -13,3 +13,4 @@
 | 008 | Rate Limiting — token bucket at 8 req/sec | 3 | Withdrawn (duplicate of ADR-010) |
 | 009 | Phase 3 → Phase 4 Handoff Mechanism | 3→4 | **Proposed, open decision — needs CVC sign-off** |
 | 010 | Client-Side Resilience, Rate Limiting, and Error Handling | 3→4 | Accepted, implemented with deviations (see `src/simpro_client/CLAUDE.md`) |
+| 011 | Exception Hierarchy and Authentication Error Context (would supersede ADR-010 §2.5) | 3 | **Proposed, awaiting Alex's decision**; code implemented 2026-10-06 |

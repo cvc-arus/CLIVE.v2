@@ -70,7 +70,8 @@ class AuthManager:
 
         if response.status_code != 200:
             raise SimproAuthError(
-                f"Token endpoint returned {response.status_code}: {response.text}"
+                f"Token endpoint returned {response.status_code}: {response.text}",
+                status_code=response.status_code,
             )
 
         data = response.json()

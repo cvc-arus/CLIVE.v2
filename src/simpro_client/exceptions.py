@@ -8,7 +8,28 @@ class SimproError(Exception):
 
 
 class SimproAuthError(SimproError):
-    pass
+    """Obtaining an access token failed (ADR-011).
+
+    ``status_code`` is the token endpoint's HTTP status, or ``None`` when no
+    response was received or no request was made (e.g. a missing API key).
+    ``method``, ``url`` and ``correlation_id`` describe the API request that
+    needed the token; the client fills them in (ADR-010 §2.4).
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int | None = None,
+        method: str | None = None,
+        url: str | None = None,
+        correlation_id: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.method = method
+        self.url = url
+        self.correlation_id = correlation_id
 
 
 class SimproAPIError(SimproError):
@@ -23,13 +44,13 @@ class SimproAPIError(SimproError):
         correlation_id: str | None = None,
         retry_count: int = 0,
     ) -> None:
+        super().__init__(message)
         self.status_code = status_code
         self.response_body = response_body
         self.method = method
         self.url = url
         self.correlation_id = correlation_id
         self.retry_count = retry_count
-        super().__init__(message)
 
 
 class SimproClientError(SimproAPIError):

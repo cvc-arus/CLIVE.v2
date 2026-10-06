@@ -76,6 +76,7 @@ it. When documents and code disagree, say so explicitly. Do not quietly
 | 008 | Rate limiting | Withdrawn 2026-09-29 as a duplicate of ADR-010; kept for history |
 | 009 | Phase 3 → 4 handoff | **Open. Do not decide or assume.** |
 | 010 | Resilience: token bucket, 401/429 budgets, error hierarchy | Approved; implemented with deviations (see `src/simpro_client/CLAUDE.md`) |
+| 011 | Exception hierarchy and `SimproAuthError` context (would supersede ADR-010 §2.5) | **Proposed**; code implemented. Alex decides |
 
 Re-verify this table before relying on it; it is a snapshot.
 
