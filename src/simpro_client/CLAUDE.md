@@ -74,6 +74,16 @@ Do not create `pagination.py` unless a task asks for it.
   guarantees `api_key` is set in this mode, so `_get_api_key_token()`'s
   `SimproAuthError` guard is unreachable via validated settings. It is kept
   as defence in depth; do not remove it without a task.
+- **`client_id` / `client_secret` are `str | None` at the type level.** The
+  `model_validator` in `config.py` guarantees they are non-empty whenever
+  `auth_mode="client_credentials"`, which is the only mode that reaches
+  `_refresh_token()`, so passing them into the token payload is safe at
+  runtime and no narrowing is needed for correctness. The project configures
+  no type checker (`pyproject.toml` dev group is pytest, respx, ruff,
+  pytest-cov), so nothing flags this today. If one is ever added, expect
+  `arg-type`/`reportArgumentType` on the `client_id` and `client_secret`
+  entries of the `_refresh_token()` payload; narrow there (an `assert` or an
+  explicit raise), not by widening the validator or retyping the fields.
 - `invalidate()` forces a refresh. The client uses it on a 401. If that
   refresh fails, the client raises `SimproAuthRefreshError`; a failure on
   the first token fetch still raises plain `SimproAuthError`.
