@@ -58,18 +58,20 @@ Library-first design: importable by any future phase without requiring a network
 | Module | Responsibility |
 |---|---|
 | `config.py` | `SimproSettings` (pydantic-settings), env prefix `SIMPRO_`, loads from `.env`, `extra="ignore"` so it coexists with unrelated Postgres/PGVector keys in the same `.env` file. `get_settings()` is `lru_cache`d. |
-| `auth.py` | `AuthManager` — OAuth2 Client Credentials with in-memory token caching (60-second early-refresh buffer) and refresh, plus a static API Key fallback mode. |
+| `auth.py` | `AuthManager` — OAuth2 Client Credentials with in-memory token caching (60-second early-refresh buffer) and refresh, plus a static API Key fallback mode. Each token request first acquires from the client's rate limiter, which `SimproClient` passes in. |
 | `client.py` | `SimproClient` — thin `httpx.Client` wrapper. `get/post/patch/delete` all funnel through `_request()`, which calls `_request_response()`: it waits on the rate limiter, attaches `Authorization: Bearer <token>` and `X-Correlation-ID` headers, times the call, logs it, and handles the status code (below). `_request()` then returns `None` for `204`, otherwise the parsed JSON body. |
-| `exceptions.py` | Typed hierarchy: `SimproError` → `SimproAuthError`, `SimproProtocolError` (bad or missing pagination headers), `SimproAPIError(status_code, response_body)`; `SimproAPIError` → `SimproClientError` (4xx) and `SimproServerError` (5xx); `SimproClientError` → `SimproRateLimitError(retry_after)`, `SimproNotFoundError`. |
+| `exceptions.py` | Typed hierarchy: `SimproError` → `SimproAuthError`, `SimproProtocolError` (bad or missing pagination headers), `SimproAPIError(status_code, response_body)`; `SimproAPIError` → `SimproClientError` (4xx) and `SimproServerError` (5xx); `SimproClientError` → `SimproRateLimitError(retry_after)`, `SimproNotFoundError`, `SimproAuthRefreshError` (also a `SimproAuthError`). |
 | `logging.py` | `ContextVar`-based correlation IDs (`get_correlation_id`/`set_correlation_id`), a `JSONFormatter` that emits single-line JSON logs to `stderr`, and a `RequestTimer` context manager for millisecond-precision timing. |
 
 **Response handling in `client.py`:**
-- `401` → invalidate cached token, retry exactly once (`_retry_on_401` flag prevents infinite loops)
+- `401` → invalidate cached token, retry exactly once (`_retry_on_401` flag prevents infinite loops); if the refresh fails → `SimproAuthRefreshError`; a second `401` → `SimproClientError`
 - `429` → retry up to `max_retries` (`SIMPRO_MAX_RETRIES`), waiting for `Retry-After` if present, else exponential backoff; then `SimproRateLimitError`
 - `404` → `SimproNotFoundError`
 - any other `4xx` → `SimproClientError`
-- `5xx` → `SimproServerError` (not retried)
-- network error → `SimproAPIError` with `status_code` 0
+- `502`/`503`/`504` on GET → retried within the same `max_retries` budget as `429` (`Retry-After` if present, else backoff); then `SimproServerError`
+- other `5xx`, or any `5xx` on a non-GET method → `SimproServerError` (not retried)
+- timeout or network error (`httpx.TimeoutException`, `httpx.NetworkError`) on GET → retried within the same budget with backoff; then `SimproAPIError` with `status_code` 0
+- any other transport error, or one on a non-GET method → `SimproAPIError` with `status_code` 0 (not retried)
 - `204` → `None`
 - otherwise → parsed JSON body
 

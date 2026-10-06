@@ -59,7 +59,12 @@ Do not create `pagination.py` unless a task asks for it.
 - Default `auth_mode="client_credentials"`: form-encoded POST to `token_url`,
   token cached in memory, refreshed 60 s before `expires_in`.
 - `auth_mode="api_key"`: static token from settings.
-- `invalidate()` forces a refresh. The client uses it on a 401.
+- `invalidate()` forces a refresh. The client uses it on a 401. If that
+  refresh fails, the client raises `SimproAuthRefreshError`; a failure on
+  the first token fetch still raises plain `SimproAuthError`.
+- `SimproClient` passes its `TokenBucket` to `AuthManager(settings,
+  limiter=...)`, so each token POST acquires from the same budget as API
+  calls (ADR-010 §2.1). API-key mode makes no token request.
 - Tokens live in memory only. Never write them to disk or logs.
 - Authorization Code Grant ("Log in with Simpro") is deferred. Do not add it
   without a new ADR.
@@ -80,24 +85,27 @@ Response handling, as implemented:
 
 | Response | Behaviour |
 |---|---|
-| `httpx.HTTPError` (network/timeout) | `SimproAPIError(status_code=0)`, no retry |
-| 401 | invalidate token, retry once (separate budget), then error |
+| `httpx.TimeoutException` / `httpx.NetworkError` | GET: retry up to `max_retries` with backoff; then (and for other methods) `SimproAPIError(status_code=0)` |
+| other `httpx.HTTPError` | `SimproAPIError(status_code=0)`, no retry |
+| 401 | invalidate token, retry once (separate budget); failed refresh → `SimproAuthRefreshError`; second 401 → `SimproClientError` |
 | 429 | retry up to `max_retries`; honour `Retry-After`, else backoff |
 | 404 | `SimproNotFoundError` |
 | other 4xx | `SimproClientError` |
-| 5xx | `SimproServerError`, no retry |
+| 502 / 503 / 504 | GET: retry up to `max_retries`; honour `Retry-After`, else backoff; then (and for other methods) `SimproServerError` |
+| other 5xx | `SimproServerError`, no retry |
 | 204 | `None` from the raw methods |
 
 Retry details: `Retry-After` is parsed as **integer seconds** or an HTTP-date.
 If missing or unparseable, backoff is `min(60, 2**n * (0.5 + random()))`.
 The same correlation ID is reused on every attempt of one logical request.
 A 401 refresh followed by a 429 does not consume the 429 budget.
+429, transient 5xx and transient network errors share one `max_retries`
+budget. Transient retries are GET-only (`_RETRYABLE_METHODS`), so a
+non-idempotent request is never re-sent after a timeout or 5xx.
 
 Known deviations from ADR-010 (report them; do not "fix" them without a task):
 - Decimal `Retry-After` values (e.g. `2.5`) are treated as unparseable and
   fall back to backoff. ADR-010 says they should be honoured.
-- Only 429 is retried. 5xx and network errors are not, although ADR-010's
-  context mentions transient errors.
 - The hierarchy keeps `SimproAPIError` between `SimproError` and
   `SimproClientError` / `SimproServerError`, for backward compatibility.
 
@@ -111,7 +119,9 @@ SimproError
     │                             correlation_id, retry_count)
     ├── SimproClientError        4xx
     │   ├── SimproNotFoundError  404
-    │   └── SimproRateLimitError 429 (retry_after, attempt_count)
+    │   ├── SimproRateLimitError 429 (retry_after, attempt_count)
+    │   └── SimproAuthRefreshError 401, refresh after a 401 failed;
+    │                             also a SimproAuthError (multiple inheritance)
     └── SimproServerError        5xx
 ```
 
@@ -166,7 +176,8 @@ failures. (Missing route parameters currently raise `ValueError` from
 
 - `TokenBucket(refill_rate, capacity, *, clock, sleeper)`. It is created once
   per `SimproClient` from `limiter_refill_rate` / `limiter_capacity`.
-- `acquire()` is called for every attempt, including retries.
+- `acquire()` is called for every attempt, including retries, and before
+  every OAuth token request (`AuthManager` holds the same bucket).
 - The lock covers only the token arithmetic. It must be released before
   sleeping. Keep `clock` and `sleeper` injectable for tests.
 - Limitation: the budget is per client instance, not per process or per
@@ -185,7 +196,7 @@ caching/ORM libraries. Upgrade pins only as a deliberate, stated change.
 `client.py` lacks most type hints and docstrings. `rate_limiter.py` is typed
 but has no class or method docstrings. In `endpoints/base.py` only
 `_route_values` and `_render` lack type hints; it has no docstrings.
-`client.py` and `endpoints/base.py` have lines over 88 characters. When
+`endpoints/base.py` has lines over 88 characters. When
 you modify a function in these files, give it type hints and a docstring and
 keep it within the line length. Do not reformat the whole file as a side
 effect.
