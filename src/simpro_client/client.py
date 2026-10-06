@@ -27,6 +27,8 @@ from simpro_client.endpoints import (
 )
 from simpro_client.exceptions import (
     SimproAPIError,
+    SimproAuthError,
+    SimproAuthRefreshError,
     SimproClientError,
     SimproNotFoundError,
     SimproRateLimitError,
@@ -107,18 +109,32 @@ class SimproClient:
         """Send one logical request through the shared resilience policy.
 
         Every attempt acquires from the rate limiter and carries the same
-        correlation ID. A 401 refreshes the token once (separate budget).
+        correlation ID. A 401 refreshes the token once (separate budget); if
+        that refresh fails, ``SimproAuthRefreshError`` is raised.
         429 responses, and for GET also 502/503/504 responses and timeouts
         or network errors, share one retry budget of ``max_retries``.
         Other failures are mapped to the typed exceptions.
         """
         correlation_id = get_correlation_id()
         auth_retry_available = _retry_on_401
+        refreshing_after_401 = False
         rate_retry_count = 0
         attempt_count = 0
         retryable = method in _RETRYABLE_METHODS
         while True:
-            token = self._auth.get_token()
+            try:
+                token = self._auth.get_token()
+            except SimproAuthError as exc:
+                if not refreshing_after_401:
+                    raise
+                raise SimproAuthRefreshError(
+                    f"Token refresh after 401 failed: {exc.message}",
+                    method=method,
+                    url=path,
+                    correlation_id=correlation_id,
+                    retry_count=rate_retry_count,
+                ) from exc
+            refreshing_after_401 = False
             headers = {
                 "Authorization": f"Bearer {token}",
                 "X-Correlation-ID": correlation_id,
@@ -156,6 +172,7 @@ class SimproClient:
             if response.status_code == 401 and auth_retry_available:
                 self._auth.invalidate()
                 auth_retry_available = False
+                refreshing_after_401 = True
                 continue
             if response.status_code == 429:
                 if not budget_left:

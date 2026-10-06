@@ -60,6 +60,7 @@ Implemented with deviations from ADR-010; see `src/simpro_client/CLAUDE.md`.
 - 2026-09-29: added `iter_all()` (iterates over all pages) to `endpoints/base.py`; added the token-bucket rate limiter (`src/simpro_client/rate_limiter.py`, settings `SIMPRO_LIMITER_CAPACITY` / `SIMPRO_LIMITER_REFILL_RATE`); `client.py` retries 429 responses up to `SIMPRO_MAX_RETRIES`; added `SimproClientError`, `SimproServerError` and `SimproProtocolError` to `exceptions.py`; added `tests/test_pagination.py`, `tests/test_rate_limiter.py` and `tests/test_retries.py`
 - 2026-10-06: `client.py` retries GET requests on 502/503/504 and on timeouts/network errors, sharing the `SIMPRO_MAX_RETRIES` budget with 429 (ADR-010 §2.2); non-GET methods and other 5xx are not retried
 - 2026-10-06: `AuthManager` token requests acquire from the client's `TokenBucket` (ADR-010 §2.1)
+- 2026-10-06: added `SimproAuthRefreshError(SimproClientError, SimproAuthError)` to `exceptions.py`, raised when the token refresh after a 401 fails (ADR-010 §2.2)
 
 ## Not Yet Started
 

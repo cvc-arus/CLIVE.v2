@@ -8,6 +8,8 @@ from httpx import Response
 from simpro_client.client import SimproClient
 from simpro_client.exceptions import (
     SimproAPIError,
+    SimproAuthError,
+    SimproAuthRefreshError,
     SimproClientError,
     SimproRateLimitError,
     SimproServerError,
@@ -219,3 +221,47 @@ def test_rate_limit_and_transient_errors_share_one_budget(mock_settings):
         error = capture(SimproServerError, lambda: client.get("/jobs"))
     assert route.call_count == 3
     assert error.retry_count == 2
+
+
+@respx.mock
+def test_failed_refresh_after_401_raises_auth_refresh_error(mock_settings):
+    respx.post(mock_settings.token_url).mock(
+        side_effect=[
+            Response(200, json={"access_token": "tok", "expires_in": 3600}),
+            Response(401, text="Invalid client credentials"),
+        ]
+    )
+    route = respx.get(f"{mock_settings.base_url}/jobs").mock(return_value=Response(401))
+    set_correlation_id("refresh-fail-id")
+    with SimproClient(mock_settings) as client:
+        error = capture(SimproAuthRefreshError, lambda: client.get("/jobs"))
+    assert route.call_count == 1
+    assert isinstance(error, SimproAuthError)
+    assert isinstance(error, SimproClientError)
+    assert error.status_code == 401
+    assert error.method == "GET"
+    assert error.url == "/jobs"
+    assert error.correlation_id == "refresh-fail-id"
+    assert isinstance(error.__cause__, SimproAuthError)
+
+
+@respx.mock
+def test_failed_first_token_fetch_raises_plain_auth_error(mock_settings):
+    respx.post(mock_settings.token_url).mock(
+        return_value=Response(401, text="Invalid client credentials")
+    )
+    route = respx.get(f"{mock_settings.base_url}/jobs")
+    with SimproClient(mock_settings) as client:
+        error = capture(SimproAuthError, lambda: client.get("/jobs"))
+    assert not isinstance(error, SimproAuthRefreshError)
+    assert route.call_count == 0
+
+
+@respx.mock
+def test_second_401_after_refresh_raises_client_error(mock_settings):
+    token(mock_settings)
+    respx.get(f"{mock_settings.base_url}/jobs").mock(return_value=Response(401))
+    with SimproClient(mock_settings) as client:
+        error = capture(SimproClientError, lambda: client.get("/jobs"))
+    assert not isinstance(error, SimproAuthError)
+    assert error.status_code == 401

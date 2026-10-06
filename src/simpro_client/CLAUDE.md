@@ -59,7 +59,9 @@ Do not create `pagination.py` unless a task asks for it.
 - Default `auth_mode="client_credentials"`: form-encoded POST to `token_url`,
   token cached in memory, refreshed 60 s before `expires_in`.
 - `auth_mode="api_key"`: static token from settings.
-- `invalidate()` forces a refresh. The client uses it on a 401.
+- `invalidate()` forces a refresh. The client uses it on a 401. If that
+  refresh fails, the client raises `SimproAuthRefreshError`; a failure on
+  the first token fetch still raises plain `SimproAuthError`.
 - `SimproClient` passes its `TokenBucket` to `AuthManager(settings,
   limiter=...)`, so each token POST acquires from the same budget as API
   calls (ADR-010 §2.1). API-key mode makes no token request.
@@ -85,7 +87,7 @@ Response handling, as implemented:
 |---|---|
 | `httpx.TimeoutException` / `httpx.NetworkError` | GET: retry up to `max_retries` with backoff; then (and for other methods) `SimproAPIError(status_code=0)` |
 | other `httpx.HTTPError` | `SimproAPIError(status_code=0)`, no retry |
-| 401 | invalidate token, retry once (separate budget), then error |
+| 401 | invalidate token, retry once (separate budget); failed refresh → `SimproAuthRefreshError`; second 401 → `SimproClientError` |
 | 429 | retry up to `max_retries`; honour `Retry-After`, else backoff |
 | 404 | `SimproNotFoundError` |
 | other 4xx | `SimproClientError` |
@@ -117,7 +119,9 @@ SimproError
     │                             correlation_id, retry_count)
     ├── SimproClientError        4xx
     │   ├── SimproNotFoundError  404
-    │   └── SimproRateLimitError 429 (retry_after, attempt_count)
+    │   ├── SimproRateLimitError 429 (retry_after, attempt_count)
+    │   └── SimproAuthRefreshError 401, refresh after a 401 failed;
+    │                             also a SimproAuthError (multiple inheritance)
     └── SimproServerError        5xx
 ```
 

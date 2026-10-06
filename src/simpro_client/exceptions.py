@@ -67,6 +67,19 @@ class SimproNotFoundError(SimproClientError):
         super().__init__(message, 404, **context)
 
 
+class SimproAuthRefreshError(SimproClientError, SimproAuthError):
+    """The token refresh after a 401 response failed (ADR-010 §2.2).
+
+    It is both a ``SimproClientError`` (status 401, with request context) and
+    a ``SimproAuthError``, so callers catching either parent still catch it.
+    """
+
+    def __init__(
+        self, message: str = "Token refresh after 401 failed", **context
+    ) -> None:
+        super().__init__(message, 401, **context)
+
+
 class SimproServerError(SimproAPIError):
     pass
 
