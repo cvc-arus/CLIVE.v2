@@ -40,7 +40,7 @@ One file exercises the running `simpro-mock` container over real HTTP:
 - **`tests/test_simpro_mock_v2.py`** — marked `integration` (`pytestmark`). An autouse fixture checks `GET http://localhost:8100/health`; if the mock isn't reachable, it calls `pytest.skip()` at runtime, so a full `pytest` run never fails just because nobody started the mock. Covers: PascalCase field casing + pagination headers on `/companies/`, and a 401 on an unauthenticated request.
 
 ```bash
-docker compose up -d simpro-mock
+docker compose up -d --build simpro-mock
 uv run pytest tests/test_simpro_mock_v2.py -v
 ```
 
@@ -49,8 +49,8 @@ uv run pytest tests/test_simpro_mock_v2.py -v
 `scripts/verify-simpro-mock.py` (521 lines) is a comprehensive manual diagnostic — not a pytest test, and deliberately kept outside `tests/` because its helper functions are named `test_list_endpoint`, `test_single_endpoint`, etc. If it lived inside `tests/`, pytest would try (and fail) to collect and run those helpers as real tests. It exercises every one of the mock's 12 resources plus auth and health, printing pass/fail diagnostics and exiting non-zero on any failure.
 
 ```bash
-docker compose up -d simpro-mock
-python scripts/verify-simpro-mock.py
+docker compose up -d --build simpro-mock
+uv run python scripts/verify-simpro-mock.py
 ```
 
 ## 5. Linting (part of the test/verification pipeline)

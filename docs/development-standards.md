@@ -30,14 +30,14 @@ New files must pass both checks, and modified files must not gain new violations
 - **No live dependency in unit tests:** everything except the `integration`-marked tests runs fully offline. Test layers and how to run them: `docs/testing.md`.
 - **Live/integration tests are explicitly separated and skip-gated:** `tests/test_simpro_mock_v2.py` checks reachability of `http://localhost:8100/health` in an autouse fixture and calls `pytest.skip()` at runtime, so the suite never fails just because the mock isn't running.
 - **Manual diagnostic scripts are kept outside `tests/`:** `scripts/verify-simpro-mock.py` deliberately lives outside the `tests/` directory and is documented as "not a pytest test," specifically because its helper functions are named `test_list_endpoint`, `test_single_endpoint`, etc., which pytest would otherwise try to collect and run.
-- **Run tests, don't just read code:** codebase reviews in this project run `pytest tests/ -v` rather than relying on static inspection, since that's what actually surfaces pytest-collection bugs.
+- **Run tests, don't just read code:** codebase reviews in this project run the suite rather than relying on static inspection, since that's what actually surfaces pytest-collection bugs.
 
-Run locally:
+Run locally. Commands go through `uv`, because dev tools live in `[dependency-groups]` and are not installed by `pip install -e ".[dev]"` (root `CLAUDE.md` §6, `docs/known-issues.md`):
 ```bash
-pytest tests/ -v                      # unit tests (offline)
-docker compose up -d simpro-mock      # start the mock
-python scripts/verify-simpro-mock.py  # manual diagnostic
-pytest tests/test_simpro_mock_v2.py -v  # skip-gated integration test
+uv run pytest -q -m "not integration"        # offline suite (the required gate)
+docker compose up -d --build simpro-mock     # start the mock
+uv run python scripts/verify-simpro-mock.py  # manual diagnostic
+uv run pytest -m integration -v              # skip-gated integration tests
 ```
 
 ## 3. Docker

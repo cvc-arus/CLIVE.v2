@@ -57,7 +57,7 @@ Library-first design: importable by any future phase without requiring a network
 
 | Module | Responsibility |
 |---|---|
-| `config.py` | `SimproSettings` (pydantic-settings), env prefix `SIMPRO_`, loads from `.env`, `extra="ignore"` so it coexists with unrelated Postgres/PGVector keys in the same `.env` file. `get_settings()` is `lru_cache`d. |
+| `config.py` | `SimproSettings` (pydantic-settings), env prefix `SIMPRO_`, loads from `.env`, `extra="ignore"` so it coexists with unrelated Postgres/PGVector keys in the same `.env` file. `get_settings()` is `lru_cache`d. `auth_mode` is a `Literal`, and a `model_validator` requires the credentials that mode uses (`client_id` + `client_secret`, or `api_key`), so misconfiguration raises `ValidationError` at construction instead of failing at the first request. |
 | `auth.py` | `AuthManager` — OAuth2 Client Credentials with in-memory token caching (60-second early-refresh buffer) and refresh, plus a static API Key fallback mode. Each token request first acquires from the client's rate limiter, which `SimproClient` passes in. |
 | `client.py` | `SimproClient` — thin `httpx.Client` wrapper. `get/post/patch/delete` all funnel through `_request()`, which calls `_request_response()`: it waits on the rate limiter, attaches `Authorization: Bearer <token>` and `X-Correlation-ID` headers, times the call, logs it, and handles the status code (below). `_request()` then returns `None` for `204`, otherwise the parsed JSON body. |
 | `exceptions.py` | Typed hierarchy (ADR-011): `SimproError` → `SimproAuthError(status_code, method, url, correlation_id)`, `SimproProtocolError` (bad or missing pagination headers), `SimproAPIError(status_code, response_body)`; `SimproAPIError` → `SimproClientError` (4xx) and `SimproServerError` (5xx); `SimproClientError` → `SimproRateLimitError(retry_after)`, `SimproNotFoundError`, `SimproAuthRefreshError` (also a `SimproAuthError`). |
@@ -144,7 +144,7 @@ Write operations (POST/PATCH/DELETE) are out of scope for both the mock and `sim
 
 ### 5.5 Two-company model
 
-`seed.py` seeds exactly two companies matching CVC's real Simpro setup: **CVC Service** (`company_id=1`) and **CVC Projects** (`company_id=2`), each with representative Customers, Jobs, Quotes, Contacts, Sites, Assets, Employees, Projects, Job Notes, Attachments, and Statuses (8 customers per company, 8 jobs per company, etc.). `simpro_client`'s `SimproSettings.company_id_service` / `company_id_projects` (defaulting to 1/2) mirror this.
+`seed.py` seeds exactly two companies matching CVC's real Simpro setup: **CVC Service** (`company_id=1`) and **CVC Projects** (`company_id=2`), each with representative Customers, Jobs, Quotes, Contacts, Sites, Assets, Employees, Projects, Job Notes, Attachments, and Statuses (8 customers per company, 8 jobs per company, etc.). `simpro_client`'s `SimproSettings.company_id_service` / `company_id_projects` (defaulting to 1/2) mirror this, but are **reserved**: no client code reads them, and endpoint calls take an explicit `company_id` argument.
 
 ## 6. Planned but Not Yet Decided
 
