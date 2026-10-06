@@ -6,7 +6,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,11 +27,19 @@ class SimproSettings(BaseSettings):
         description="Base URL of the Simpro API (e.g. http://localhost:8100/api/v1.0)"
     )
     token_url: str = Field(description="OAuth2 token endpoint URL")
-    client_id: str = Field(description="OAuth2 Client ID")
-    client_secret: str = Field(description="OAuth2 Client Secret")
+    client_id: str | None = Field(
+        default=None,
+        description="OAuth2 Client ID (required when auth_mode='client_credentials')",
+    )
+    client_secret: str | None = Field(
+        default=None,
+        description=(
+            "OAuth2 Client Secret (required when auth_mode='client_credentials')"
+        ),
+    )
     api_key: str | None = Field(
         default=None,
-        description="Static API key (fallback auth, optional)",
+        description="Static API key (required when auth_mode='api_key')",
     )
     auth_mode: Literal["client_credentials", "api_key"] = Field(
         default="client_credentials",
@@ -56,6 +64,25 @@ class SimproSettings(BaseSettings):
     limiter_capacity: int = Field(default=8)
     limiter_refill_rate: float = Field(default=8.0)
 
+    @model_validator(mode="after")
+    def _check_auth_mode_fields(self) -> "SimproSettings":
+        """Require the credentials the selected ``auth_mode`` actually uses.
+
+        ``client_credentials`` needs ``client_id`` and ``client_secret``;
+        ``api_key`` needs ``api_key``. Fields the mode does not use may be
+        left unset. An empty value counts as unset.
+        """
+        required = (
+            ("client_id", "client_secret")
+            if self.auth_mode == "client_credentials"
+            else ("api_key",)
+        )
+        missing = [name for name in required if not getattr(self, name)]
+        if missing:
+            raise ValueError(
+                f"auth_mode={self.auth_mode!r} requires: {', '.join(missing)}"
+            )
+        return self
 
 
 @lru_cache

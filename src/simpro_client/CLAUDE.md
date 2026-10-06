@@ -45,7 +45,12 @@ Do not create `pagination.py` unless a task asks for it.
 
 - `SimproSettings`: pydantic-settings, prefix `SIMPRO_`, `env_file=".env"`,
   `extra="ignore"` (required so it can share `.env` with Phase 2 keys).
-- Required: `base_url`, `token_url`, `client_id`, `client_secret`.
+- Always required: `base_url`, `token_url`.
+- Required per `auth_mode`, enforced by a `model_validator(mode="after")`:
+  `client_credentials` needs `client_id` and `client_secret`; `api_key` needs
+  `api_key`. Fields the mode does not use may be left unset, and an empty
+  value counts as unset. Misconfiguration raises `ValidationError` at
+  construction rather than `SimproAuthError` at the first request.
 - Optional with defaults: `api_key`, `auth_mode`, `company_id_service` (1),
   `company_id_projects` (2), `timeout`, `max_retries` (3),
   `limiter_capacity` (8), `limiter_refill_rate` (8.0).
@@ -61,7 +66,10 @@ Do not create `pagination.py` unless a task asks for it.
 
 - Default `auth_mode="client_credentials"`: form-encoded POST to `token_url`,
   token cached in memory, refreshed 60 s before `expires_in`.
-- `auth_mode="api_key"`: static token from settings.
+- `auth_mode="api_key"`: static token from settings. `config.py` now
+  guarantees `api_key` is set in this mode, so `_get_api_key_token()`'s
+  `SimproAuthError` guard is unreachable via validated settings. It is kept
+  as defence in depth; do not remove it without a task.
 - `invalidate()` forces a refresh. The client uses it on a 401. If that
   refresh fails, the client raises `SimproAuthRefreshError`; a failure on
   the first token fetch still raises plain `SimproAuthError`.
