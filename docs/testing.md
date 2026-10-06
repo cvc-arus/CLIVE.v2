@@ -14,7 +14,7 @@ There are three distinct layers of testing in Phase 3, deliberately kept separat
 | `test_endpoints.py` | Typed endpoints use the exact route and model, keep pagination headers and filters, and reject a missing nested scope before any request |
 | `test_pagination.py` | `iter_all()` is lazy, walks multiple pages, and raises `SimproProtocolError` on bad pagination metadata |
 | `test_rate_limiter.py` | `TokenBucket` burst, refill and wait; lock released before sleeping |
-| `test_retries.py` | `Retry-After` forms and backoff fallback, independent 401 and 429 budgets, retry exhaustion and typed errors |
+| `test_retries.py` | `Retry-After` forms and backoff fallback, independent 401 and 429 budgets, retry exhaustion and typed errors, GET-only retry of 502/503/504 and timeouts/network errors, one budget shared with 429 |
 | `test_route_contract.py` | The read-only route inventory matches the committed contract |
 
 All tests except those marked `integration` run fully offline. All HTTP traffic is intercepted with `respx`; no network or live service is required. Run the offline suite with:

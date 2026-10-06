@@ -80,24 +80,27 @@ Response handling, as implemented:
 
 | Response | Behaviour |
 |---|---|
-| `httpx.HTTPError` (network/timeout) | `SimproAPIError(status_code=0)`, no retry |
+| `httpx.TimeoutException` / `httpx.NetworkError` | GET: retry up to `max_retries` with backoff; then (and for other methods) `SimproAPIError(status_code=0)` |
+| other `httpx.HTTPError` | `SimproAPIError(status_code=0)`, no retry |
 | 401 | invalidate token, retry once (separate budget), then error |
 | 429 | retry up to `max_retries`; honour `Retry-After`, else backoff |
 | 404 | `SimproNotFoundError` |
 | other 4xx | `SimproClientError` |
-| 5xx | `SimproServerError`, no retry |
+| 502 / 503 / 504 | GET: retry up to `max_retries`; honour `Retry-After`, else backoff; then (and for other methods) `SimproServerError` |
+| other 5xx | `SimproServerError`, no retry |
 | 204 | `None` from the raw methods |
 
 Retry details: `Retry-After` is parsed as **integer seconds** or an HTTP-date.
 If missing or unparseable, backoff is `min(60, 2**n * (0.5 + random()))`.
 The same correlation ID is reused on every attempt of one logical request.
 A 401 refresh followed by a 429 does not consume the 429 budget.
+429, transient 5xx and transient network errors share one `max_retries`
+budget. Transient retries are GET-only (`_RETRYABLE_METHODS`), so a
+non-idempotent request is never re-sent after a timeout or 5xx.
 
 Known deviations from ADR-010 (report them; do not "fix" them without a task):
 - Decimal `Retry-After` values (e.g. `2.5`) are treated as unparseable and
   fall back to backoff. ADR-010 says they should be honoured.
-- Only 429 is retried. 5xx and network errors are not, although ADR-010's
-  context mentions transient errors.
 - The hierarchy keeps `SimproAPIError` between `SimproError` and
   `SimproClientError` / `SimproServerError`, for backward compatibility.
 

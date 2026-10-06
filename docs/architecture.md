@@ -68,8 +68,10 @@ Library-first design: importable by any future phase without requiring a network
 - `429` → retry up to `max_retries` (`SIMPRO_MAX_RETRIES`), waiting for `Retry-After` if present, else exponential backoff; then `SimproRateLimitError`
 - `404` → `SimproNotFoundError`
 - any other `4xx` → `SimproClientError`
-- `5xx` → `SimproServerError` (not retried)
-- network error → `SimproAPIError` with `status_code` 0
+- `502`/`503`/`504` on GET → retried within the same `max_retries` budget as `429` (`Retry-After` if present, else backoff); then `SimproServerError`
+- other `5xx`, or any `5xx` on a non-GET method → `SimproServerError` (not retried)
+- timeout or network error (`httpx.TimeoutException`, `httpx.NetworkError`) on GET → retried within the same budget with backoff; then `SimproAPIError` with `status_code` 0
+- any other transport error, or one on a non-GET method → `SimproAPIError` with `status_code` 0 (not retried)
 - `204` → `None`
 - otherwise → parsed JSON body
 

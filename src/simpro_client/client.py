@@ -36,6 +36,10 @@ from simpro_client.logging import RequestTimer, configure_logging, get_correlati
 from simpro_client.rate_limiter import TokenBucket
 
 _MAX_RETRY_DELAY_SECONDS = 60.0
+# Transient failures are retried only for idempotent methods (ADR-010 §2.2).
+_RETRYABLE_METHODS = frozenset({"GET"})
+_TRANSIENT_STATUS_CODES = frozenset({502, 503, 504})
+_TRANSIENT_TRANSPORT_ERRORS = (httpx.TimeoutException, httpx.NetworkError)
 
 
 def _utc_now() -> datetime:
@@ -93,12 +97,26 @@ class SimproClient:
         return None if response.status_code == 204 else response.json()
 
     def _request_response(
-        self, method, path, params=None, json=None, _retry_on_401=True
-    ):
+        self,
+        method: str,
+        path: str,
+        params: dict[str, Any] | None = None,
+        json: Any = None,
+        _retry_on_401: bool = True,
+    ) -> httpx.Response:
+        """Send one logical request through the shared resilience policy.
+
+        Every attempt acquires from the rate limiter and carries the same
+        correlation ID. A 401 refreshes the token once (separate budget).
+        429 responses, and for GET also 502/503/504 responses and timeouts
+        or network errors, share one retry budget of ``max_retries``.
+        Other failures are mapped to the typed exceptions.
+        """
         correlation_id = get_correlation_id()
         auth_retry_available = _retry_on_401
         rate_retry_count = 0
         attempt_count = 0
+        retryable = method in _RETRYABLE_METHODS
         while True:
             token = self._auth.get_token()
             headers = {
@@ -107,32 +125,61 @@ class SimproClient:
             }
             self._limiter.acquire()
             attempt_count += 1
-            with RequestTimer() as timer:
-                try:
+            budget_left = rate_retry_count < self._settings.max_retries
+            try:
+                with RequestTimer() as timer:
                     response = self._http.request(
-                        method=method, url=path, params=params, json=json, headers=headers
+                        method=method,
+                        url=path,
+                        params=params,
+                        json=json,
+                        headers=headers,
                     )
-                except httpx.HTTPError as exc:
-                    raise SimproAPIError(
-                        f"Request failed: {exc}", 0, method=method, url=path,
-                        correlation_id=correlation_id, retry_count=rate_retry_count,
-                    ) from exc
+            except httpx.HTTPError as exc:
+                if (
+                    retryable
+                    and budget_left
+                    and isinstance(exc, _TRANSIENT_TRANSPORT_ERRORS)
+                ):
+                    self._sleep(self._backoff_delay(rate_retry_count))
+                    rate_retry_count += 1
+                    continue
+                raise SimproAPIError(
+                    f"Request failed: {exc}",
+                    0,
+                    method=method,
+                    url=path,
+                    correlation_id=correlation_id,
+                    retry_count=rate_retry_count,
+                ) from exc
             self._log_request(method, path, response.status_code, timer.duration_ms)
             if response.status_code == 401 and auth_retry_available:
                 self._auth.invalidate()
                 auth_retry_available = False
                 continue
             if response.status_code == 429:
-                retry_after = self._parse_retry_after(response.headers.get("Retry-After"))
-                if rate_retry_count >= self._settings.max_retries:
+                if not budget_left:
                     raise SimproRateLimitError(
-                        retry_after=retry_after, method=method, url=path,
-                        response_body=response.text, correlation_id=correlation_id,
-                        retry_count=rate_retry_count, attempt_count=attempt_count,
+                        retry_after=self._parse_retry_after(
+                            response.headers.get("Retry-After")
+                        ),
+                        method=method,
+                        url=path,
+                        response_body=response.text,
+                        correlation_id=correlation_id,
+                        retry_count=rate_retry_count,
+                        attempt_count=attempt_count,
                     )
-                delay = retry_after if retry_after is not None else self._backoff_delay(rate_retry_count)
+                self._sleep(self._retry_delay(response, rate_retry_count))
                 rate_retry_count += 1
-                self._sleep(delay)
+                continue
+            if (
+                response.status_code in _TRANSIENT_STATUS_CODES
+                and retryable
+                and budget_left
+            ):
+                self._sleep(self._retry_delay(response, rate_retry_count))
+                rate_retry_count += 1
                 continue
             if response.status_code == 404:
                 raise SimproNotFoundError(
@@ -152,6 +199,13 @@ class SimproClient:
                     correlation_id=correlation_id, retry_count=rate_retry_count,
                 )
             return response
+
+    def _retry_delay(self, response: httpx.Response, retry_count: int) -> float:
+        """Return the server's ``Retry-After`` delay, else the backoff delay."""
+        retry_after = self._parse_retry_after(response.headers.get("Retry-After"))
+        if retry_after is not None:
+            return retry_after
+        return self._backoff_delay(retry_count)
 
     def _parse_retry_after(self, value):
         if value is None:
