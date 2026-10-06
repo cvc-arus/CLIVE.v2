@@ -7,7 +7,6 @@ name = "simpro-client"
 version = "0.1.0"
 description = "Reusable integration layer for the Simpro REST API"
 requires-python = ">=3.12"
-license = {text = "MIT"}
 dependencies = [
     "httpx==0.28.1",
     "pydantic==2.13.4",

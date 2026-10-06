@@ -6,7 +6,7 @@ Target environment: Ubuntu Desktop 24.04 LTS, Python 3.12.3, Docker + Docker Com
 
 - Docker & Docker Compose installed
 - Python 3.12.3
-- `uv` (or `pip`) for Python package management
+- `uv` for Python package management
 - NVIDIA drivers + Container Toolkit (for the Ollama GPU reservation, if using GPU inference)
 - Git
 
@@ -69,7 +69,7 @@ Open WebUI: http://localhost:3000
 
 ```bash
 curl http://localhost:8100/health
-python scripts/verify-simpro-mock.py
+uv run python scripts/verify-simpro-mock.py
 ```
 
 `verify-simpro-mock.py` obtains a token, exercises every resource endpoint, and exits non-zero with diagnostics on failure.
@@ -93,7 +93,7 @@ uv run pytest -q -m "not integration"
 This runs the offline suite (no live services required). To also run the live mock smoke test:
 
 ```bash
-docker compose up -d simpro-mock
+docker compose up -d --build simpro-mock
 uv run pytest tests/test_simpro_mock_v2.py -v
 ```
 
