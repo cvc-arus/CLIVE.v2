@@ -171,38 +171,19 @@ def main():
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/",
-        ["ID", "CompanyID", "GivenName", "FamilyName", "Email", "Phone"],
+        ["ID", "Type", "CompanyName", "GivenName", "FamilyName", "_href"],
         "Customers",
     )
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{customer_id}/contacts/",
-        [
-            "ID",
-            "CompanyID",
-            "CustomerID",
-            "GivenName",
-            "FamilyName",
-            "Position",
-            "Email",
-            "Phone",
-        ],
+        ["ID", "GivenName", "FamilyName"],
         "Contacts",
     )
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/",
-        [
-            "ID",
-            "CompanyID",
-            "CustomerID",
-            "Name",
-            "Address",
-            "City",
-            "Postcode",
-            "State",
-            "Country",
-        ],
+        ["ID", "Name"],
         "Sites",
     )
     test_list_endpoint(
@@ -266,12 +247,42 @@ def main():
          "Currency", "DefaultLanguage", "ScheduleFormat", "DateModified"],
         "Company",
     )
-    test_single_endpoint(
+    # Simpro publishes no /customers/{id}: the full record lives on a subtype
+    # route, which the list response's Type and _href point at (ADR-013).
+    test_404(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{customer_id}",
-        ["ID", "CompanyID", "GivenName", "FamilyName", "Email", "Phone"],
-        "Customer",
+        "Customer detail (no such route upstream)",
     )
+    for subtype, label in (("individuals", "Individual"), ("companies", "Company")):
+        r = httpx.get(
+            f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{subtype}/",
+            headers=headers,
+        )
+        rows = check_response(r, f"{label} customers", expect_list=True)
+        if not rows:
+            print(f"⚠️  No {subtype} customers found, skipping single test")
+            continue
+        name_field = "CompanyName" if subtype == "companies" else "GivenName"
+        test_single_endpoint(
+            headers,
+            f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/"
+            f"{subtype}/{rows[0]['ID']}",
+            [
+                "ID",
+                "Type",
+                name_field,
+                "Email",
+                "Phone",
+                "Address",
+                "BillingAddress",
+                "AmountOwing",
+                "Profile",
+                "Sites",
+                "DateModified",
+            ],
+            f"{label} customer",
+        )
 
     # Contacts (need a contact ID)
     r = httpx.get(
@@ -286,13 +297,19 @@ def main():
             f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{customer_id}/contacts/{cid}",
             [
                 "ID",
-                "CompanyID",
-                "CustomerID",
                 "GivenName",
                 "FamilyName",
+                "Title",
                 "Position",
+                "Department",
                 "Email",
-                "Phone",
+                "WorkPhone",
+                "CellPhone",
+                "JobContact",
+                "PrimaryJobContact",
+                "InvoiceContact",
+                "CustomFields",
+                "DateModified",
             ],
             "Contact",
         )
@@ -305,14 +322,19 @@ def main():
         f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/{site_id}",
         [
             "ID",
-            "CompanyID",
-            "CustomerID",
             "Name",
             "Address",
-            "City",
-            "Postcode",
-            "State",
-            "Country",
+            "BillingAddress",
+            "BillingContact",
+            "Customers",
+            "PrimaryContact",
+            "PublicNotes",
+            "PrivateNotes",
+            "Zone",
+            "PreferredTechs",
+            "CustomFields",
+            "Archived",
+            "DateModified",
         ],
         "Site",
     )
@@ -471,10 +493,17 @@ def main():
     # ---- 5. 404 tests ----
     bogus = 99999
     test_404(headers, f"{BASE_URL}/api/v1.0/companies/{bogus}", "Company")
+    # The subtype routes, not /customers/{id}: that path is not a route at all
+    # any more, so it would 404 whatever the id. Tested separately above.
     test_404(
         headers,
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{bogus}",
-        "Customer",
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/individuals/{bogus}",
+        "Individual customer",
+    )
+    test_404(
+        headers,
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/companies/{bogus}",
+        "Company customer",
     )
     test_404(
         headers, f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/{bogus}", "Site"

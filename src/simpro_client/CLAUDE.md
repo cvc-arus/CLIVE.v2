@@ -200,6 +200,16 @@ failures. (Missing route parameters currently raise `ValueError` from
   historical record and is no longer normative; do not rewrite it.)
 - Dates are `datetime.date`; timestamps are `datetime.datetime`. Money is
   `Decimal`, because the spec constrains money to two decimal places.
+- **One model serves both the list and the detail payload**, and Simpro's list
+  projection is narrow (often just `ID` and `Name`). So a field may only be
+  required if the contract marks it required on *both* legs. Everything else
+  is optional, even where the detail response requires it. Getting this wrong
+  makes `test_spec_conformance.py`'s list leg fail.
+- Nested value objects live in `models/common.py` and are added as they are
+  first consumed, not up front. Two address shapes are deliberately distinct:
+  `CompanyAddress` is two free-text lines, `AddressBlock` has discrete
+  city/state/postcode, and `SiteBillingAddress` is `AddressBlock` without
+  `Country`.
 - Do not add fields the contract does not document. Adding a field the contract
   documents but the mock does not yet serve is allowed and expected — that is
   how the re-shape proceeds — but it must be optional until the mock serves it,
@@ -211,6 +221,14 @@ failures. (Missing route parameters currently raise `ValueError` from
 
 - One class per resource, subclassing `ResourceEndpoint[Model]`, setting
   `model`, `collection_path`, `detail_path`, `item_key`.
+- A resource can need **more than one** endpoint class. Customers need three:
+  `CustomersEndpoint` lists both kinds polymorphically, and
+  `IndividualCustomersEndpoint` / `CompanyCustomersEndpoint` own the subtype
+  detail routes. The list response's `Type` and `_href` are what route a
+  caller between them.
+- `detail_path` is `None` when Simpro publishes no detail route for a
+  collection. Such a class **must** override `get()` to raise and name the
+  endpoints that do work; `tests/test_route_contract.py` enforces that.
 - Path templates use `str.format` names. Collection paths end with `/`;
   detail paths do not. This matches the mock routes exactly.
 - Nested scopes (`customer_id`, `site_id`, `job_id`) are passed as keyword
@@ -241,7 +259,8 @@ failures. (Missing route parameters currently raise `ValueError` from
   and `Total`), and it is accepted on detail routes too. The mock still
   ignores it.
 - `get()` takes `item_id: int | str`, because `Attachment.ID` is a string
-  upstream.
+  upstream. It raises `NotImplementedError` on `CustomersEndpoint`, which has
+  no detail route.
 
 ## 10. Rate limiting (`rate_limiter.py`)
 

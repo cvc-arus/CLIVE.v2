@@ -1,13 +1,17 @@
 from datetime import date, datetime
+from decimal import Decimal
 
 from sqlalchemy import (
     Boolean,
+    Column,
     Date,
     DateTime,
     Float,
     ForeignKey,
     Integer,
+    Numeric,
     String,
+    Table,
     Text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -102,17 +106,90 @@ class Company(Base):
     )
 
 
+#: Sites and customers are many-to-many upstream: Site.Customers and
+#: Customer.Sites are both required arrays describing the same relation.
+site_customers = Table(
+    "site_customers",
+    Base.metadata,
+    Column(
+        "site_id", ForeignKey("sites.id", ondelete="CASCADE"), primary_key=True
+    ),
+    Column(
+        "customer_id",
+        ForeignKey("customers.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
+
 class Customer(Base):
+    """A customer, either an individual or a company.
+
+    ``type`` is the discriminator. Both name shapes are columns because the
+    polymorphic collection route returns both, and the subtype detail routes
+    each return one.
+    """
+
     __tablename__ = "customers"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Kept as a column even though CompanyID left the wire: it scopes the route.
     company_id: Mapped[int] = mapped_column(
         ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
     )
-    given_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    family_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    type: Mapped[str] = mapped_column(String(10), nullable=False, default="Individual")
+
+    # Individual names; empty for a company customer.
+    given_name: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    family_name: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    title: Mapped[str] = mapped_column(String(10), nullable=False, default="")
+    cell_phone: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+
+    # Company names; empty for an individual customer.
+    company_name: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    company_number: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    ein: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    fax: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    website: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+
+    # Shared
+    email: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    phone: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    alt_phone: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    customer_type: Mapped[str] = mapped_column(
+        String(10), nullable=False, default="Customer"
+    )
+    do_not_call: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    amount_owing: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False, default=Decimal("0.00")
+    )
+    profile_notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    currency_code: Mapped[str] = mapped_column(String(10), nullable=False, default="")
+    currency_name: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+
+    # Address block
+    address: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    city: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    state: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    postal_code: Mapped[str] = mapped_column(String(20), nullable=False, default="")
+    country: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+
+    # Billing address block
+    billing_address: Mapped[str] = mapped_column(
+        String(255), nullable=False, default=""
+    )
+    billing_city: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    billing_state: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    billing_postal_code: Mapped[str] = mapped_column(
+        String(20), nullable=False, default=""
+    )
+    billing_country: Mapped[str] = mapped_column(
+        String(50), nullable=False, default=""
+    )
+
+    date_created: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    date_modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     # Relationships
     company: Mapped["Company"] = relationship(back_populates="customers")
@@ -121,7 +198,7 @@ class Customer(Base):
         back_populates="customer", cascade="all, delete-orphan"
     )
     sites: Mapped[list["Site"]] = relationship(
-        back_populates="customer", cascade="all, delete-orphan"
+        secondary=site_customers, back_populates="customers"
     )
     projects: Mapped[list["Project"]] = relationship(back_populates="customer")
 
@@ -171,6 +248,7 @@ class Contact(Base):
     __tablename__ = "contacts"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Both kept as columns even though they left the wire: they scope the route.
     company_id: Mapped[int] = mapped_column(
         ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
     )
@@ -179,9 +257,41 @@ class Contact(Base):
     )
     given_name: Mapped[str] = mapped_column(String(255), nullable=False)
     family_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    position: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    title: Mapped[str] = mapped_column(String(10), nullable=False, default="")
+    position: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    department: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    email: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+
+    # Upstream there is no single "Phone": a contact has four numbers.
+    work_phone: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    cell_phone: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    alt_phone: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    fax: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+
+    # The eight role flags: "is a X contact" and "is *the* X contact".
+    job_contact: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    primary_job_contact: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    quote_contact: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    primary_quote_contact: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    invoice_contact: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    primary_invoice_contact: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    statement_contact: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    primary_statement_contact: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+
+    date_modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     # Relationships
     company: Mapped["Company"] = relationship(back_populates="contacts")
@@ -189,25 +299,73 @@ class Contact(Base):
 
 
 class Site(Base):
+    """A customer site.
+
+    A site belongs to *several* customers upstream, via ``site_customers``:
+    ``Site.Customers`` and ``Customer.Sites`` are both required arrays and are
+    the same relation. The single ``customer_id`` FK this table used to carry
+    could not express that.
+    """
+
     __tablename__ = "sites"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Kept as a column even though CompanyID left the wire: it scopes the route.
     company_id: Mapped[int] = mapped_column(
         ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
     )
-    customer_id: Mapped[int] = mapped_column(
-        ForeignKey("customers.id", ondelete="CASCADE"), nullable=False
-    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    address: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    city: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    postcode: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    state: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    country: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    # Address block
+    address: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    city: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    state: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    postal_code: Mapped[str] = mapped_column(String(20), nullable=False, default="")
+    country: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+
+    # Billing address block. Upstream this one has no Country member.
+    billing_address: Mapped[str] = mapped_column(
+        String(255), nullable=False, default=""
+    )
+    billing_city: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    billing_state: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    billing_postal_code: Mapped[str] = mapped_column(
+        String(20), nullable=False, default=""
+    )
+    billing_contact: Mapped[str] = mapped_column(
+        String(255), nullable=False, default=""
+    )
+
+    public_notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    private_notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    date_modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    zone_id: Mapped[int | None] = mapped_column(
+        ForeignKey("zones.id", ondelete="SET NULL"), nullable=True
+    )
+    primary_contact_id: Mapped[int | None] = mapped_column(
+        ForeignKey("contacts.id", ondelete="SET NULL"), nullable=True
+    )
 
     # Relationships
     company: Mapped["Company"] = relationship(back_populates="sites")
-    customer: Mapped["Customer"] = relationship(back_populates="sites")
+    customers: Mapped[list["Customer"]] = relationship(
+        secondary=site_customers, back_populates="sites"
+    )
+    zone: Mapped["Zone | None"] = relationship()
+    primary_contact: Mapped["Contact | None"] = relationship()
+    #: Read-only: custom_field_values keys on (resource_type, resource_id)
+    #: rather than a real FK, because the same table serves sites, assets and
+    #: jobs. The join is spelled out and viewonly so SQLAlchemy never tries to
+    #: write through it.
+    custom_field_values: Mapped[list["CustomFieldValue"]] = relationship(
+        primaryjoin=(
+            "and_(CustomFieldValue.resource_type == 'Site', "
+            "foreign(CustomFieldValue.resource_id) == Site.id)"
+        ),
+        viewonly=True,
+    )
     assets: Mapped[list["Asset"]] = relationship(
         back_populates="site", cascade="all, delete-orphan"
     )
@@ -387,6 +545,58 @@ class Attachment(Base):
     # Relationships
     job: Mapped["Job"] = relationship(back_populates="attachments")
     added_by: Mapped["Employee | None"] = relationship()
+
+
+class CustomField(Base):
+    """A custom-field *definition*: its name, type and options.
+
+    Two tables rather than a JSON column, per ADR-013: the definition is shared
+    across records and the value is per record. Simpro keeps asset serial
+    numbers, models and manufacturers in custom fields, which is CVC's CCTV
+    asset data, so this has to be queryable rather than opaque.
+    """
+
+    __tablename__ = "custom_fields"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    #: Which resource the field is defined for, e.g. "Site" or "Asset".
+    resource_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    #: One of List, Text, Date, Numeric, Hyperlink (Barcode too, for assets).
+    field_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    is_mandatory: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    #: Newline-separated options for a List field; empty otherwise.
+    list_items: Mapped[str] = mapped_column(Text, nullable=False, default="")
+
+    # Relationships
+    values: Mapped[list["CustomFieldValue"]] = relationship(
+        back_populates="custom_field", cascade="all, delete-orphan"
+    )
+
+
+class CustomFieldValue(Base):
+    """One custom field's value on one record.
+
+    ``resource_type`` + ``resource_id`` is a deliberate loose reference rather
+    than a real FK: the same two tables serve sites, assets and jobs, which
+    live in different tables. The mock never joins on it.
+    """
+
+    __tablename__ = "custom_field_values"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    custom_field_id: Mapped[int] = mapped_column(
+        ForeignKey("custom_fields.id", ondelete="CASCADE"), nullable=False
+    )
+    resource_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    resource_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    value: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Relationships
+    custom_field: Mapped["CustomField"] = relationship(back_populates="values")
 
 
 class Status(Base):

@@ -8,9 +8,11 @@ from simpro_client import (
     Asset,
     Attachment,
     Company,
+    CompanyCustomer,
     Contact,
-    Customer,
+    CustomerSummary,
     Employee,
+    IndividualCustomer,
     Job,
     JobNote,
     ProjectStatusCode,
@@ -22,17 +24,20 @@ from simpro_client.client import SimproClient
 GET_CASES = [
     ("companies", 1, {}, "/companies/1", {"ID": 1, "Name": "CVC"}, Company),
     (
-        "customers",
+        "individual_customers",
         2,
         {"company_id": 1},
-        "/companies/1/customers/2",
-        {
-            "ID": 2,
-            "CompanyID": 1,
-            "GivenName": "Ada",
-            "FamilyName": "Lovelace",
-        },
-        Customer,
+        "/companies/1/customers/individuals/2",
+        {"ID": 2, "Type": "Individual", "GivenName": "Ada", "FamilyName": "Lovelace"},
+        IndividualCustomer,
+    ),
+    (
+        "company_customers",
+        3,
+        {"company_id": 1},
+        "/companies/1/customers/companies/3",
+        {"ID": 3, "Type": "Company", "CompanyName": "Acme Pty Ltd"},
+        CompanyCustomer,
     ),
     (
         "jobs",
@@ -67,13 +72,7 @@ GET_CASES = [
         5,
         {"company_id": 1, "customer_id": 2},
         "/companies/1/customers/2/contacts/5",
-        {
-            "ID": 5,
-            "CompanyID": 1,
-            "CustomerID": 2,
-            "GivenName": "Grace",
-            "FamilyName": "Hopper",
-        },
+        {"ID": 5, "GivenName": "Grace", "FamilyName": "Hopper"},
         Contact,
     ),
     (
@@ -81,7 +80,7 @@ GET_CASES = [
         6,
         {"company_id": 1},
         "/companies/1/sites/6",
-        {"ID": 6, "CompanyID": 1, "CustomerID": 2, "Name": "Plant"},
+        {"ID": 6, "Name": "Plant"},
         Site,
     ),
     (
@@ -287,3 +286,48 @@ def test_page_below_one_is_rejected(mock_settings):
         pytest.raises(ValueError, match="page must be >= 1"),
     ):
         client.jobs.fetch_page(company_id=1, page=0)
+
+
+def test_polymorphic_customers_endpoint_refuses_get(mock_settings):
+    """``client.customers.get()`` names the two endpoints that do work.
+
+    Simpro has no ``/customers/{id}`` route, so the inherited ``get()`` would
+    otherwise format a ``None`` detail path and raise an obscure ``TypeError``.
+    """
+    with (
+        SimproClient(settings=mock_settings) as client,
+        pytest.raises(NotImplementedError, match="individual_customers"),
+    ):
+        client.customers.get(2, company_id=1)
+
+
+@respx.mock
+def test_polymorphic_customers_endpoint_still_lists(mock_settings):
+    """The list leg works and parses into ``CustomerSummary``."""
+    mock_token(mock_settings)
+    route = respx.get(
+        f"{mock_settings.base_url}/companies/1/customers/",
+    ).mock(
+        return_value=Response(
+            200,
+            json=[
+                {
+                    "ID": 2,
+                    "Type": "Individual",
+                    "CompanyName": "",
+                    "GivenName": "Ada",
+                    "FamilyName": "Lovelace",
+                    "_href": "/api/v1.0/companies/1/customers/individuals/2",
+                }
+            ],
+            headers={"Result-Total": "1", "Result-Count": "1", "Result-Pages": "1"},
+        )
+    )
+
+    with SimproClient(settings=mock_settings) as client:
+        page = client.customers.fetch_page(company_id=1)
+
+    assert route.called
+    assert all(isinstance(item, CustomerSummary) for item in page.items)
+    assert [item.id for item in page.items] == [2]
+    assert page.items[0].href.endswith("/individuals/2")

@@ -92,9 +92,9 @@ Numeric operators (`gt`, `lt`, `ge`, `le`, `between`) attempt `int` then `float`
 
 For every resource below: all fields are returned in PascalCase; `ID` is always the primary key; nested resources are scoped under `/api/v1.0/companies/{company_id}/...`.
 
-**Routes** match Simpro's published spec, vendored at `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013). **Field sets match for Wave A only** — Companies, Employees, Job Notes, Attachments and Project Status Codes. The rest are still the mock's original invented shapes and are re-shaped in Waves B and C. `tests/test_spec_conformance.py` reports which resources still differ.
+**Routes** match Simpro's published spec, vendored at `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013). **Field sets match for Waves A and B** — Companies, Customers, Contacts, Sites, Employees, Job Notes, Attachments and Project Status Codes. Jobs, Quotes and Assets are still the mock's original invented shapes and are re-shaped in Wave C. `tests/test_spec_conformance.py` reports which resources still differ.
 
-Wave A resources return a **narrow projection from the collection route** and the full record from the detail route, as real Simpro does. Both field sets are listed below.
+Re-shaped resources return a **narrow projection from the collection route** and the full record from the detail route, as real Simpro does. Both field sets are listed below.
 
 ### Companies
 - `GET /api/v1.0/companies/` — list, filterable/paginated
@@ -107,10 +107,28 @@ Detail fields: `ID`, `Name`, `Address` (`{Line1, Line2}`), `BillingAddress` (`{L
 `Banking` is documented upstream but out of ADR-013's fidelity scope.
 
 ### Customers
-- `GET /api/v1.0/companies/{company_id}/customers/`
-- `GET /api/v1.0/companies/{company_id}/customers/{customer_id}`
 
-Fields: `ID`, `CompanyID`, `GivenName`, `FamilyName`, `Email` (nullable), `Phone` (nullable)
+Customers are **polymorphic**: a customer is either an individual or a company, and the two have different name fields and different detail routes. There are three routes, and **no `/customers/{customer_id}`**.
+
+- `GET /api/v1.0/companies/{company_id}/customers/` — both kinds, with the `Type` discriminator and an `_href`
+- `GET /api/v1.0/companies/{company_id}/customers/individuals/`
+- `GET /api/v1.0/companies/{company_id}/customers/individuals/{customer_id}`
+- `GET /api/v1.0/companies/{company_id}/customers/companies/`
+- `GET /api/v1.0/companies/{company_id}/customers/companies/{customer_id}`
+
+Polymorphic list fields: `ID`, `Type` (`Individual`|`Company`), `CompanyName`, `GivenName`, `FamilyName`, `_href`
+
+`_href` is the only documented way from the list to a full record. Following it is what the client does; each subtype detail route is **type-scoped** and returns `404` for an id of the other kind.
+
+Individuals list: `ID`, `Type`, `GivenName`, `FamilyName`
+Companies list: `ID`, `Type`, `CompanyName`
+
+Shared detail fields: `ID`, `Type`, `Email`, `Phone`, `AltPhone`, `Address` (5-member object), `BillingAddress` (5-member object), `CustomerType`, `DoNotCall`, `Archived`, `AmountOwing` (JSON number, 2dp), `Profile` (`{Notes, Currency, AccountManager, CustomerGroup, CustomerProfile, ServiceJobCostCenter}`), `Sites`, `Tags` (always `[]`), `PreferredTechs` (always `[]`), `Contacts`, `Contracts` (always `null`), `ResponseTimes` (always `null`), `CustomFields` (always `[]`), `DateCreated`, `DateModified`
+
+Individual detail adds: `GivenName`, `FamilyName`, `Title`, `CellPhone`
+Company detail adds: `CompanyName`, `CompanyNumber`, `EIN`, `Fax`, `Website`
+
+`Banking` and `Rates` are documented upstream but out of ADR-013's fidelity scope. There is no `CompanyID` — the company is in the path.
 
 ### Jobs
 - `GET /api/v1.0/companies/{company_id}/jobs/`
@@ -128,13 +146,21 @@ Fields: `ID`, `CompanyID`, `CustomerID` (nullable), `Name`, `Status`, `Total`
 - `GET /api/v1.0/companies/{company_id}/customers/{customer_id}/contacts/`
 - `GET /api/v1.0/companies/{company_id}/customers/{customer_id}/contacts/{contact_id}`
 
-Fields: `ID`, `CompanyID`, `CustomerID`, `GivenName`, `FamilyName`, `Position` (nullable), `Email` (nullable), `Phone` (nullable)
+List fields: `ID`, `GivenName`, `FamilyName`
+
+Detail fields: `ID`, `GivenName`, `FamilyName`, `Title`, `Position`, `Department`, `Email`, `WorkPhone`, `CellPhone`, `AltPhone`, `Fax`, `Notes`, the eight role flags (`JobContact`, `PrimaryJobContact`, `QuoteContact`, `PrimaryQuoteContact`, `InvoiceContact`, `PrimaryInvoiceContact`, `StatementContact`, `PrimaryStatementContact`), `Contact` (always `null`), `CustomFields` (always `[]`), `DateModified`
+
+There is no `CompanyID` or `CustomerID`, and no single `Phone` — a contact has four numbers.
 
 ### Sites
 - `GET /api/v1.0/companies/{company_id}/sites/`
 - `GET /api/v1.0/companies/{company_id}/sites/{site_id}`
 
-Fields: `ID`, `CompanyID`, `CustomerID`, `Name`, `Address`, `City`, `Postcode`, `State`, `Country` (all address fields nullable)
+List fields: `ID`, `Name`
+
+Detail fields: `ID`, `Name`, `Address` (5-member object), `BillingAddress` (4-member object — **no `Country`**, the one address shape upstream without it), `BillingContact`, `Customers` (array of customer refs), `PrimaryContact`, `PublicNotes`, `PrivateNotes`, `Zone`, `STCZone` (always `null`), `VEECZone` (always `null`), `PreferredTechs` (always `[]`), `PreferredTechnicians` (always `[]`), `CustomFields`, `Archived`, `DateModified`
+
+A site belongs to **several** customers, through the `site_customers` table: `Site.Customers` and `Customer.Sites` are the same relation, which the old single `CustomerID` could not express. `Rates` is out of ADR-013's fidelity scope.
 
 ### Assets
 - `GET /api/v1.0/companies/{company_id}/sites/{site_id}/assets/`
@@ -190,8 +216,10 @@ Two companies are seeded on container start (`simpro_mock/seed.py`, run via the 
 
 | Company | ID | Approx. seeded volume |
 |---|---|---|
-| CVC Service | 1 | 8 customers, 8 jobs, 3 zones, plus proportional sites/contacts/assets/projects/notes/statuses |
-| CVC Projects | 2 | 8 customers, 8 jobs, 3 zones, plus proportional sites/contacts/assets/projects/notes/statuses |
+| CVC Service | 1 | 8 customers (4 individuals, 4 companies), 8 jobs, 3 zones, plus proportional sites/contacts/assets/projects/notes/statuses |
+| CVC Projects | 2 | 8 customers (4 individuals, 4 companies), 8 jobs, 3 zones, plus proportional sites/contacts/assets/projects/notes/statuses |
+
+Customers alternate between the two kinds within each company, so both subtype routes always return data. Custom fields are seeded for **sites** only; jobs and assets follow in Wave C.
 
 Attachments are not seeded per company: `seed.py` adds 1–3 attachments to each of the first 10 jobs returned by its job query (`jobs[:10]`).
 
@@ -204,5 +232,5 @@ Attachments are not seeded per company: `seed.py` adds 1–3 attachments to each
 - No webhooks / async event callbacks
 - No Projects resource — correct, since Simpro has none (a project is a Job with `Type: "Project"`). The `projects` table is still seeded but unreachable; it becomes `Type="Project"` jobs in ADR-013's Wave C
 - `columns` is accepted and ignored. `simpro_client` sends it, but the mock cannot yet narrow a response to the requested fields (ADR-013 S6). Wave A resources do return Simpro's narrow default projection from their collection routes; resources awaiting their wave return every modelled field on both legs
-- Thin data behind correct shapes in Wave A: `Attachment.Folder` and `Company.DefaultCostCenter` are always `null`, `JobNote.Attachments` is always `[]`, and `Employee.Zones` holds only that employee's default zone
+- Thin data behind correct shapes in the re-shaped resources: `Attachment.Folder`, `Company.DefaultCostCenter`, `Customer.Contracts`, `Customer.ResponseTimes`, `Contact.Contact`, `Site.STCZone` and `Site.VEECZone` are always `null`; `JobNote.Attachments`, `Customer.Tags`, `Customer.PreferredTechs`, `Customer.CustomFields`, `Contact.CustomFields`, `Site.PreferredTechs` and `Site.PreferredTechnicians` are always `[]`; `Employee.Zones` holds only that employee's default zone
 - Read-only: no POST/PATCH/DELETE routes, no business-logic state transitions (e.g. Quote → Job conversion)

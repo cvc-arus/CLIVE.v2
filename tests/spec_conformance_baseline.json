@@ -15,38 +15,6 @@
     "fixed_by": "S5",
     "reason": "AssetNo:missing; CompanyID:missing; Name:missing; SiteID:missing"
   },
-  "Contact.detail.full": {
-    "fixed_by": "S4",
-    "reason": "CompanyID:missing; CustomerID:missing"
-  },
-  "Contact.detail.minimal": {
-    "fixed_by": "S4",
-    "reason": "CompanyID:missing; CustomerID:missing"
-  },
-  "Contact.list.full": {
-    "fixed_by": "S4",
-    "reason": "CompanyID:missing; CustomerID:missing"
-  },
-  "Contact.list.minimal": {
-    "fixed_by": "S4",
-    "reason": "CompanyID:missing; CustomerID:missing"
-  },
-  "Customer.detail.full": {
-    "fixed_by": "S4",
-    "reason": "CompanyID:missing"
-  },
-  "Customer.detail.minimal": {
-    "fixed_by": "S4",
-    "reason": "CompanyID:missing"
-  },
-  "Customer.list.full": {
-    "fixed_by": "S4",
-    "reason": "CompanyID:missing"
-  },
-  "Customer.list.minimal": {
-    "fixed_by": "S4",
-    "reason": "CompanyID:missing"
-  },
   "Job.detail.full": {
     "fixed_by": "S5",
     "reason": "CompanyID:missing; Status:string_type; Total:float_type"
@@ -78,21 +46,5 @@
   "Quote.list.minimal": {
     "fixed_by": "S5",
     "reason": "CompanyID:missing; Name:missing; Status:missing; Total:float_type"
-  },
-  "Site.detail.full": {
-    "fixed_by": "S4",
-    "reason": "Address:string_type; CompanyID:missing; CustomerID:missing"
-  },
-  "Site.detail.minimal": {
-    "fixed_by": "S4",
-    "reason": "Address:string_type; CompanyID:missing; CustomerID:missing"
-  },
-  "Site.list.full": {
-    "fixed_by": "S4",
-    "reason": "CompanyID:missing; CustomerID:missing"
-  },
-  "Site.list.minimal": {
-    "fixed_by": "S4",
-    "reason": "CompanyID:missing; CustomerID:missing"
   }
 }

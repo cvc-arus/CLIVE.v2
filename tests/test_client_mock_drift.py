@@ -36,6 +36,8 @@ BASE = "http://localhost:8100"
 SCOPES: dict[str, tuple[str, ...]] = {
     "companies": (),
     "customers": (),
+    "individual_customers": (),
+    "company_customers": (),
     "jobs": (),
     "quotes": (),
     "sites": (),
@@ -148,6 +150,9 @@ def test_endpoint_detail_against_the_mock(
     """Each endpoint's detail route resolves for an id taken from its list."""
     scope, company_id = _endpoint_scope(name, scope_ids)
     endpoint = getattr(client, name)
+
+    if endpoint.detail_path is None:
+        pytest.skip(f"{name} has no detail route upstream (ADR-013)")
 
     page = endpoint.fetch_page(company_id=company_id, page_size=1, **scope)
     assert page.items, f"{name}: the mock returned an empty first page"

@@ -88,7 +88,102 @@ class NoteAttachmentSchema(BaseModel):
     FileName: str
     # The leading underscore is legal as an alias, but not as a field name:
     # Pydantic would treat a field called _href as a private attribute.
-    href: str = Field(serialization_alias="_href")
+    # ``alias`` (not ``serialization_alias``) because FastAPI *validates* the
+    # dict the serializer returns before serialising it, so the alias has to
+    # work in both directions.
+    href: str = Field(alias="_href")
+
+
+class SiteBillingAddressSchema(BaseModel):
+    """A site's billing address: the one address shape with no Country."""
+
+    Address: str
+    City: str
+    State: str
+    PostalCode: str
+
+
+class ContactRefSchema(BaseModel):
+    """A nullable pointer at a contact record."""
+
+    ID: int | None = None
+    GivenName: str | None = None
+    FamilyName: str | None = None
+    Email: str | None = None
+
+
+class CustomerRefSchema(BaseModel):
+    """A customer nested in another resource. Carries both name shapes."""
+
+    ID: int
+    Type: str
+    CompanyName: str
+    GivenName: str
+    FamilyName: str
+
+
+class CustomerContactRefSchema(BaseModel):
+    """A contact listed on a customer, with its invoicing roles."""
+
+    ID: int
+    GivenName: str
+    FamilyName: str
+    Email: str
+    InvoiceContact: bool
+    PrimaryInvoiceContact: bool
+    StatementContact: bool
+    PrimaryStatementContact: bool
+
+
+class CurrencySchema(BaseModel):
+    """A currency. ``ID`` is a string here, not an integer."""
+
+    ID: str
+    Name: str
+    Visible: bool
+
+
+class CustomerProfileSchema(BaseModel):
+    """A customer's Profile block."""
+
+    Notes: str
+    Currency: CurrencySchema
+    AccountManager: NamedRefSchema | None = None
+    CustomerGroup: NamedRefSchema | None = None
+    CustomerProfile: NamedRefSchema | None = None
+    ServiceJobCostCenter: NamedRefSchema | None = None
+
+
+class SitePrimaryContactSchema(BaseModel):
+    """A site's primary contact: a named person, not a bundle of numbers."""
+
+    GivenName: str
+    FamilyName: str
+    Title: str
+    Position: str
+    Email: str
+    WorkPhone: str
+    CellPhone: str
+    Fax: str
+    PreferredNotificationMethod: str
+    Contact: ContactRefSchema | None = None
+
+
+class CustomFieldDefinitionSchema(BaseModel):
+    """The definition half of a custom field."""
+
+    ID: int
+    Name: str
+    Type: str
+    IsMandatory: bool
+    ListItems: list[str] | None = None
+
+
+class CustomFieldValueSchema(BaseModel):
+    """One custom field paired with its value on a record."""
+
+    CustomField: CustomFieldDefinitionSchema
+    Value: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -140,15 +235,85 @@ class CompanyDetailResponse(BaseModel):
     DateModified: str
 
 
-class CustomerResponse(BaseModel):
+class CustomerSummaryResponse(BaseModel):
+    """A row of the polymorphic /customers/ collection."""
+
     model_config = ConfigDict(from_attributes=True)
 
     ID: int
-    CompanyID: int
+    Type: str
+    CompanyName: str
     GivenName: str
     FamilyName: str
-    Email: str | None = None
-    Phone: str | None = None
+    # Underscore is legal as an alias but not as a field name: Pydantic would
+    # treat a field called _href as a private attribute. ``alias`` rather than
+    # ``serialization_alias`` because FastAPI validates the serializer's dict
+    # against this model before serialising it.
+    href: str = Field(alias="_href")
+
+
+class _CustomerDetailBase(BaseModel):
+    """Detail fields both customer subtypes share.
+
+    ``Banking`` and ``Rates`` are out of ADR-013's fidelity scope.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    ID: int
+    Type: str
+    Email: str
+    Phone: str
+    AltPhone: str
+    Address: AddressSchema
+    BillingAddress: AddressSchema
+    CustomerType: str
+    DoNotCall: bool
+    Archived: bool
+    #: A JSON number on the wire, from a Numeric(12,2) column (ADR-013).
+    AmountOwing: float
+    Profile: CustomerProfileSchema
+    Sites: list[NamedRefSchema]
+    Tags: list[NamedRefSchema]
+    PreferredTechs: list[StaffRefSchema]
+    Contacts: list[CustomerContactRefSchema] | None = None
+    Contracts: list[NamedRefSchema] | None = None
+    ResponseTimes: list[NamedRefSchema] | None = None
+    CustomFields: list[CustomFieldValueSchema]
+    DateCreated: str
+    DateModified: str
+
+
+class IndividualCustomerListResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    ID: int
+    Type: str
+    GivenName: str
+    FamilyName: str
+
+
+class IndividualCustomerDetailResponse(_CustomerDetailBase):
+    GivenName: str
+    FamilyName: str
+    Title: str
+    CellPhone: str
+
+
+class CompanyCustomerListResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    ID: int
+    Type: str
+    CompanyName: str
+
+
+class CompanyCustomerDetailResponse(_CustomerDetailBase):
+    CompanyName: str
+    CompanyNumber: str
+    EIN: str
+    Fax: str
+    Website: str
 
 
 class JobResponse(BaseModel):
@@ -173,31 +338,71 @@ class QuoteResponse(BaseModel):
     Total: float
 
 
-class ContactResponse(BaseModel):
+class ContactListResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     ID: int
-    CompanyID: int
-    CustomerID: int
     GivenName: str
     FamilyName: str
-    Position: str | None = None
-    Email: str | None = None
-    Phone: str | None = None
 
 
-class SiteResponse(BaseModel):
+class ContactDetailResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     ID: int
-    CompanyID: int
-    CustomerID: int
+    GivenName: str
+    FamilyName: str
+    Title: str
+    Position: str
+    Department: str
+    Email: str
+    WorkPhone: str
+    CellPhone: str
+    AltPhone: str
+    Fax: str
+    Notes: str
+    JobContact: bool
+    PrimaryJobContact: bool
+    QuoteContact: bool
+    PrimaryQuoteContact: bool
+    InvoiceContact: bool
+    PrimaryInvoiceContact: bool
+    StatementContact: bool
+    PrimaryStatementContact: bool
+    Contact: ContactRefSchema | None = None
+    CustomFields: list[CustomFieldValueSchema]
+    DateModified: str
+
+
+class SiteListResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    ID: int
     Name: str
-    Address: str | None = None
-    City: str | None = None
-    Postcode: str | None = None
-    State: str | None = None
-    Country: str | None = None
+
+
+class SiteDetailResponse(BaseModel):
+    """``Rates`` is out of ADR-013's fidelity scope."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    ID: int
+    Name: str
+    Address: AddressSchema
+    BillingAddress: SiteBillingAddressSchema
+    BillingContact: str
+    Customers: list[CustomerRefSchema]
+    PrimaryContact: SitePrimaryContactSchema
+    PublicNotes: str
+    PrivateNotes: str
+    Zone: NamedRefSchema | None = None
+    STCZone: int | None = None
+    VEECZone: str | None = None
+    PreferredTechs: list[StaffRefSchema]
+    PreferredTechnicians: list[NamedRefSchema]
+    CustomFields: list[CustomFieldValueSchema]
+    Archived: bool
+    DateModified: str
 
 
 class AssetResponse(BaseModel):
