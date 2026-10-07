@@ -1,6 +1,7 @@
 """OAuth2 Client Credentials authentication manager."""
 
 import time
+from threading import Lock
 from typing import Any
 
 import httpx
@@ -16,6 +17,11 @@ class AuthManager:
     Supports two modes:
     - client_credentials: Obtains tokens from the OAuth2 token endpoint
     - api_key: Uses a static Bearer token from configuration
+
+    Refreshes are serialised by an internal lock, so concurrent callers
+    produce one token request between them rather than one each
+    (ADR-012 §2.2). The lock guards ``_access_token`` and
+    ``_token_expiry``; ``api_key`` mode touches neither and is lock-free.
     """
 
     def __init__(
@@ -30,6 +36,7 @@ class AuthManager:
         self._limiter = limiter
         self._access_token: str | None = None
         self._token_expiry: float = 0.0
+        self._lock = Lock()
         self._http_client = httpx.Client(timeout=settings.timeout)
 
     def get_token(self) -> str:
@@ -45,13 +52,28 @@ class AuthManager:
         return self._settings.api_key
 
     def _get_oauth_token(self) -> str:
-        """Return a cached token or fetch a new one."""
-        if self._access_token and time.time() < self._token_expiry:
-            return self._access_token
-        return self._refresh_token()
+        """Return a cached token, fetching a new one at most once.
+
+        The cache is read without the lock first, so the common hit costs
+        nothing. On a miss the lock is taken and the cache re-read, because
+        another thread may have refreshed while this one waited.
+        """
+        token = self._access_token
+        if token and time.time() < self._token_expiry:
+            return token
+        with self._lock:
+            token = self._access_token
+            if token and time.time() < self._token_expiry:
+                return token
+            return self._refresh_token()
 
     def _refresh_token(self) -> str:
-        """Fetch a new token from the OAuth2 endpoint."""
+        """Fetch a new token from the OAuth2 endpoint.
+
+        Called only with ``_lock`` held. It acquires the shared limiter
+        while holding that lock; ``TokenBucket`` never calls back into this
+        class, so the auth-then-bucket order cannot cycle (ADR-012 §4).
+        """
         payload: dict[str, Any] = {
             "grant_type": "client_credentials",
             "client_id": self._settings.client_id,
@@ -80,10 +102,21 @@ class AuthManager:
         self._token_expiry = time.time() + expires_in - 60
         return self._access_token
 
-    def invalidate(self) -> None:
-        """Force token refresh on next call."""
-        self._access_token = None
-        self._token_expiry = 0.0
+    def invalidate(self, token: str | None = None) -> None:
+        """Force a token refresh on the next call.
+
+        Args:
+            token: The token that was rejected. When given, the cache is
+                cleared only if it still holds that token, so a late 401
+                cannot discard a newer token another thread has just
+                fetched (ADR-012 §2.2). When omitted, the cache is
+                cleared unconditionally.
+        """
+        with self._lock:
+            if token is not None and self._access_token != token:
+                return
+            self._access_token = None
+            self._token_expiry = 0.0
 
     def close(self) -> None:
         """Close the internal HTTP client."""
