@@ -37,7 +37,6 @@ from simpro_client.exceptions import (
 from simpro_client.logging import RequestTimer, configure_logging, get_correlation_id
 from simpro_client.rate_limiter import TokenBucket
 
-_MAX_RETRY_DELAY_SECONDS = 60.0
 # Transient failures are retried only for idempotent methods (ADR-010 §2.2).
 _RETRYABLE_METHODS = frozenset({"GET"})
 _TRANSIENT_STATUS_CODES = frozenset({502, 503, 504})
@@ -236,7 +235,7 @@ class SimproClient:
                 ) from exc
             self._log_request(method, path, response.status_code, timer.duration_ms)
             if response.status_code == 401 and auth_retry_available:
-                self._auth.invalidate()
+                self._auth.invalidate(token)
                 auth_retry_available = False
                 refreshing_after_401 = True
                 continue
@@ -284,10 +283,17 @@ class SimproClient:
             return response
 
     def _retry_delay(self, response: httpx.Response, retry_count: int) -> float:
-        """Return the server's ``Retry-After`` delay, else the backoff delay."""
+        """Return how long to wait before the next attempt, in seconds.
+
+        The server's ``Retry-After`` wins when present, capped at
+        ``max_retry_delay`` so one response cannot block the calling thread
+        indefinitely (ADR-012 §2.1). ``_parse_retry_after()`` itself stays
+        uncapped, so the value reported on ``SimproRateLimitError`` is the
+        one the server actually sent.
+        """
         retry_after = self._parse_retry_after(response.headers.get("Retry-After"))
         if retry_after is not None:
-            return retry_after
+            return min(self._settings.max_retry_delay, retry_after)
         return self._backoff_delay(retry_count)
 
     def _parse_retry_after(self, value: str | None) -> float | None:
@@ -314,10 +320,10 @@ class SimproClient:
     def _backoff_delay(self, retry_count: int) -> float:
         """Return a jittered exponential backoff delay in seconds.
 
-        ``min(60, 2 ** retry_count * (0.5 + random()))``.
+        ``min(max_retry_delay, 2 ** retry_count * (0.5 + random()))``.
         """
         return min(
-            _MAX_RETRY_DELAY_SECONDS,
+            self._settings.max_retry_delay,
             (2**retry_count) * (0.5 + self._random()),
         )
 

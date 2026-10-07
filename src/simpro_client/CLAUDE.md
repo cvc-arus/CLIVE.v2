@@ -53,7 +53,8 @@ Do not create `pagination.py` unless a task asks for it.
   construction rather than `SimproAuthError` at the first request.
 - Optional with defaults: `api_key`, `auth_mode`, `company_id_service` (1),
   `company_id_projects` (2), `timeout`, `max_retries` (3),
-  `limiter_capacity` (8), `limiter_refill_rate` (8.0).
+  `max_retry_delay` (60.0), `limiter_capacity` (8),
+  `limiter_refill_rate` (8.0).
 - `auth_mode` is `Literal["client_credentials", "api_key"]`. An unrecognised
   value raises `ValidationError` when settings are constructed; it no longer
   falls through to the OAuth path.
@@ -70,6 +71,17 @@ Do not create `pagination.py` unless a task asks for it.
 
 - Default `auth_mode="client_credentials"`: form-encoded POST to `token_url`,
   token cached in memory, refreshed 60 s before `expires_in`.
+- **Refreshes are serialised** by `AuthManager._lock` (ADR-012 §2.2).
+  `_get_oauth_token()` reads the cache unlocked, then re-reads it under the
+  lock before refreshing, so N concurrent callers make one token request
+  between them. `_refresh_token()` is called only with the lock held, and
+  acquires the shared limiter while holding it; `TokenBucket` never calls
+  back into `AuthManager`, so the auth-then-bucket order cannot cycle.
+  `api_key` mode mutates nothing and stays lock-free.
+- `invalidate(token=None)` clears the cache only if it still holds
+  `token`, so a late 401 cannot discard a newer token another thread just
+  fetched. `client.py` passes the token that received the 401. Calling it
+  with no argument still clears unconditionally.
 - `auth_mode="api_key"`: static token from settings. `config.py` now
   guarantees `api_key` is set in this mode, so `_get_api_key_token()`'s
   `SimproAuthError` guard is unreachable via validated settings. It is kept
@@ -84,9 +96,11 @@ Do not create `pagination.py` unless a task asks for it.
   `arg-type`/`reportArgumentType` on the `client_id` and `client_secret`
   entries of the `_refresh_token()` payload; narrow there (an `assert` or an
   explicit raise), not by widening the validator or retyping the fields.
-- `invalidate()` forces a refresh. The client uses it on a 401. If that
-  refresh fails, the client raises `SimproAuthRefreshError`; a failure on
-  the first token fetch still raises plain `SimproAuthError`.
+- `invalidate(token=None)` forces a refresh. The client uses it on a 401,
+  passing the token that was rejected, so the cache is cleared only if it
+  still holds that token (see §4). If that refresh fails, the client raises
+  `SimproAuthRefreshError`; a failure on the first token fetch still raises
+  plain `SimproAuthError`.
 - `SimproAuthError` carries optional `status_code` (the **token endpoint's**
   status; `None` for transport or configuration errors) and `method`, `url`,
   `correlation_id` of the API request that needed the token. `auth.py` sets
@@ -117,15 +131,20 @@ Response handling, as implemented:
 | `httpx.TimeoutException` / `httpx.NetworkError` | GET: retry up to `max_retries` with backoff; then (and for other methods) `SimproAPIError(status_code=0)` |
 | other `httpx.HTTPError` | `SimproAPIError(status_code=0)`, no retry |
 | 401 | invalidate token, retry once (separate budget); failed refresh → `SimproAuthRefreshError`; second 401 → `SimproClientError` |
-| 429 | retry up to `max_retries`; honour `Retry-After`, else backoff |
+| 429 | retry up to `max_retries`; honour `Retry-After` capped at `max_retry_delay`, else backoff |
 | 404 | `SimproNotFoundError` |
 | other 4xx | `SimproClientError` |
-| 502 / 503 / 504 | GET: retry up to `max_retries`; honour `Retry-After`, else backoff; then (and for other methods) `SimproServerError` |
+| 502 / 503 / 504 | GET: retry up to `max_retries`; honour `Retry-After` capped at `max_retry_delay`, else backoff; then (and for other methods) `SimproServerError` |
 | other 5xx | `SimproServerError`, no retry |
 | 204 | `None` from the raw methods |
 
-Retry details: `Retry-After` is parsed as **integer seconds** or an HTTP-date.
-If missing or unparseable, backoff is `min(60, 2**n * (0.5 + random()))`.
+Retry details: `Retry-After` is parsed as **integer seconds** or an HTTP-date,
+then capped at `max_retry_delay` (`SIMPRO_MAX_RETRY_DELAY`, default 60.0)
+before sleeping, so no single response can block the calling thread
+indefinitely (ADR-012 §2.1). `_parse_retry_after()` itself is uncapped, so
+`SimproRateLimitError.retry_after` reports what the server actually sent.
+If missing or unparseable, backoff is
+`min(max_retry_delay, 2**n * (0.5 + random()))`.
 The same correlation ID is reused on every attempt of one logical request.
 A 401 refresh followed by a 429 does not consume the 429 budget.
 429, transient 5xx and transient network errors share one `max_retries`

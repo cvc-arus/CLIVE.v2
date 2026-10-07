@@ -1,6 +1,7 @@
 # ADR-010: Client-Side Resilience, Rate Limiting, and Error Handling
 
 *   **Status:** Approved. §2.5 (exception hierarchy) superseded by ADR-011 (2026-10-06).
+    §2.3 (Retry-After compliance) superseded by ADR-012 (2026-10-06), which also extends §2.1.
 *   **Deciders:** ARus
 *   **Date:** 2026-09-07 UTC
 *   **Context/Phase:** Phase 3 / Sprint 4 Implementation

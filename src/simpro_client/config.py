@@ -67,6 +67,14 @@ class SimproSettings(BaseSettings):
         default=3,
         description="Maximum number of retries on transient failures",
     )
+    max_retry_delay: float = Field(
+        default=60.0,
+        gt=0,
+        description=(
+            "Upper bound in seconds on any single retry sleep, including a "
+            "server-supplied Retry-After (ADR-012 2.1)"
+        ),
+    )
     limiter_capacity: int = Field(default=8)
     limiter_refill_rate: float = Field(default=8.0)
 

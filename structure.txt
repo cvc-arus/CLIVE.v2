@@ -22,6 +22,7 @@
 │   │   ├── adr-009-phase3-phase4-handoff.md
 │   │   ├── adr-010-resilience-policy.md
 │   │   ├── adr-011-exception-hierarchy-and-auth-errors.md
+│   │   ├── adr-012-retry-delay-ceiling-and-auth-concurrency.md
 │   │   ├── ADR-index.md
 │   │   └── adr-mock-simpro-api.md
 │   ├── architecture.md
@@ -150,4 +151,4 @@
 │   └── test_simpro_mock_v2.py
 └── uv.lock
 
-24 directories, 126 files
+24 directories, 127 files
