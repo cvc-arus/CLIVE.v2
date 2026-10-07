@@ -16,6 +16,7 @@ There are three distinct layers of testing in Phase 3, deliberately kept separat
 | `test_rate_limiter.py` | `TokenBucket` burst, refill and wait; lock released before sleeping |
 | `test_retries.py` | `Retry-After` forms and backoff fallback, independent 401 and 429 budgets, one limiter shared by client and auth, retry exhaustion and typed errors, GET-only retry of 502/503/504 and timeouts/network errors, one budget shared with 429, failed refresh after a 401 raises `SimproAuthRefreshError`, a failed first token fetch raises `SimproAuthError` carrying the request context, a second 401 after refresh raises `SimproClientError` |
 | `test_route_contract.py` | The read-only route inventory matches the committed contract |
+| `test_spec_conformance.py` | Every client model validates payloads generated from the vendored contract `docs/contracts/simpro-openapi-v1-get-subset.json`, in both a `full` shape (every documented property) and a `minimal` shape (required properties only, nullables set to `null`). Known-nonconforming combinations are listed in `tests/spec_conformance_baseline.json` and enforced in both directions: a combination outside the file must conform, and one inside it that starts conforming fails until its entry is deleted (ADR-013) |
 
 All tests except those marked `integration` run fully offline. All HTTP traffic is intercepted with `respx`; no network or live service is required. Run the offline suite with:
 
@@ -35,13 +36,14 @@ python tests/test_manual_logging.py
 
 ## 3. Live Integration / Smoke Tests Against the Mock Service
 
-One file exercises the running `simpro-mock` container over real HTTP:
+Two files exercise the running `simpro-mock` container over real HTTP. Both are marked `integration` (`pytestmark`) and both use an autouse fixture that checks `GET http://localhost:8100/health` and calls `pytest.skip()` at runtime if the mock isn't reachable — so a full `pytest` run never fails just because nobody started the mock.
 
-- **`tests/test_simpro_mock_v2.py`** — marked `integration` (`pytestmark`). An autouse fixture checks `GET http://localhost:8100/health`; if the mock isn't reachable, it calls `pytest.skip()` at runtime, so a full `pytest` run never fails just because nobody started the mock. Covers: PascalCase field casing + pagination headers on `/companies/`, and a 401 on an unauthenticated request.
+- **`tests/test_simpro_mock_v2.py`** — drives the mock with raw `httpx`. Covers: PascalCase field casing + pagination headers on `/companies/`, and a 401 on an unauthenticated request.
+- **`tests/test_client_mock_drift.py`** — drives the real `SimproClient` against the mock, which nothing did before (the file above never imports the client, and every client-side test uses `respx` and never touches the mock, so the two packages could drift apart with a green suite). Parametrized over every endpoint registered on `SimproClient`: the collection route resolves and parses into the declared model, the detail route resolves for an id taken from that list, and `iter_all()` walks every page. One further test asserts its endpoint table matches what `SimproClient` actually registers, so a renamed endpoint cannot escape the module. Scope ids are discovered from the mock at runtime, never hardcoded, and no exact seeded value is asserted (`tests/CLAUDE.md` §4).
 
 ```bash
 docker compose up -d --build simpro-mock
-uv run pytest tests/test_simpro_mock_v2.py -v
+uv run pytest -m integration -v
 ```
 
 ## 4. Manual Diagnostic Script

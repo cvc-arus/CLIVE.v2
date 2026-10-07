@@ -9,7 +9,8 @@ the running mock over HTTP. Configuration lives in root `pyproject.toml`
 | Layer | Where | Runs | Network |
 |---|---|---|---|
 | Offline unit | `tests/test_*.py` (default) | always | none: `respx` intercepts all `httpx` traffic |
-| Mock integration | modules marked `pytest.mark.integration` (currently `test_simpro_mock_v2.py`) | only when `simpro-mock` is up on `localhost:8100` | real HTTP to the local mock only |
+| Mock integration | modules marked `pytest.mark.integration` (`test_simpro_mock_v2.py`, `test_client_mock_drift.py`) | only when `simpro-mock` is up on `localhost:8100` | real HTTP to the local mock only |
+| Contract conformance | `test_spec_conformance.py` | always | none: payloads are generated from the vendored spec |
 | Manual diagnostic | `scripts/verify-simpro-mock.py` | by hand | local mock |
 | Live Simpro | **does not exist** | never | — |
 
@@ -24,6 +25,14 @@ Rules:
   available, and adding it needs Alex's decision.
 - Tests never connect to PostgreSQL directly and never import `simpro_mock`.
   The mock is exercised only through its HTTP API.
+- `test_spec_conformance.py` is the authority on model field names, types and
+  optionality (ADR-013). It reads `docs/contracts/simpro-openapi-v1-get-subset.json`,
+  so it stays offline. Known gaps live in `spec_conformance_baseline.json`,
+  which may only shrink — never add an entry to make a failing check pass, and
+  never use `xfail` for this (see §7).
+- `test_client_mock_drift.py` is what fails when only one side of a
+  client/mock change lands. During the ADR-013 re-shape, every sprint that
+  moves a route or a field name must leave it green.
 
 ## 2. Commands
 
