@@ -23,7 +23,20 @@ from simpro_client.models import (
 #: list position. Resizing MODEL_CASES used to silently change what it
 #: asserted (ADR-013 re-shape; see tests/CLAUDE.md §7).
 MODEL_CASES = [
-    (Company, {"ID": 1, "Name": "CVC"}, "Name", []),
+    (
+        Company,
+        {
+            "ID": 1,
+            "Name": "CVC",
+            "Address": {"Line1": "Ground floor", "Line2": "31 McKechnie Dr"},
+            "Phone": "03 9000 0000",
+            "Timezone": "Australia/Melbourne",
+            "ScheduleFormat": 30,
+            "DateModified": "2026-09-07T10:30:00+10:00",
+        },
+        "Name",
+        ["Address", "Phone", "Timezone", "ScheduleFormat", "DateModified"],
+    ),
     (
         Customer,
         {
@@ -114,53 +127,114 @@ MODEL_CASES = [
         Employee,
         {
             "ID": 8,
-            "CompanyID": 1,
-            "GivenName": "Linus",
-            "FamilyName": "Torvalds",
+            "Name": "Linus Torvalds",
             "Position": "Engineer",
-            "Email": "linus@example.test",
-            "Phone": "555-0102",
+            "PrimaryContact": {
+                "Email": "linus@example.test",
+                "SecondaryEmail": "",
+                "WorkPhone": "555-0102",
+                "CellPhone": "0400000000",
+                "Extension": "",
+                "Fax": "",
+                "PreferredNotificationMethod": "Email",
+            },
+            "Address": {
+                "Address": "1 Main St",
+                "City": "Melbourne",
+                "State": "VIC",
+                "PostalCode": "3000",
+                "Country": "AU",
+            },
+            "Zones": [{"ID": 1, "Name": "Metro"}],
+            "DefaultZone": {"ID": 1, "Name": "Metro"},
+            "DefaultCompany": {"ID": 1, "Name": "CVC"},
+            "Archived": False,
+            "DateCreated": "2026-01-02T09:00:00+10:00",
+            "DateModified": "2026-09-07T10:30:00+10:00",
         },
-        "GivenName",
-        ["Position", "Email", "Phone"],
+        "Name",
+        [
+            "Position",
+            "PrimaryContact",
+            "Address",
+            "Zones",
+            "DefaultZone",
+            "DefaultCompany",
+            "Archived",
+            "DateCreated",
+            "DateModified",
+        ],
     ),
     (
         JobNote,
         {
             "ID": 10,
-            "JobID": 3,
+            "Reference": {"Text": "Job #3", "Number": "3", "Type": "Job"},
+            "Visibility": {"Admin": True, "Customer": False},
             "Subject": "Visit",
             "Note": "Completed",
-            "CreatedBy": 8,
-            "CreatedAt": "2026-09-07T10:30:00",
+            "DateCreated": "2026-09-07T10:30:00+10:00",
+            "FollowUpDate": "2026-09-14",
+            "Attachments": [{"FileName": "photo.jpg", "_href": "/api/v1.0/x"}],
+            "SubmittedBy": {
+                "ID": 8,
+                "Name": "Linus Torvalds",
+                "Type": "employee",
+                "TypeId": 8,
+            },
+            "AssignTo": None,
         },
-        "JobID",
-        ["Subject", "Note", "CreatedBy", "CreatedAt"],
+        "Reference",
+        [
+            "Subject",
+            "Note",
+            "DateCreated",
+            "FollowUpDate",
+            "Attachments",
+            "SubmittedBy",
+            "AssignTo",
+        ],
     ),
     (
         Attachment,
         {
-            "ID": 11,
-            "JobID": 3,
+            "ID": "11",
             "Filename": "photo.jpg",
             "MimeType": "image/jpeg",
-            "FileSize": 2048,
-            "UploadedAt": "2026-09-07T10:31:00",
+            "FileSizeBytes": 2048,
+            "DateAdded": "2026-09-07T10:31:00+10:00",
+            "Public": False,
+            "Email": False,
+            "Folder": None,
+            "AddedBy": {
+                "ID": 8,
+                "Name": "Linus Torvalds",
+                "Type": "employee",
+                "TypeId": 8,
+            },
         },
         "Filename",
-        ["MimeType", "FileSize", "UploadedAt"],
+        [
+            "MimeType",
+            "FileSizeBytes",
+            "DateAdded",
+            "Public",
+            "Email",
+            "Folder",
+            "AddedBy",
+        ],
     ),
     (
         ProjectStatusCode,
         {
             "ID": 12,
-            "CompanyID": 1,
             "Name": "Open",
-            "Category": "Job",
-            "IsDefault": True,
+            "Color": "#ff0000",
+            "Priority": 10,
+            "DateModified": "2026-09-07T10:30:00+10:00",
         },
-        "IsDefault",
-        ["Category"],
+        "Name",
+        ["Color", "Priority", "DateModified"],
     ),
 ]
 
@@ -198,7 +272,10 @@ def test_temporal_fields_use_python_types():
     """Date and timestamp aliases parse into Python types, not strings."""
     assert isinstance(Job.model_validate(PAYLOADS[Job]).date_issued, date)
     assert isinstance(Asset.model_validate(PAYLOADS[Asset]).installed_date, date)
-    assert isinstance(JobNote.model_validate(PAYLOADS[JobNote]).created_at, datetime)
+    assert isinstance(JobNote.model_validate(PAYLOADS[JobNote]).date_created, datetime)
     assert isinstance(
-        Attachment.model_validate(PAYLOADS[Attachment]).uploaded_at, datetime
+        JobNote.model_validate(PAYLOADS[JobNote]).follow_up_date, date
+    )
+    assert isinstance(
+        Attachment.model_validate(PAYLOADS[Attachment]).date_added, datetime
     )

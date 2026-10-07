@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import Field
 
 from simpro_client.models.base import SimproBaseModel
@@ -10,14 +12,14 @@ class ProjectStatusCode(SimproBaseModel):
     ``Status`` field of the Job POST, Job PATCH and Quote POST bodies as
     "ID of a project status code" (ADR-013 §7).
 
-    The field set still reflects the mock's invented shape. It is re-shaped to
-    the published contract in ADR-013's Wave A, which drops ``CompanyID``,
-    ``Category`` and ``IsDefault`` and adds ``Color``, ``Priority`` and
-    ``DateModified``.
+    Only ``ID`` and ``Name`` are required, because they are the only fields the
+    contract marks required on *both* the list and the detail response. The
+    rest appear on the detail route only, so requiring them here would reject a
+    valid list payload.
     """
 
     id: int = Field(alias="ID")
-    company_id: int = Field(alias="CompanyID")
     name: str = Field(alias="Name")
-    category: str | None = Field(default=None, alias="Category")
-    is_default: bool = Field(alias="IsDefault")
+    color: str | None = Field(default=None, alias="Color")
+    priority: int | None = Field(default=None, alias="Priority")
+    date_modified: datetime | None = Field(default=None, alias="DateModified")

@@ -92,13 +92,19 @@ Numeric operators (`gt`, `lt`, `ge`, `le`, `between`) attempt `int` then `float`
 
 For every resource below: all fields are returned in PascalCase; `ID` is always the primary key; nested resources are scoped under `/api/v1.0/companies/{company_id}/...`.
 
-**Routes** match Simpro's published spec, vendored at `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013). **Field sets do not yet** — they are still the mock's original invented shapes, and are re-shaped resource by resource in ADR-013's Waves A–C. `tests/test_spec_conformance.py` reports which resources still differ.
+**Routes** match Simpro's published spec, vendored at `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013). **Field sets match for Wave A only** — Companies, Employees, Job Notes, Attachments and Project Status Codes. The rest are still the mock's original invented shapes and are re-shaped in Waves B and C. `tests/test_spec_conformance.py` reports which resources still differ.
+
+Wave A resources return a **narrow projection from the collection route** and the full record from the detail route, as real Simpro does. Both field sets are listed below.
 
 ### Companies
 - `GET /api/v1.0/companies/` — list, filterable/paginated
 - `GET /api/v1.0/companies/{company_id}` — detail, `404` if not found
 
-Fields: `ID`, `Name`
+List fields: `ID`, `Name`
+
+Detail fields: `ID`, `Name`, `Address` (`{Line1, Line2}`), `BillingAddress` (`{Line1, Line2}`), `Phone`, `Fax`, `Email`, `Website`, `Country`, `Currency`, `Timezone`, `TimezoneOffset`, `CompanyNo`, `EIN`, `EmployerTaxRefNo`, `CISCertNo`, `Licence`, `TaxName`, `DefaultLanguage`, `DefaultCostCenter` (always `null`), `SingleCostCenterMode`, `SimproPayments`, `Template`, `MultiCompanyLabel`, `MultiCompanyColor`, `ScheduleFormat`, `UIDateFormat`, `UITimeFormat`, `DateModified`
+
+`Banking` is documented upstream but out of ADR-013's fidelity scope.
 
 ### Customers
 - `GET /api/v1.0/companies/{company_id}/customers/`
@@ -140,19 +146,31 @@ Fields: `ID`, `CompanyID`, `SiteID`, `AssetNo`, `Name`, `SerialNo` (nullable), `
 - `GET /api/v1.0/companies/{company_id}/employees/`
 - `GET /api/v1.0/companies/{company_id}/employees/{employee_id}`
 
-Fields: `ID`, `CompanyID`, `GivenName`, `FamilyName`, `Position` (nullable), `Email` (nullable), `Phone` (nullable)
+List fields: `ID`, `Name`
+
+Detail fields: `ID`, `Name`, `Position`, `PrimaryContact` (`{Email, SecondaryEmail, WorkPhone, CellPhone, Extension, Fax, PreferredNotificationMethod}`), `Address` (`{Address, City, State, PostalCode, Country}`), `Zones` (array of `{ID, Name}`), `DefaultZone`, `DefaultCompany`, `Archived`, `DateCreated`, `DateModified`
+
+There is no `CompanyID` — the company is in the path. An employee has a single `Name`, not `GivenName`/`FamilyName`. `Banking` and `PayRates` are out of ADR-013's fidelity scope.
 
 ### Job Notes
 - `GET /api/v1.0/companies/{company_id}/jobs/{job_id}/notes/`
 - `GET /api/v1.0/companies/{company_id}/jobs/{job_id}/notes/{note_id}`
 
-Fields: `ID`, `JobID`, `Subject` (nullable), `Note` (nullable), `CreatedBy` (nullable, employee id), `CreatedAt` (nullable ISO datetime)
+List fields: `ID`, `Subject` (nullable), `Reference` (`{Text, Number, Type}`), `Visibility` (`{Admin, Customer}`)
+
+Detail fields: the above plus `Note` (nullable), `DateCreated`, `FollowUpDate` (nullable ISO date), `Attachments` (always `[]`), `SubmittedBy` (nullable `{ID, Name, Type, TypeId}`), `AssignTo` (same shape, nullable)
+
+There is no `JobID` — the job is in the path.
 
 ### Attachments
 - `GET /api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/files/`
 - `GET /api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/files/{file_id}`
 
-Fields: `ID`, `JobID`, `Filename`, `MimeType` (nullable), `FileSize` (nullable, bytes), `UploadedAt` (nullable ISO datetime)
+List fields: `ID`, `Filename`
+
+Detail fields: `ID`, `Filename`, `MimeType`, `FileSizeBytes`, `DateAdded`, `Public`, `Email` (boolean — whether the file rides along on outgoing email), `Folder` (always `null`), `AddedBy` (nullable `{ID, Name, Type, TypeId}`)
+
+**`ID` is a string**, not an integer (`file-0001` in the seed). There is no `JobID` — the job is in the path.
 
 ### Project Status Codes
 - `GET /api/v1.0/companies/{company_id}/setup/statusCodes/projects/`
@@ -160,7 +178,11 @@ Fields: `ID`, `JobID`, `Filename`, `MimeType` (nullable), `FileSize` (nullable, 
 
 Job and quote statuses draw their IDs from this list: the spec documents the `Status` field of the Job POST, Job PATCH and Quote POST bodies as "ID of a project status code".
 
-Fields: `ID`, `CompanyID`, `Name`, `Category` (nullable, e.g. "Job"/"Quote"/"Project"), `IsDefault` (boolean)
+List fields: `ID`, `Name`
+
+Detail fields: `ID`, `Name`, `Color` (nullable hex), `Priority`, `DateModified`
+
+There is no `CompanyID`, `Category` or `IsDefault` — none of the three exists upstream.
 
 ## 6. Seed Data
 
@@ -168,8 +190,8 @@ Two companies are seeded on container start (`simpro_mock/seed.py`, run via the 
 
 | Company | ID | Approx. seeded volume |
 |---|---|---|
-| CVC Service | 1 | 8 customers, 8 jobs, plus proportional sites/contacts/assets/projects/notes/statuses |
-| CVC Projects | 2 | 8 customers, 8 jobs, plus proportional sites/contacts/assets/projects/notes/statuses |
+| CVC Service | 1 | 8 customers, 8 jobs, 3 zones, plus proportional sites/contacts/assets/projects/notes/statuses |
+| CVC Projects | 2 | 8 customers, 8 jobs, 3 zones, plus proportional sites/contacts/assets/projects/notes/statuses |
 
 Attachments are not seeded per company: `seed.py` adds 1–3 attachments to each of the first 10 jobs returned by its job query (`jobs[:10]`).
 
@@ -181,5 +203,6 @@ Attachments are not seeded per company: `seed.py` adds 1–3 attachments to each
 - No rate limiting — the mock never returns `429`, unlike real Simpro's documented 10 req/sec/build limit
 - No webhooks / async event callbacks
 - No Projects resource — correct, since Simpro has none (a project is a Job with `Type: "Project"`). The `projects` table is still seeded but unreachable; it becomes `Type="Project"` jobs in ADR-013's Wave C
-- `columns` is accepted and ignored. `simpro_client` sends it, so list routes still return every modelled field instead of Simpro's narrow default projection
+- `columns` is accepted and ignored. `simpro_client` sends it, but the mock cannot yet narrow a response to the requested fields (ADR-013 S6). Wave A resources do return Simpro's narrow default projection from their collection routes; resources awaiting their wave return every modelled field on both legs
+- Thin data behind correct shapes in Wave A: `Attachment.Folder` and `Company.DefaultCostCenter` are always `null`, `JobNote.Attachments` is always `[]`, and `Employee.Zones` holds only that employee's default zone
 - Read-only: no POST/PATCH/DELETE routes, no business-logic state transitions (e.g. Quote → Job conversion)

@@ -103,12 +103,7 @@ GET_CASES = [
         8,
         {"company_id": 1},
         "/companies/1/employees/8",
-        {
-            "ID": 8,
-            "CompanyID": 1,
-            "GivenName": "Linus",
-            "FamilyName": "Torvalds",
-        },
+        {"ID": 8, "Name": "Linus Torvalds"},
         Employee,
     ),
     (
@@ -116,15 +111,21 @@ GET_CASES = [
         10,
         {"company_id": 1, "job_id": 3},
         "/companies/1/jobs/3/notes/10",
-        {"ID": 10, "JobID": 3},
+        {
+            "ID": 10,
+            "Reference": {"Text": "Job #3"},
+            "Visibility": {"Admin": True, "Customer": False},
+        },
         JobNote,
     ),
+    # ``item_id`` is a string here on purpose: Attachment.ID is a string
+    # upstream, which is why ``get()`` takes ``int | str``.
     (
         "attachments",
-        11,
+        "11",
         {"company_id": 1, "job_id": 3},
         "/companies/1/jobs/3/attachments/files/11",
-        {"ID": 11, "JobID": 3, "Filename": "photo.jpg"},
+        {"ID": "11", "Filename": "photo.jpg"},
         Attachment,
     ),
     (
@@ -132,12 +133,7 @@ GET_CASES = [
         12,
         {"company_id": 1},
         "/companies/1/setup/statusCodes/projects/12",
-        {
-            "ID": 12,
-            "CompanyID": 1,
-            "Name": "Open",
-            "IsDefault": True,
-        },
+        {"ID": 12, "Name": "Open"},
         ProjectStatusCode,
     ),
 ]

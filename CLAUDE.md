@@ -78,7 +78,7 @@ it. When documents and code disagree, say so explicitly. Do not quietly
 | 010 | Resilience: token bucket, 401/429 budgets, error hierarchy | Approved; implemented with deviations (see `src/simpro_client/CLAUDE.md`). §2.5 superseded by ADR-011 |
 | 011 | Exception hierarchy and `SimproAuthError` context (supersedes ADR-010 §2.5) | Accepted 2026-10-06, implemented |
 | 012 | Retry delay ceiling (`SIMPRO_MAX_RETRY_DELAY`) and token-refresh concurrency | Accepted 2026-10-06 (supersedes ADR-010 §2.3, extends §2.1) |
-| 013 | Re-shape mock and client to Simpro's published OpenAPI spec | Accepted 2026-10-07. Implementation in progress: S1 of 7 landed (contract vendored, conformance + drift tests). Field names, types and optionality are governed by `docs/contracts/simpro-openapi-v1-get-subset.json` |
+| 013 | Re-shape mock and client to Simpro's published OpenAPI spec | Accepted 2026-10-07. Implementation in progress: S1–S3 of 7 landed (contract vendored; conformance + drift tests; routes corrected; Wave A re-shaped — `ProjectStatusCode`, `Attachment`, `JobNote`, `Company`, `Employee`). Field names, types and optionality are governed by `docs/contracts/simpro-openapi-v1-get-subset.json` |
 
 Re-verify this table before relying on it; it is a snapshot.
 

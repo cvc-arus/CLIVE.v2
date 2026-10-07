@@ -77,6 +77,7 @@
 │       │   ├── env.py
 │       │   ├── script.py.mako
 │       │   └── versions
+│       │       ├── 20261007_reshape_wave_a.py
 │       │       ├── 27082026_add_simpro_resources.py
 │       │       └── 876a0e057b67_init_db.py
 │       ├── alembic.ini
@@ -94,7 +95,8 @@
 │       │   ├── models.py
 │       │   ├── routers.py
 │       │   ├── schemas.py
-│       │   └── seed.py
+│       │   ├── seed.py
+│       │   └── serializers.py
 │       └── uv.lock
 ├── src
 │   └── simpro_client
@@ -123,6 +125,7 @@
 │       │   ├── asset.py
 │       │   ├── attachment.py
 │       │   ├── base.py
+│       │   ├── common.py
 │       │   ├── company.py
 │       │   ├── contact.py
 │       │   ├── customer.py
@@ -156,4 +159,4 @@
 │   └── test_spec_conformance.py
 └── uv.lock
 
-25 directories, 131 files
+25 directories, 134 files

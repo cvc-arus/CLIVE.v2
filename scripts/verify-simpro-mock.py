@@ -224,7 +224,7 @@ def main():
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/employees/",
-        ["ID", "CompanyID", "GivenName", "FamilyName", "Position", "Email", "Phone"],
+        ["ID", "Name"],
         "Employees",
     )
     test_list_endpoint(
@@ -236,13 +236,13 @@ def main():
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/notes/",
-        ["ID", "JobID", "Subject", "Note", "CreatedBy", "CreatedAt"],
+        ["ID", "Subject", "Reference", "Visibility"],
         "JobNotes",
     )
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/files/",
-        ["ID", "JobID", "Filename", "MimeType", "FileSize", "UploadedAt"],
+        ["ID", "Filename"],
         "Attachments",
     )
     test_list_endpoint(
@@ -254,7 +254,7 @@ def main():
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/setup/statusCodes/projects/",
-        ["ID", "CompanyID", "Name", "Category", "IsDefault"],
+        ["ID", "Name"],
         "Project Status Codes",
     )
 
@@ -262,7 +262,8 @@ def main():
     test_single_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}",
-        ["ID", "Name"],
+        ["ID", "Name", "Address", "BillingAddress", "Phone", "Timezone",
+         "Currency", "DefaultLanguage", "ScheduleFormat", "DateModified"],
         "Company",
     )
     test_single_endpoint(
@@ -355,12 +356,16 @@ def main():
             f"{BASE_URL}/api/v1.0/companies/{company_id}/employees/{eid}",
             [
                 "ID",
-                "CompanyID",
-                "GivenName",
-                "FamilyName",
+                "Name",
                 "Position",
-                "Email",
-                "Phone",
+                "PrimaryContact",
+                "Address",
+                "Zones",
+                "DefaultZone",
+                "DefaultCompany",
+                "Archived",
+                "DateCreated",
+                "DateModified",
             ],
             "Employee",
         )
@@ -386,7 +391,18 @@ def main():
         test_single_endpoint(
             headers,
             f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/notes/{nid}",
-            ["ID", "JobID", "Subject", "Note", "CreatedBy", "CreatedAt"],
+            [
+                "ID",
+                "Subject",
+                "Note",
+                "Reference",
+                "Visibility",
+                "DateCreated",
+                "FollowUpDate",
+                "Attachments",
+                "SubmittedBy",
+                "AssignTo",
+            ],
             "JobNote",
         )
     else:
@@ -403,7 +419,17 @@ def main():
         test_single_endpoint(
             headers,
             f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/files/{atid}",
-            ["ID", "JobID", "Filename", "MimeType", "FileSize", "UploadedAt"],
+            [
+                "ID",
+                "Filename",
+                "MimeType",
+                "FileSizeBytes",
+                "DateAdded",
+                "Public",
+                "Email",
+                "Folder",
+                "AddedBy",
+            ],
             "Attachment",
         )
     else:
@@ -436,7 +462,7 @@ def main():
         test_single_endpoint(
             headers,
             f"{BASE_URL}/api/v1.0/companies/{company_id}/setup/statusCodes/projects/{sid}",
-            ["ID", "CompanyID", "Name", "Category", "IsDefault"],
+            ["ID", "Name", "Color", "Priority", "DateModified"],
             "Project Status Code",
         )
     else:

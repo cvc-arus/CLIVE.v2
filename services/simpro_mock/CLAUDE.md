@@ -36,8 +36,9 @@ services/simpro_mock/
     database.py    sync engine, SessionLocal, Base, get_db()
     middleware.py  BearerAuthMiddleware, paginate_query, set_pagination_headers
     filtering.py   Simpro-style query filters
-    models.py      12 SQLAlchemy ORM models
+    models.py      13 SQLAlchemy ORM models
     schemas.py     PascalCase Pydantic response schemas
+    serializers.py ORM row -> wire-shaped dict, per resource and leg
     routers.py     health, /oauth2/token, /api/v1.0/... routes
     seed.py        truncate + seed two companies
 ```
@@ -61,8 +62,15 @@ matching client change, updated tests, and Alex's approval:
   attachments live at `.../jobs/{job_id}/attachments/files/`, project status
   codes at `.../setup/statusCodes/projects/`, and there is **no Projects
   route** — upstream, a project is a Job with `Type: "Project"`.
-- Response fields are PascalCase and built explicitly in `routers.py`.
-  Schema field names in `schemas.py` are the wire contract.
+- Response fields are PascalCase. Schema field names in `schemas.py` are the
+  wire contract; `serializers.py` is what produces them (§4).
+- **Collection and detail routes return different field sets.** Real Simpro's
+  list routes return a narrow projection — companies, employees and project
+  status codes return only `ID` and `Name`, attachments only `ID` and
+  `Filename` — and the full record comes from the detail route. The
+  re-shaped resources now behave this way; the ones still awaiting their wave
+  return every modelled field on both legs.
+- `Attachment.ID` is a **string**, not an integer (`file-0001` in the seed).
 - List routes accept `page` (≥1, default 1) and `pageSize` (1–250,
   default 30) and set `Result-Total`, `Result-Count`, `Result-Pages`.
   `pageSize` is camelCase on purpose. Do not rename it to satisfy ruff `N803`.
@@ -87,7 +95,12 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
 - `search` is applied, but only as a mode switch: `search=any` joins the
   field filters with OR; anything else (default `all`) joins them with AND
   (`apply_filters()` in `filtering.py`). It is not a free-text search.
-- `JobNote` and `Attachment` responses have no `CompanyID`.
+- Thin data behind correct shapes, in the Wave A resources: `Attachment.Folder`
+  and `Company.DefaultCostCenter` are always `null` (both nullable upstream;
+  the mock models neither folders nor cost centres), `JobNote.Attachments` is
+  always `[]` (the mock attaches files to jobs, not to notes), and
+  `Employee.Zones` holds only that employee's default zone. The shapes match
+  the contract; only the data is sparse. Tests must not assert otherwise.
 - The mock does not read or log `X-Correlation-ID`.
 - The token endpoint accepts any credentials.
 
@@ -99,8 +112,22 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
   Keep database access out of middleware.
 - `Depends(...)` / `Query(...)` in defaults is the FastAPI idiom. Ruff `B008`
   on these is expected; do not restructure routes to silence it.
-- Build response objects explicitly with PascalCase fields, following the
-  existing routes. Serialise dates with `.isoformat()`.
+- **Responses are composed in `serializers.py`, not inline in `routers.py`.**
+  Each re-shaped resource has a `<resource>_list_dict()` and a
+  `<resource>_detail_dict()` that build a PascalCase dict from the ORM row;
+  the handler calls one and returns it. Dates are serialised with
+  `.isoformat()` there. Handlers must not hand-build response bodies.
+  (Resources not yet re-shaped — customers, jobs, quotes, contacts, sites,
+  assets — still build theirs inline. They move to `serializers.py` in their
+  own ADR-013 wave; do not convert them early.)
+- Collection and detail routes return **different projections**, so a
+  re-shaped resource has both an `XListResponse` and an `XDetailResponse` in
+  `schemas.py`, and both stay on their route's `response_model`. The
+  `response_model` is what catches a typo in a serializer, so do not drop it
+  when returning a dict.
+- The database stores composite values **flat, one column each**; the nested
+  wire shape (`Employee.PrimaryContact`, `Company.Address`) is assembled in
+  `serializers.py`. Do not add JSON columns to mirror the wire shape.
 - Company scoping: every company-level query filters on `company_id`.
   Job-nested resources verify that the job belongs to the company.
 
@@ -144,7 +171,7 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
   uvicorn ...` on **every start**. `seed.py` **truncates every table with
   `RESTART IDENTITY`** and reseeds. Mock data does not survive a restart.
 - Deterministic within a day: two companies, `1` = "CVC Service",
-  `2` = "CVC Projects". `random` is seeded with `RANDOM_SEED`, the
+  `2` = "CVC Projects", each with three `zones`. `random` is seeded with `RANDOM_SEED`, the
   re-read queries are ordered by `id`, and timestamps are anchored to
   midnight of `date.today()`, so every restart on the same day yields
   identical data.
@@ -155,6 +182,8 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
   reintroduce a hardcoded table list.
 - The `projects` table is still seeded but no route serves it; it is
   converted to `Type="Project"` jobs and dropped in ADR-013's Wave C.
+- `Attachment.id` is a string and is **assigned explicitly** by the seed
+  (`file-0001`, …), not autoincremented. Keep it deterministic.
 
 ## 8. Docker
 
