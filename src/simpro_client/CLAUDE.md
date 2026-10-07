@@ -189,12 +189,21 @@ failures. (Missing route parameters currently raise `ValueError` from
 - Every resource model subclasses `SimproBaseModel` (`extra="ignore"`,
   `validate_by_alias=True`, `validate_by_name=True`).
 - Every field has an explicit PascalCase `alias` and a snake_case attribute.
-- Required vs optional must match the mock response schema
-  (`services/simpro_mock/simpro_mock/schemas.py`) and
-  `docs/phase3/sprints/phase3-sprint4-contract.md`. Where they disagree, report it.
-- Dates are `datetime.date`; timestamps are `datetime.datetime`.
-- Do not add fields the mock does not return unless they are optional and
-  you can cite real Simpro documentation for them.
+- **Field names, types and required vs optional are governed by the vendored
+  contract, `docs/contracts/simpro-openapi-v1-get-subset.json`** (ADR-013).
+  `tests/test_spec_conformance.py` enforces it. The mock follows that contract
+  too, so if a model and `services/simpro_mock/simpro_mock/schemas.py`
+  disagree, the contract decides which one is wrong — report it rather than
+  matching the mock.
+  (Before ADR-013 this rule pointed at the mock's schemas and
+  `docs/phase3/sprints/phase3-sprint4-contract.md`. That sprint report is a
+  historical record and is no longer normative; do not rewrite it.)
+- Dates are `datetime.date`; timestamps are `datetime.datetime`. Money is
+  `Decimal`, because the spec constrains money to two decimal places.
+- Do not add fields the contract does not document. Adding a field the contract
+  documents but the mock does not yet serve is allowed and expected — that is
+  how the re-shape proceeds — but it must be optional until the mock serves it,
+  or `tests/test_client_mock_drift.py` will fail.
 - One model per module; export from `models/__init__.py` and
   `simpro_client/__init__.py`.
 

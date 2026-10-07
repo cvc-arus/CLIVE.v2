@@ -68,7 +68,7 @@ it. When documents and code disagree, say so explicitly. Do not quietly
 | ADR | Topic | Status |
 |---|---|---|
 | 001–003 | Local LLM stack, PGVector, Tika | Accepted, implemented |
-| mock | `adr-mock-simpro-api.md` | Accepted. Its capability list (4 resources) predates the 12-resource mock |
+| mock | `adr-mock-simpro-api.md` | Accepted, but its "Capabilities & Coverage" list is **superseded by ADR-013**: the route count predates the 12-resource mock, and the payload-fidelity claim is contradicted by Simpro's published spec |
 | 004 | httpx | Accepted, implemented |
 | 005 | Client Credentials + API key fallback; Authorization Code deferred | Accepted, implemented |
 | 006 | Library-first `simpro_client` | Accepted, implemented |
@@ -78,6 +78,7 @@ it. When documents and code disagree, say so explicitly. Do not quietly
 | 010 | Resilience: token bucket, 401/429 budgets, error hierarchy | Approved; implemented with deviations (see `src/simpro_client/CLAUDE.md`). §2.5 superseded by ADR-011 |
 | 011 | Exception hierarchy and `SimproAuthError` context (supersedes ADR-010 §2.5) | Accepted 2026-10-06, implemented |
 | 012 | Retry delay ceiling (`SIMPRO_MAX_RETRY_DELAY`) and token-refresh concurrency | Accepted 2026-10-06 (supersedes ADR-010 §2.3, extends §2.1) |
+| 013 | Re-shape mock and client to Simpro's published OpenAPI spec | Accepted 2026-10-07. Implementation in progress: S1 of 7 landed (contract vendored, conformance + drift tests). Field names, types and optionality are governed by `docs/contracts/simpro-openapi-v1-get-subset.json` |
 
 Re-verify this table before relying on it; it is a snapshot.
 

@@ -1,0 +1,162 @@
+{
+  "Asset.detail.full": {
+    "fixed_by": "S5",
+    "reason": "AssetNo:missing; CompanyID:missing; Name:missing; SiteID:missing"
+  },
+  "Asset.detail.minimal": {
+    "fixed_by": "S5",
+    "reason": "AssetNo:missing; CompanyID:missing; Name:missing; SiteID:missing"
+  },
+  "Asset.list.full": {
+    "fixed_by": "S5",
+    "reason": "AssetNo:missing; CompanyID:missing; Name:missing; SiteID:missing"
+  },
+  "Asset.list.minimal": {
+    "fixed_by": "S5",
+    "reason": "AssetNo:missing; CompanyID:missing; Name:missing; SiteID:missing"
+  },
+  "Attachment.detail.full": {
+    "fixed_by": "S3",
+    "reason": "ID:int_parsing; JobID:missing"
+  },
+  "Attachment.detail.minimal": {
+    "fixed_by": "S3",
+    "reason": "ID:int_parsing; JobID:missing"
+  },
+  "Attachment.list.full": {
+    "fixed_by": "S3",
+    "reason": "ID:int_parsing; JobID:missing"
+  },
+  "Attachment.list.minimal": {
+    "fixed_by": "S3",
+    "reason": "ID:int_parsing; JobID:missing"
+  },
+  "Contact.detail.full": {
+    "fixed_by": "S4",
+    "reason": "CompanyID:missing; CustomerID:missing"
+  },
+  "Contact.detail.minimal": {
+    "fixed_by": "S4",
+    "reason": "CompanyID:missing; CustomerID:missing"
+  },
+  "Contact.list.full": {
+    "fixed_by": "S4",
+    "reason": "CompanyID:missing; CustomerID:missing"
+  },
+  "Contact.list.minimal": {
+    "fixed_by": "S4",
+    "reason": "CompanyID:missing; CustomerID:missing"
+  },
+  "Customer.detail.full": {
+    "fixed_by": "S4",
+    "reason": "CompanyID:missing"
+  },
+  "Customer.detail.minimal": {
+    "fixed_by": "S4",
+    "reason": "CompanyID:missing"
+  },
+  "Customer.list.full": {
+    "fixed_by": "S4",
+    "reason": "CompanyID:missing"
+  },
+  "Customer.list.minimal": {
+    "fixed_by": "S4",
+    "reason": "CompanyID:missing"
+  },
+  "Employee.detail.full": {
+    "fixed_by": "S3",
+    "reason": "CompanyID:missing; FamilyName:missing; GivenName:missing"
+  },
+  "Employee.detail.minimal": {
+    "fixed_by": "S3",
+    "reason": "CompanyID:missing; FamilyName:missing; GivenName:missing"
+  },
+  "Employee.list.full": {
+    "fixed_by": "S3",
+    "reason": "CompanyID:missing; FamilyName:missing; GivenName:missing"
+  },
+  "Employee.list.minimal": {
+    "fixed_by": "S3",
+    "reason": "CompanyID:missing; FamilyName:missing; GivenName:missing"
+  },
+  "Job.detail.full": {
+    "fixed_by": "S5",
+    "reason": "CompanyID:missing; Status:string_type; Total:float_type"
+  },
+  "Job.detail.minimal": {
+    "fixed_by": "S5",
+    "reason": "CompanyID:missing; Status:string_type; Total:float_type"
+  },
+  "Job.list.full": {
+    "fixed_by": "S5",
+    "reason": "CompanyID:missing; Name:missing; Status:missing; Total:float_type"
+  },
+  "Job.list.minimal": {
+    "fixed_by": "S5",
+    "reason": "CompanyID:missing; Name:missing; Status:missing; Total:float_type"
+  },
+  "JobNote.detail.full": {
+    "fixed_by": "S3",
+    "reason": "JobID:missing"
+  },
+  "JobNote.detail.minimal": {
+    "fixed_by": "S3",
+    "reason": "JobID:missing"
+  },
+  "JobNote.list.full": {
+    "fixed_by": "S3",
+    "reason": "JobID:missing"
+  },
+  "JobNote.list.minimal": {
+    "fixed_by": "S3",
+    "reason": "JobID:missing"
+  },
+  "Quote.detail.full": {
+    "fixed_by": "S5",
+    "reason": "CompanyID:missing; Status:string_type; Total:float_type"
+  },
+  "Quote.detail.minimal": {
+    "fixed_by": "S5",
+    "reason": "CompanyID:missing; Status:string_type; Total:float_type"
+  },
+  "Quote.list.full": {
+    "fixed_by": "S5",
+    "reason": "CompanyID:missing; Name:missing; Status:missing; Total:float_type"
+  },
+  "Quote.list.minimal": {
+    "fixed_by": "S5",
+    "reason": "CompanyID:missing; Name:missing; Status:missing; Total:float_type"
+  },
+  "Site.detail.full": {
+    "fixed_by": "S4",
+    "reason": "Address:string_type; CompanyID:missing; CustomerID:missing"
+  },
+  "Site.detail.minimal": {
+    "fixed_by": "S4",
+    "reason": "Address:string_type; CompanyID:missing; CustomerID:missing"
+  },
+  "Site.list.full": {
+    "fixed_by": "S4",
+    "reason": "CompanyID:missing; CustomerID:missing"
+  },
+  "Site.list.minimal": {
+    "fixed_by": "S4",
+    "reason": "CompanyID:missing; CustomerID:missing"
+  },
+  "Status.detail.full": {
+    "fixed_by": "S3",
+    "reason": "CompanyID:missing; IsDefault:missing"
+  },
+  "Status.detail.minimal": {
+    "fixed_by": "S3",
+    "reason": "CompanyID:missing; IsDefault:missing"
+  },
+  "Status.list.full": {
+    "fixed_by": "S3",
+    "reason": "CompanyID:missing; IsDefault:missing"
+  },
+  "Status.list.minimal": {
+    "fixed_by": "S3",
+    "reason": "CompanyID:missing; IsDefault:missing"
+  }
+}
