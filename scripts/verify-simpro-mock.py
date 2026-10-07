@@ -171,38 +171,19 @@ def main():
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/",
-        ["ID", "CompanyID", "GivenName", "FamilyName", "Email", "Phone"],
+        ["ID", "Type", "CompanyName", "GivenName", "FamilyName", "_href"],
         "Customers",
     )
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{customer_id}/contacts/",
-        [
-            "ID",
-            "CompanyID",
-            "CustomerID",
-            "GivenName",
-            "FamilyName",
-            "Position",
-            "Email",
-            "Phone",
-        ],
+        ["ID", "GivenName", "FamilyName"],
         "Contacts",
     )
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/",
-        [
-            "ID",
-            "CompanyID",
-            "CustomerID",
-            "Name",
-            "Address",
-            "City",
-            "Postcode",
-            "State",
-            "Country",
-        ],
+        ["ID", "Name"],
         "Sites",
     )
     test_list_endpoint(
@@ -224,14 +205,8 @@ def main():
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/employees/",
-        ["ID", "CompanyID", "GivenName", "FamilyName", "Position", "Email", "Phone"],
+        ["ID", "Name"],
         "Employees",
-    )
-    test_list_endpoint(
-        headers,
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/projects/",
-        ["ID", "CompanyID", "CustomerID", "SiteID", "Name", "Status", "Total"],
-        "Projects",
     )
     test_list_endpoint(
         headers,
@@ -242,13 +217,13 @@ def main():
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/notes/",
-        ["ID", "JobID", "Subject", "Note", "CreatedBy", "CreatedAt"],
+        ["ID", "Subject", "Reference", "Visibility"],
         "JobNotes",
     )
     test_list_endpoint(
         headers,
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/",
-        ["ID", "JobID", "Filename", "MimeType", "FileSize", "UploadedAt"],
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/files/",
+        ["ID", "Filename"],
         "Attachments",
     )
     test_list_endpoint(
@@ -259,24 +234,55 @@ def main():
     )
     test_list_endpoint(
         headers,
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/statuses/",
-        ["ID", "CompanyID", "Name", "Category", "IsDefault"],
-        "Statuses",
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/setup/statusCodes/projects/",
+        ["ID", "Name"],
+        "Project Status Codes",
     )
 
     # ---- 4. Single endpoints (using discovered IDs) ----
     test_single_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}",
-        ["ID", "Name"],
+        ["ID", "Name", "Address", "BillingAddress", "Phone", "Timezone",
+         "Currency", "DefaultLanguage", "ScheduleFormat", "DateModified"],
         "Company",
     )
-    test_single_endpoint(
+    # Simpro publishes no /customers/{id}: the full record lives on a subtype
+    # route, which the list response's Type and _href point at (ADR-013).
+    test_404(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{customer_id}",
-        ["ID", "CompanyID", "GivenName", "FamilyName", "Email", "Phone"],
-        "Customer",
+        "Customer detail (no such route upstream)",
     )
+    for subtype, label in (("individuals", "Individual"), ("companies", "Company")):
+        r = httpx.get(
+            f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{subtype}/",
+            headers=headers,
+        )
+        rows = check_response(r, f"{label} customers", expect_list=True)
+        if not rows:
+            print(f"⚠️  No {subtype} customers found, skipping single test")
+            continue
+        name_field = "CompanyName" if subtype == "companies" else "GivenName"
+        test_single_endpoint(
+            headers,
+            f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/"
+            f"{subtype}/{rows[0]['ID']}",
+            [
+                "ID",
+                "Type",
+                name_field,
+                "Email",
+                "Phone",
+                "Address",
+                "BillingAddress",
+                "AmountOwing",
+                "Profile",
+                "Sites",
+                "DateModified",
+            ],
+            f"{label} customer",
+        )
 
     # Contacts (need a contact ID)
     r = httpx.get(
@@ -291,13 +297,19 @@ def main():
             f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{customer_id}/contacts/{cid}",
             [
                 "ID",
-                "CompanyID",
-                "CustomerID",
                 "GivenName",
                 "FamilyName",
+                "Title",
                 "Position",
+                "Department",
                 "Email",
-                "Phone",
+                "WorkPhone",
+                "CellPhone",
+                "JobContact",
+                "PrimaryJobContact",
+                "InvoiceContact",
+                "CustomFields",
+                "DateModified",
             ],
             "Contact",
         )
@@ -310,14 +322,19 @@ def main():
         f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/{site_id}",
         [
             "ID",
-            "CompanyID",
-            "CustomerID",
             "Name",
             "Address",
-            "City",
-            "Postcode",
-            "State",
-            "Country",
+            "BillingAddress",
+            "BillingContact",
+            "Customers",
+            "PrimaryContact",
+            "PublicNotes",
+            "PrivateNotes",
+            "Zone",
+            "PreferredTechs",
+            "CustomFields",
+            "Archived",
+            "DateModified",
         ],
         "Site",
     )
@@ -361,33 +378,21 @@ def main():
             f"{BASE_URL}/api/v1.0/companies/{company_id}/employees/{eid}",
             [
                 "ID",
-                "CompanyID",
-                "GivenName",
-                "FamilyName",
+                "Name",
                 "Position",
-                "Email",
-                "Phone",
+                "PrimaryContact",
+                "Address",
+                "Zones",
+                "DefaultZone",
+                "DefaultCompany",
+                "Archived",
+                "DateCreated",
+                "DateModified",
             ],
             "Employee",
         )
     else:
         print("⚠️  No employees found, skipping Employee single test")
-
-    # Projects
-    r = httpx.get(
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/projects/", headers=headers
-    )
-    projs = check_response(r, "Projects", expect_list=True)
-    if projs:
-        pid = projs[0]["ID"]
-        test_single_endpoint(
-            headers,
-            f"{BASE_URL}/api/v1.0/companies/{company_id}/projects/{pid}",
-            ["ID", "CompanyID", "CustomerID", "SiteID", "Name", "Status", "Total"],
-            "Project",
-        )
-    else:
-        print("⚠️  No projects found, skipping Project single test")
 
     # Job
     test_single_endpoint(
@@ -408,7 +413,18 @@ def main():
         test_single_endpoint(
             headers,
             f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/notes/{nid}",
-            ["ID", "JobID", "Subject", "Note", "CreatedBy", "CreatedAt"],
+            [
+                "ID",
+                "Subject",
+                "Note",
+                "Reference",
+                "Visibility",
+                "DateCreated",
+                "FollowUpDate",
+                "Attachments",
+                "SubmittedBy",
+                "AssignTo",
+            ],
             "JobNote",
         )
     else:
@@ -416,7 +432,7 @@ def main():
 
     # Attachments
     r = httpx.get(
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/",
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/files/",
         headers=headers,
     )
     atts = check_response(r, "Attachments", expect_list=True)
@@ -424,8 +440,18 @@ def main():
         atid = atts[0]["ID"]
         test_single_endpoint(
             headers,
-            f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/{atid}",
-            ["ID", "JobID", "Filename", "MimeType", "FileSize", "UploadedAt"],
+            f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/files/{atid}",
+            [
+                "ID",
+                "Filename",
+                "MimeType",
+                "FileSizeBytes",
+                "DateAdded",
+                "Public",
+                "Email",
+                "Folder",
+                "AddedBy",
+            ],
             "Attachment",
         )
     else:
@@ -447,29 +473,37 @@ def main():
     else:
         print("⚠️  No quotes found, skipping Quote single test")
 
-    # Statuses
+    # Project status codes
     r = httpx.get(
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/statuses/", headers=headers
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/setup/statusCodes/projects/",
+        headers=headers,
     )
-    statuses = check_response(r, "Statuses", expect_list=True)
+    statuses = check_response(r, "Project Status Codes", expect_list=True)
     if statuses:
         sid = statuses[0]["ID"]
         test_single_endpoint(
             headers,
-            f"{BASE_URL}/api/v1.0/companies/{company_id}/statuses/{sid}",
-            ["ID", "CompanyID", "Name", "Category", "IsDefault"],
-            "Status",
+            f"{BASE_URL}/api/v1.0/companies/{company_id}/setup/statusCodes/projects/{sid}",
+            ["ID", "Name", "Color", "Priority", "DateModified"],
+            "Project Status Code",
         )
     else:
-        print("⚠️  No statuses found, skipping Status single test")
+        print("⚠️  No project status codes found, skipping single test")
 
     # ---- 5. 404 tests ----
     bogus = 99999
     test_404(headers, f"{BASE_URL}/api/v1.0/companies/{bogus}", "Company")
+    # The subtype routes, not /customers/{id}: that path is not a route at all
+    # any more, so it would 404 whatever the id. Tested separately above.
     test_404(
         headers,
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/{bogus}",
-        "Customer",
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/individuals/{bogus}",
+        "Individual customer",
+    )
+    test_404(
+        headers,
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/customers/companies/{bogus}",
+        "Company customer",
     )
     test_404(
         headers, f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/{bogus}", "Site"
@@ -492,17 +526,12 @@ def main():
     )
     test_404(
         headers,
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/projects/{bogus}",
-        "Project",
-    )
-    test_404(
-        headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/notes/{bogus}",
         "JobNote",
     )
     test_404(
         headers,
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/{bogus}",
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/files/{bogus}",
         "Attachment",
     )
     test_404(
@@ -510,8 +539,8 @@ def main():
     )
     test_404(
         headers,
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/statuses/{bogus}",
-        "Status",
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/setup/statusCodes/projects/{bogus}",
+        "Project Status Code",
     )
 
     print("\n🎉 All integration tests passed!")

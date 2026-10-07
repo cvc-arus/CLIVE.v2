@@ -77,6 +77,8 @@
 │       │   ├── env.py
 │       │   ├── script.py.mako
 │       │   └── versions
+│       │       ├── 20261007_reshape_wave_a.py
+│       │       ├── 20261007_reshape_wave_b.py
 │       │       ├── 27082026_add_simpro_resources.py
 │       │       └── 876a0e057b67_init_db.py
 │       ├── alembic.ini
@@ -94,7 +96,8 @@
 │       │   ├── models.py
 │       │   ├── routers.py
 │       │   ├── schemas.py
-│       │   └── seed.py
+│       │   ├── seed.py
+│       │   └── serializers.py
 │       └── uv.lock
 ├── src
 │   └── simpro_client
@@ -113,10 +116,9 @@
 │       │   ├── __init__.py
 │       │   ├── job_note.py
 │       │   ├── job.py
-│       │   ├── project.py
+│       │   ├── project_status_code.py
 │       │   ├── quote.py
-│       │   ├── site.py
-│       │   └── status.py
+│       │   └── site.py
 │       ├── exceptions.py
 │       ├── __init__.py
 │       ├── logging.py
@@ -124,6 +126,7 @@
 │       │   ├── asset.py
 │       │   ├── attachment.py
 │       │   ├── base.py
+│       │   ├── common.py
 │       │   ├── company.py
 │       │   ├── contact.py
 │       │   ├── customer.py
@@ -131,10 +134,9 @@
 │       │   ├── __init__.py
 │       │   ├── job_note.py
 │       │   ├── job.py
-│       │   ├── project.py
+│       │   ├── project_status_code.py
 │       │   ├── quote.py
-│       │   ├── site.py
-│       │   └── status.py
+│       │   └── site.py
 │       └── rate_limiter.py
 ├── structure.txt
 ├── tests
@@ -158,4 +160,4 @@
 │   └── test_spec_conformance.py
 └── uv.lock
 
-25 directories, 133 files
+25 directories, 135 files

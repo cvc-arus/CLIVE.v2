@@ -15,15 +15,16 @@ from simpro_client.endpoints import (
     AssetsEndpoint,
     AttachmentsEndpoint,
     CompaniesEndpoint,
+    CompanyCustomersEndpoint,
     ContactsEndpoint,
     CustomersEndpoint,
     EmployeesEndpoint,
+    IndividualCustomersEndpoint,
     JobNotesEndpoint,
     JobsEndpoint,
-    ProjectsEndpoint,
+    ProjectStatusCodesEndpoint,
     QuotesEndpoint,
     SitesEndpoint,
-    StatusesEndpoint,
 )
 from simpro_client.exceptions import (
     SimproAPIError,
@@ -83,16 +84,17 @@ class SimproClient:
         self._now = _utc_now
         self.companies = CompaniesEndpoint(self)
         self.customers = CustomersEndpoint(self)
+        self.individual_customers = IndividualCustomersEndpoint(self)
+        self.company_customers = CompanyCustomersEndpoint(self)
         self.jobs = JobsEndpoint(self)
         self.quotes = QuotesEndpoint(self)
         self.contacts = ContactsEndpoint(self)
         self.sites = SitesEndpoint(self)
         self.assets = AssetsEndpoint(self)
         self.employees = EmployeesEndpoint(self)
-        self.projects = ProjectsEndpoint(self)
         self.job_notes = JobNotesEndpoint(self)
         self.attachments = AttachmentsEndpoint(self)
-        self.statuses = StatusesEndpoint(self)
+        self.project_status_codes = ProjectStatusCodesEndpoint(self)
 
     def get(self, path: str, params: dict[str, Any] | None = None) -> Any:
         """GET ``path`` and return the decoded JSON body.

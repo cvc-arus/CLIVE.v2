@@ -39,14 +39,16 @@ from simpro_client.models import (
     Asset,
     Attachment,
     Company,
+    CompanyCustomer,
     Contact,
-    Customer,
+    CustomerSummary,
     Employee,
+    IndividualCustomer,
     Job,
     JobNote,
+    ProjectStatusCode,
     Quote,
     Site,
-    Status,
 )
 
 API_PREFIX = "/api/v1.0"
@@ -60,18 +62,32 @@ BASELINE_PATH = Path(__file__).resolve().parent / "spec_conformance_baseline.jso
 
 #: The baseline may never grow. Lower this literal as entries are deleted;
 #: raising it means the re-shape went backwards.
-MAX_BASELINE_ENTRIES = 40
+MAX_BASELINE_ENTRIES = 12
 
 #: ``(name, model, list path, detail path)`` for every resource the client
 #: reads. ``Project`` is absent on purpose: Simpro has no Projects resource,
-#: so there is nothing to conform to. See ADR-013.
-RESOURCES: tuple[tuple[str, type[BaseModel], str, str], ...] = (
+#: so there is nothing to conform to. A ``None`` detail path means Simpro
+#: publishes no detail route for that collection, so only the list leg is
+#: checked. See ADR-013.
+RESOURCES: tuple[tuple[str, type[BaseModel], str, str | None], ...] = (
     ("Company", Company, "/companies/", "/companies/{companyID}"),
     (
-        "Customer",
-        Customer,
+        "CustomerSummary",
+        CustomerSummary,
         "/companies/{companyID}/customers/",
+        None,
+    ),
+    (
+        "IndividualCustomer",
+        IndividualCustomer,
+        "/companies/{companyID}/customers/individuals/",
         "/companies/{companyID}/customers/individuals/{customerID}",
+    ),
+    (
+        "CompanyCustomer",
+        CompanyCustomer,
+        "/companies/{companyID}/customers/companies/",
+        "/companies/{companyID}/customers/companies/{customerID}",
     ),
     ("Job", Job, "/companies/{companyID}/jobs/", "/companies/{companyID}/jobs/{jobID}"),
     (
@@ -117,8 +133,8 @@ RESOURCES: tuple[tuple[str, type[BaseModel], str, str], ...] = (
         "/companies/{companyID}/jobs/{jobID}/attachments/files/{fileID}",
     ),
     (
-        "Status",
-        Status,
+        "ProjectStatusCode",
+        ProjectStatusCode,
         "/companies/{companyID}/setup/statusCodes/projects/",
         "/companies/{companyID}/setup/statusCodes/projects/{statusCodeID}",
     ),
@@ -192,10 +208,17 @@ def _response_schema(path: str) -> dict[str, Any]:
 
 
 def _cases() -> list[tuple[str, type[BaseModel], str, str, bool]]:
-    """Enumerate ``(name, model, kind, path, minimal)`` for every check."""
+    """Enumerate ``(name, model, kind, path, minimal)`` for every check.
+
+    A resource whose ``detail_path`` is ``None`` contributes only list legs:
+    there is no detail route upstream to conform to.
+    """
     cases = []
     for name, model, list_path, detail_path in RESOURCES:
-        for kind, path in (("list", list_path), ("detail", detail_path)):
+        legs = [("list", list_path)]
+        if detail_path is not None:
+            legs.append(("detail", detail_path))
+        for kind, path in legs:
             for minimal in (False, True):
                 cases.append((name, model, kind, path, minimal))
     return cases
