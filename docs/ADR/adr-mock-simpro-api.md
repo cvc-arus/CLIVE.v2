@@ -1,7 +1,11 @@
 # ADR : Mocking the Simpro REST API Service for Local Integration Testing
 
 ## Status
-Accepted
+Accepted. The decision to build a containerised FastAPI + PostgreSQL mock
+stands. The "Capabilities & Coverage" section below is **superseded by
+ADR-013** (2026-10-07): its route count understates the implemented surface,
+and its payload-fidelity claim is contradicted by Simpro's published OpenAPI
+spec. Read that section as a historical record, not as the current contract.
 
 ## Context
 Our team is actively building `simpro_client`, a type-safe, modular Python integration package designed to interact with the Simpro REST API (v1.0). In an ideal development environment, integration paths are continuously validated against a live testing sandbox. However, waiting for live Simpro sandbox API access and valid tenant credentials often introduces severe bottlenecks, stalling all development pipelines that depend on external resources. 

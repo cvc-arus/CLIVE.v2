@@ -23,11 +23,14 @@
 │   │   ├── adr-010-resilience-policy.md
 │   │   ├── adr-011-exception-hierarchy-and-auth-errors.md
 │   │   ├── adr-012-retry-delay-ceiling-and-auth-concurrency.md
+│   │   ├── adr-013-reshape-to-published-simpro-spec.md
 │   │   ├── ADR-index.md
 │   │   └── adr-mock-simpro-api.md
 │   ├── architecture.md
 │   ├── CHANGELOG.md
 │   ├── CLAUDE.md
+│   ├── contracts
+│   │   └── simpro-openapi-v1-get-subset.json
 │   ├── development-standards.md
 │   ├── doc-audit.md
 │   ├── installation.md
@@ -65,6 +68,7 @@
 ├── README.md
 ├── scripts
 │   ├── backup.sh
+│   ├── prune-simpro-spec.py
 │   ├── verify.sh
 │   └── verify-simpro-mock.py
 ├── services
@@ -137,7 +141,9 @@
 │   ├── CLAUDE.md
 │   ├── conftest.py
 │   ├── __init__.py
+│   ├── spec_conformance_baseline.json
 │   ├── test_auth.py
+│   ├── test_client_mock_drift.py
 │   ├── test_client.py
 │   ├── test_config.py
 │   ├── test_endpoints.py
@@ -148,7 +154,8 @@
 │   ├── test_rate_limiter.py
 │   ├── test_retries.py
 │   ├── test_route_contract.py
-│   └── test_simpro_mock_v2.py
+│   ├── test_simpro_mock_v2.py
+│   └── test_spec_conformance.py
 └── uv.lock
 
-24 directories, 127 files
+25 directories, 133 files
