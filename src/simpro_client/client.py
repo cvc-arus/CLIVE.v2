@@ -235,7 +235,7 @@ class SimproClient:
                 ) from exc
             self._log_request(method, path, response.status_code, timer.duration_ms)
             if response.status_code == 401 and auth_retry_available:
-                self._auth.invalidate()
+                self._auth.invalidate(token)
                 auth_retry_available = False
                 refreshing_after_401 = True
                 continue

@@ -58,13 +58,13 @@ Library-first design: importable by any future phase without requiring a network
 | Module | Responsibility |
 |---|---|
 | `config.py` | `SimproSettings` (pydantic-settings), env prefix `SIMPRO_`, loads from `.env`, `extra="ignore"` so it coexists with unrelated Postgres/PGVector keys in the same `.env` file. `get_settings()` is `lru_cache`d. `auth_mode` is a `Literal`, and a `model_validator` requires the credentials that mode uses (`client_id` + `client_secret`, or `api_key`), so misconfiguration raises `ValidationError` at construction instead of failing at the first request. |
-| `auth.py` | `AuthManager` — OAuth2 Client Credentials with in-memory token caching (60-second early-refresh buffer) and refresh, plus a static API Key fallback mode. Each token request first acquires from the client's rate limiter, which `SimproClient` passes in. |
+| `auth.py` | `AuthManager` — OAuth2 Client Credentials with in-memory token caching (60-second early-refresh buffer) and refresh, plus a static API Key fallback mode. Each token request first acquires from the client's rate limiter, which `SimproClient` passes in. Refreshes are serialised by an internal lock (double-checked), so concurrent callers make one token request between them rather than one each (ADR-012 §2.2). |
 | `client.py` | `SimproClient` — thin `httpx.Client` wrapper. `get/post/patch/delete` all funnel through `_request()`, which calls `_request_response()`: it waits on the rate limiter, attaches `Authorization: Bearer <token>` and `X-Correlation-ID` headers, times the call, logs it, and handles the status code (below). `_request()` then returns `None` for `204`, otherwise the parsed JSON body. |
 | `exceptions.py` | Typed hierarchy (ADR-011): `SimproError` → `SimproAuthError(status_code, method, url, correlation_id)`, `SimproProtocolError` (bad or missing pagination headers), `SimproAPIError(status_code, response_body)`; `SimproAPIError` → `SimproClientError` (4xx) and `SimproServerError` (5xx); `SimproClientError` → `SimproRateLimitError(retry_after)`, `SimproNotFoundError`, `SimproAuthRefreshError` (also a `SimproAuthError`). |
 | `logging.py` | `ContextVar`-based correlation IDs (`get_correlation_id`/`set_correlation_id`), a `JSONFormatter` that emits single-line JSON logs to `stderr`, and a `RequestTimer` context manager for millisecond-precision timing. |
 
 **Response handling in `client.py`:**
-- `401` → invalidate cached token, retry exactly once (`_retry_on_401` flag prevents infinite loops); if the refresh fails → `SimproAuthRefreshError`; a second `401` → `SimproClientError`
+- `401` → invalidate the cached token (only if it is still the token that was rejected) and retry exactly once (`_retry_on_401` flag prevents infinite loops); if the refresh fails → `SimproAuthRefreshError`; a second `401` → `SimproClientError`
 - `429` → retry up to `max_retries` (`SIMPRO_MAX_RETRIES`), waiting for `Retry-After` if present (capped at `SIMPRO_MAX_RETRY_DELAY`, default 60.0), else exponential backoff; then `SimproRateLimitError`, whose `retry_after` reports the server's uncapped value
 - `404` → `SimproNotFoundError`
 - any other `4xx` → `SimproClientError`

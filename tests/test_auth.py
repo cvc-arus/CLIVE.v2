@@ -1,5 +1,6 @@
 """Tests for authentication module."""
 
+import threading
 import time
 
 import httpx
@@ -115,4 +116,86 @@ def test_api_key_mode_does_not_acquire(api_key_settings: SimproSettings):
     auth = AuthManager(api_key_settings, limiter=limiter)
     auth.get_token()
     assert limiter.call_count == 0
+    auth.close()
+
+
+class _SerialisedTokenEndpoint:
+    """Fake token endpoint that records how many threads are inside it.
+
+    ``post()`` blocks on ``release`` instead of sleeping, so the test is
+    deterministic and does not depend on wall-clock time.
+    """
+
+    def __init__(self, release: threading.Event) -> None:
+        self.calls = 0
+        self.max_concurrent = 0
+        self.entered = threading.Event()
+        self._inside = 0
+        self._guard = threading.Lock()
+        self._release = release
+
+    def post(self, *args, **kwargs) -> Response:
+        with self._guard:
+            self.calls += 1
+            self._inside += 1
+            self.max_concurrent = max(self.max_concurrent, self._inside)
+        self.entered.set()
+        self._release.wait(timeout=5)
+        with self._guard:
+            self._inside -= 1
+        return Response(200, json={"access_token": "tok", "expires_in": 3600})
+
+    def close(self) -> None:
+        """Match the httpx.Client interface AuthManager.close() expects."""
+
+
+def test_concurrent_get_token_issues_one_request(mock_settings: SimproSettings):
+    release = threading.Event()
+    endpoint = _SerialisedTokenEndpoint(release)
+    auth = AuthManager(mock_settings)
+    auth._http_client = endpoint
+    threads = [threading.Thread(target=auth.get_token) for _ in range(8)]
+    for thread in threads:
+        thread.start()
+    assert endpoint.entered.wait(timeout=5), "no thread reached the token endpoint"
+    release.set()
+    for thread in threads:
+        thread.join(timeout=5)
+    assert not any(thread.is_alive() for thread in threads)
+    assert endpoint.max_concurrent == 1
+    assert endpoint.calls == 1
+    auth.close()
+
+
+@respx.mock
+def test_invalidate_with_a_stale_token_keeps_the_cached_one(
+    mock_settings: SimproSettings,
+):
+    route = respx.post(mock_settings.token_url).mock(
+        side_effect=[
+            Response(200, json={"access_token": "tok-1", "expires_in": 3600}),
+            Response(200, json={"access_token": "tok-2", "expires_in": 3600}),
+        ]
+    )
+    auth = AuthManager(mock_settings)
+    assert auth.get_token() == "tok-1"
+    auth.invalidate("a-stale-token-from-another-thread")
+    assert auth.get_token() == "tok-1"
+    assert route.call_count == 1
+    auth.invalidate("tok-1")
+    assert auth.get_token() == "tok-2"
+    assert route.call_count == 2
+    auth.close()
+
+
+@respx.mock
+def test_invalidate_without_a_token_always_clears(mock_settings: SimproSettings):
+    route = respx.post(mock_settings.token_url).mock(
+        return_value=Response(200, json={"access_token": "tok", "expires_in": 3600})
+    )
+    auth = AuthManager(mock_settings)
+    auth.get_token()
+    auth.invalidate()
+    auth.get_token()
+    assert route.call_count == 2
     auth.close()

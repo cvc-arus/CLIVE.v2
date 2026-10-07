@@ -71,6 +71,17 @@ Do not create `pagination.py` unless a task asks for it.
 
 - Default `auth_mode="client_credentials"`: form-encoded POST to `token_url`,
   token cached in memory, refreshed 60 s before `expires_in`.
+- **Refreshes are serialised** by `AuthManager._lock` (ADR-012 §2.2).
+  `_get_oauth_token()` reads the cache unlocked, then re-reads it under the
+  lock before refreshing, so N concurrent callers make one token request
+  between them. `_refresh_token()` is called only with the lock held, and
+  acquires the shared limiter while holding it; `TokenBucket` never calls
+  back into `AuthManager`, so the auth-then-bucket order cannot cycle.
+  `api_key` mode mutates nothing and stays lock-free.
+- `invalidate(token=None)` clears the cache only if it still holds
+  `token`, so a late 401 cannot discard a newer token another thread just
+  fetched. `client.py` passes the token that received the 401. Calling it
+  with no argument still clears unconditionally.
 - `auth_mode="api_key"`: static token from settings. `config.py` now
   guarantees `api_key` is set in this mode, so `_get_api_key_token()`'s
   `SimproAuthError` guard is unreachable via validated settings. It is kept

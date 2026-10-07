@@ -69,6 +69,7 @@ Implemented with deviations from ADR-010; see `src/simpro_client/CLAUDE.md`.
 - 2026-10-06: ADR-011 accepted; ADR-010 §2.5 superseded (Status line only). The `SimproAPIError` layer is no longer listed as a deviation
 - 2026-10-06: `SimproSettings.auth_mode` is a `Literal["client_credentials", "api_key"]`, and a validator requires `client_id` + `client_secret` or `api_key` according to the mode (an empty value counts as missing); `client_id` / `client_secret` are now optional in `api_key` mode. `company_id_service` / `company_id_projects` documented as reserved. `client.py` gained type hints and docstrings (no behaviour change)
 - 2026-10-06: ADR-012 accepted (supersedes ADR-010 §2.3, extends §2.1). `client.py` caps every retry sleep at the new `SIMPRO_MAX_RETRY_DELAY` setting (default 60.0), including a server-supplied `Retry-After`, which previously could block the calling thread for hours or raise an uncaught `OverflowError`; `SimproRateLimitError.retry_after` still reports the server's uncapped value
+- 2026-10-07: `AuthManager` serialises token refreshes with a double-checked `threading.Lock`, so N concurrent callers make one token request between them instead of one each (previously eight threads produced eight requests and drained the shared limiter budget); `invalidate(token=None)` clears the cache only when it still holds that token, and `client.py` passes the token that received the 401 (ADR-012 §2.2)
 
 ## Not Yet Started
 
