@@ -20,10 +20,9 @@ from simpro_client.endpoints import (
     EmployeesEndpoint,
     JobNotesEndpoint,
     JobsEndpoint,
-    ProjectsEndpoint,
+    ProjectStatusCodesEndpoint,
     QuotesEndpoint,
     SitesEndpoint,
-    StatusesEndpoint,
 )
 from simpro_client.exceptions import (
     SimproAPIError,
@@ -89,10 +88,9 @@ class SimproClient:
         self.sites = SitesEndpoint(self)
         self.assets = AssetsEndpoint(self)
         self.employees = EmployeesEndpoint(self)
-        self.projects = ProjectsEndpoint(self)
         self.job_notes = JobNotesEndpoint(self)
         self.attachments = AttachmentsEndpoint(self)
-        self.statuses = StatusesEndpoint(self)
+        self.project_status_codes = ProjectStatusCodesEndpoint(self)
 
     def get(self, path: str, params: dict[str, Any] | None = None) -> Any:
         """GET ``path`` and return the decoded JSON body.

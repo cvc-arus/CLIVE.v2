@@ -6,7 +6,7 @@ from datetime import date, datetime, time, timedelta
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from simpro_mock.database import SessionLocal
+from simpro_mock.database import Base, SessionLocal
 from simpro_mock.models import (
     Asset,
     Attachment,
@@ -27,26 +27,19 @@ RANDOM_SEED = 42
 
 
 def truncate_tables(db: Session):
-    """Truncate all tables and reset identity sequences."""
-    # Order doesn't matter much with CASCADE, but we list all tables explicitly.
-    tables = [
-        "attachments",
-        "job_notes",
-        "projects",
-        "assets",
-        "statuses",
-        "employees",
-        "sites",
-        "contacts",
-        "quotes",
-        "jobs",
-        "customers",
-        "companies",
-    ]
+    """Truncate every mapped table and reset identity sequences.
+
+    Driven off ``Base.metadata`` rather than a hardcoded list, so a table added
+    in a later migration cannot be silently missed — which matters for the
+    ADR-013 re-shape, where three waves each add tables. ``sorted_tables`` is
+    dependency-ordered (parents first), so it is reversed to delete children
+    first; ``CASCADE`` would cover it either way.
+    """
+    tables = [table.name for table in reversed(Base.metadata.sorted_tables)]
     for table in tables:
         db.execute(text(f"TRUNCATE TABLE {table} RESTART IDENTITY CASCADE;"))
     db.commit()
-    print("✅ All tables truncated.")
+    print(f"✅ All {len(tables)} tables truncated.")
 
 
 def get_or_create_company(db: Session, name: str) -> Company:

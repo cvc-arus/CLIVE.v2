@@ -13,10 +13,9 @@ from simpro_client import (
     Employee,
     Job,
     JobNote,
-    Project,
+    ProjectStatusCode,
     Quote,
     Site,
-    Status,
 )
 from simpro_client.client import SimproClient
 
@@ -113,21 +112,6 @@ GET_CASES = [
         Employee,
     ),
     (
-        "projects",
-        9,
-        {"company_id": 2},
-        "/companies/2/projects/9",
-        {
-            "ID": 9,
-            "CompanyID": 2,
-            "CustomerID": 2,
-            "Name": "Upgrade",
-            "Status": "Active",
-            "Total": 1000.0,
-        },
-        Project,
-    ),
-    (
         "job_notes",
         10,
         {"company_id": 1, "job_id": 3},
@@ -139,22 +123,22 @@ GET_CASES = [
         "attachments",
         11,
         {"company_id": 1, "job_id": 3},
-        "/companies/1/jobs/3/attachments/11",
+        "/companies/1/jobs/3/attachments/files/11",
         {"ID": 11, "JobID": 3, "Filename": "photo.jpg"},
         Attachment,
     ),
     (
-        "statuses",
+        "project_status_codes",
         12,
         {"company_id": 1},
-        "/companies/1/statuses/12",
+        "/companies/1/setup/statusCodes/projects/12",
         {
             "ID": 12,
             "CompanyID": 1,
             "Name": "Open",
             "IsDefault": True,
         },
-        Status,
+        ProjectStatusCode,
     ),
 ]
 
@@ -228,3 +212,82 @@ def test_missing_nested_scope_fails_before_request(mock_settings):
     with SimproClient(settings=mock_settings) as client:
         with pytest.raises(ValueError, match="site_id"):
             client.assets.get(7, company_id=1)
+
+
+@respx.mock
+def test_columns_are_sent_as_csv_on_collections(mock_settings):
+    """``columns=`` reaches the wire as Simpro's csv query parameter.
+
+    Collection routes return a narrow default projection without it, so the
+    client has to be able to ask for more (ADR-013 §5).
+    """
+    mock_token(mock_settings)
+    route = respx.get(f"{mock_settings.base_url}/companies/2/jobs/").mock(
+        return_value=Response(
+            200,
+            json=[
+                {"ID": 3, "CompanyID": 2, "Name": "S", "Status": "Open", "Total": 1.0}
+            ],
+            headers={
+                "Result-Total": "1",
+                "Result-Count": "1",
+                "Result-Pages": "1",
+            },
+        )
+    )
+
+    with SimproClient(settings=mock_settings) as client:
+        client.jobs.fetch_page(company_id=2, columns=["ID", "Name", "Status"])
+
+    assert route.calls.last.request.url.params["columns"] == "ID,Name,Status"
+
+
+@respx.mock
+def test_columns_are_sent_on_detail_routes_too(mock_settings):
+    """Simpro accepts ``columns`` on detail routes, so ``get()`` sends it."""
+    mock_token(mock_settings)
+    detail = respx.get(f"{mock_settings.base_url}/companies/1").mock(
+        return_value=Response(200, json={"ID": 1, "Name": "CVC"})
+    )
+
+    with SimproClient(settings=mock_settings) as client:
+        client.companies.get(1, columns=["ID", "Name"])
+
+    assert detail.calls.last.request.url.params["columns"] == "ID,Name"
+
+
+@respx.mock
+def test_omitting_columns_sends_no_columns_parameter(mock_settings):
+    """Without ``columns`` the client must not invent one."""
+    mock_token(mock_settings)
+    detail = respx.get(f"{mock_settings.base_url}/companies/1").mock(
+        return_value=Response(200, json={"ID": 1, "Name": "CVC"})
+    )
+
+    with SimproClient(settings=mock_settings) as client:
+        client.companies.get(1)
+
+    assert "columns" not in detail.calls.last.request.url.params
+
+
+@pytest.mark.parametrize("page_size", [0, -1, 251, 1000])
+def test_page_size_outside_the_documented_range_is_rejected(mock_settings, page_size):
+    """``pageSize`` is ``minimum 1, maximum 250`` in the spec.
+
+    Rejected before any request, so an out-of-range value never reaches the
+    server as a 4xx.
+    """
+    with (
+        SimproClient(settings=mock_settings) as client,
+        pytest.raises(ValueError, match="page_size must be between 1 and 250"),
+    ):
+        client.jobs.fetch_page(company_id=1, page_size=page_size)
+
+
+def test_page_below_one_is_rejected(mock_settings):
+    """Simpro pages are 1-based."""
+    with (
+        SimproClient(settings=mock_settings) as client,
+        pytest.raises(ValueError, match="page must be >= 1"),
+    ):
+        client.jobs.fetch_page(company_id=1, page=0)

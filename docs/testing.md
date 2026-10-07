@@ -48,7 +48,7 @@ uv run pytest -m integration -v
 
 ## 4. Manual Diagnostic Script
 
-`scripts/verify-simpro-mock.py` is a comprehensive manual diagnostic — not a pytest test, and deliberately kept outside `tests/` because its helper functions are named `test_list_endpoint`, `test_single_endpoint`, etc. If it lived inside `tests/`, pytest would try (and fail) to collect and run those helpers as real tests. It exercises every one of the mock's 12 resources plus auth and health, printing pass/fail diagnostics and exiting non-zero on any failure.
+`scripts/verify-simpro-mock.py` is a comprehensive manual diagnostic — not a pytest test, and deliberately kept outside `tests/` because its helper functions are named `test_list_endpoint`, `test_single_endpoint`, etc. If it lived inside `tests/`, pytest would try (and fail) to collect and run those helpers as real tests. It exercises every one of the mock's 11 served resources plus auth and health, printing pass/fail diagnostics and exiting non-zero on any failure.
 
 ```bash
 docker compose up -d --build simpro-mock
