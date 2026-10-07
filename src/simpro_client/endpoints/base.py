@@ -37,7 +37,9 @@ class Page(Generic[ModelT]):
 class ResourceEndpoint(Generic[ModelT]):
     model: type[ModelT]
     collection_path: str
-    detail_path: str
+    #: ``None`` for a collection Simpro publishes with no detail route, such
+    #: as the polymorphic customers list. Such a subclass overrides ``get()``.
+    detail_path: str | None
     item_key: str
 
     def __init__(self, client: "SimproClient") -> None:

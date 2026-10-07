@@ -20,10 +20,21 @@ here fails the request rather than silently serving a wrong shape.
 
 from typing import Any
 
-from simpro_mock.models import Attachment, Company, Employee, JobNote, Status, Zone
+from simpro_mock.models import (
+    Attachment,
+    Company,
+    Contact,
+    Customer,
+    CustomFieldValue,
+    Employee,
+    JobNote,
+    Site,
+    Status,
+    Zone,
+)
 
 
-def _named_ref(row: Zone | Company | None) -> dict[str, Any] | None:
+def _named_ref(row: Zone | Company | Site | None) -> dict[str, Any] | None:
     """Render an ``{"ID", "Name"}`` reference, or ``None`` when absent."""
     if row is None:
         return None
@@ -237,4 +248,282 @@ def project_status_code_detail_dict(status: Status) -> dict[str, Any]:
         "Color": status.color,
         "Priority": status.priority,
         "DateModified": status.date_modified.isoformat(),
+    }
+
+
+# ---------------------------------------------------------------- customers
+
+
+def _custom_fields(values: list[CustomFieldValue]) -> list[dict[str, Any]]:
+    """Render a record's custom fields as the contract's paired shape.
+
+    ``ListItems`` is stored newline-separated and is only meaningful for a
+    ``List`` field; it is ``None`` otherwise, which the contract allows.
+    """
+    rendered = []
+    for value in values:
+        definition = value.custom_field
+        rendered.append(
+            {
+                "CustomField": {
+                    "ID": definition.id,
+                    "Name": definition.name,
+                    "Type": definition.field_type,
+                    "IsMandatory": definition.is_mandatory,
+                    "ListItems": (
+                        definition.list_items.splitlines()
+                        if definition.list_items
+                        else None
+                    ),
+                },
+                "Value": value.value,
+            }
+        )
+    return rendered
+
+
+def _address(row: Customer | Site) -> dict[str, Any]:
+    """Render a five-member address block from flat columns."""
+    return {
+        "Address": row.address,
+        "City": row.city,
+        "State": row.state,
+        "PostalCode": row.postal_code,
+        "Country": row.country,
+    }
+
+
+def _customer_ref(customer: Customer) -> dict[str, Any]:
+    """Render a customer as it appears nested in another resource.
+
+    Carries both name shapes: ``Type`` tells the caller which one matters.
+    """
+    return {
+        "ID": customer.id,
+        "Type": customer.type,
+        "CompanyName": customer.company_name,
+        "GivenName": customer.given_name,
+        "FamilyName": customer.family_name,
+    }
+
+
+def customer_summary_dict(customer: Customer) -> dict[str, Any]:
+    """Render a row of the polymorphic ``/customers/`` collection.
+
+    ``_href`` points at the subtype detail route, which is the only way a
+    caller can fetch the full record: Simpro publishes no ``/customers/{id}``.
+    The contract's example is a path, not an absolute URL, so this needs no
+    request context.
+    """
+    subtype = "companies" if customer.type == "Company" else "individuals"
+    return {
+        "ID": customer.id,
+        "Type": customer.type,
+        "CompanyName": customer.company_name,
+        "GivenName": customer.given_name,
+        "FamilyName": customer.family_name,
+        "_href": (
+            f"/api/v1.0/companies/{customer.company_id}/customers/"
+            f"{subtype}/{customer.id}"
+        ),
+    }
+
+
+def _customer_common(customer: Customer) -> dict[str, Any]:
+    """The detail fields both customer subtypes share.
+
+    ``Banking`` and ``Rates`` are omitted by ADR-013's fidelity scope.
+    ``Contracts`` and ``ResponseTimes`` are nullable upstream and the mock
+    models neither, so they are ``None``. ``Tags`` and ``PreferredTechs`` are
+    required arrays, and an empty one is legal.
+    """
+    return {
+        "ID": customer.id,
+        "Type": customer.type,
+        "Email": customer.email,
+        "Phone": customer.phone,
+        "AltPhone": customer.alt_phone,
+        "Address": _address(customer),
+        "BillingAddress": {
+            "Address": customer.billing_address,
+            "City": customer.billing_city,
+            "State": customer.billing_state,
+            "PostalCode": customer.billing_postal_code,
+            "Country": customer.billing_country,
+        },
+        "CustomerType": customer.customer_type,
+        "DoNotCall": customer.do_not_call,
+        "Archived": customer.archived,
+        "AmountOwing": float(customer.amount_owing),
+        "Profile": {
+            "Notes": customer.profile_notes,
+            "Currency": {
+                "ID": customer.currency_code,
+                "Name": customer.currency_name,
+                "Visible": True,
+            },
+            "AccountManager": None,
+            "CustomerGroup": None,
+            "CustomerProfile": None,
+            "ServiceJobCostCenter": None,
+        },
+        "Sites": [{"ID": site.id, "Name": site.name} for site in customer.sites],
+        "Tags": [],
+        "PreferredTechs": [],
+        "Contacts": [
+            {
+                "ID": contact.id,
+                "GivenName": contact.given_name,
+                "FamilyName": contact.family_name,
+                "Email": contact.email,
+                "InvoiceContact": contact.invoice_contact,
+                "PrimaryInvoiceContact": contact.primary_invoice_contact,
+                "StatementContact": contact.statement_contact,
+                "PrimaryStatementContact": contact.primary_statement_contact,
+            }
+            for contact in customer.contacts
+        ],
+        "Contracts": None,
+        "ResponseTimes": None,
+        "CustomFields": [],
+        "DateCreated": customer.date_created.isoformat(),
+        "DateModified": customer.date_modified.isoformat(),
+    }
+
+
+def individual_customer_list_dict(customer: Customer) -> dict[str, Any]:
+    """The fields Simpro's individual-customer collection route returns."""
+    return {
+        "ID": customer.id,
+        "Type": customer.type,
+        "GivenName": customer.given_name,
+        "FamilyName": customer.family_name,
+    }
+
+
+def individual_customer_detail_dict(customer: Customer) -> dict[str, Any]:
+    """An individual customer's documented detail fields."""
+    return _customer_common(customer) | {
+        "GivenName": customer.given_name,
+        "FamilyName": customer.family_name,
+        "Title": customer.title,
+        "CellPhone": customer.cell_phone,
+    }
+
+
+def company_customer_list_dict(customer: Customer) -> dict[str, Any]:
+    """The fields Simpro's company-customer collection route returns."""
+    return {
+        "ID": customer.id,
+        "Type": customer.type,
+        "CompanyName": customer.company_name,
+    }
+
+
+def company_customer_detail_dict(customer: Customer) -> dict[str, Any]:
+    """A company customer's documented detail fields."""
+    return _customer_common(customer) | {
+        "CompanyName": customer.company_name,
+        "CompanyNumber": customer.company_number,
+        "EIN": customer.ein,
+        "Fax": customer.fax,
+        "Website": customer.website,
+    }
+
+
+# ----------------------------------------------------------------- contacts
+
+
+def contact_list_dict(contact: Contact) -> dict[str, Any]:
+    """The three fields Simpro's contact collection route returns."""
+    return {
+        "ID": contact.id,
+        "GivenName": contact.given_name,
+        "FamilyName": contact.family_name,
+    }
+
+
+def contact_detail_dict(contact: Contact) -> dict[str, Any]:
+    """A contact's documented detail fields, including the eight role flags.
+
+    ``Contact`` is a nullable self-reference the mock does not model.
+    """
+    return {
+        "ID": contact.id,
+        "GivenName": contact.given_name,
+        "FamilyName": contact.family_name,
+        "Title": contact.title,
+        "Position": contact.position,
+        "Department": contact.department,
+        "Email": contact.email,
+        "WorkPhone": contact.work_phone,
+        "CellPhone": contact.cell_phone,
+        "AltPhone": contact.alt_phone,
+        "Fax": contact.fax,
+        "Notes": contact.notes,
+        "JobContact": contact.job_contact,
+        "PrimaryJobContact": contact.primary_job_contact,
+        "QuoteContact": contact.quote_contact,
+        "PrimaryQuoteContact": contact.primary_quote_contact,
+        "InvoiceContact": contact.invoice_contact,
+        "PrimaryInvoiceContact": contact.primary_invoice_contact,
+        "StatementContact": contact.statement_contact,
+        "PrimaryStatementContact": contact.primary_statement_contact,
+        "Contact": None,
+        "CustomFields": [],
+        "DateModified": contact.date_modified.isoformat(),
+    }
+
+
+# -------------------------------------------------------------------- sites
+
+
+def site_list_dict(site: Site) -> dict[str, Any]:
+    """The two fields Simpro's site collection route returns."""
+    return {"ID": site.id, "Name": site.name}
+
+
+def site_detail_dict(site: Site) -> dict[str, Any]:
+    """A site's documented detail fields.
+
+    ``BillingAddress`` has no ``Country`` member upstream — it is the one
+    address shape in the contract that does not. ``Rates`` is out of ADR-013's
+    fidelity scope. ``PreferredTechs`` and ``PreferredTechnicians`` are
+    required arrays the mock has no data for, and empty ones are legal.
+    """
+    contact = site.primary_contact
+    return {
+        "ID": site.id,
+        "Name": site.name,
+        "Address": _address(site),
+        "BillingAddress": {
+            "Address": site.billing_address,
+            "City": site.billing_city,
+            "State": site.billing_state,
+            "PostalCode": site.billing_postal_code,
+        },
+        "BillingContact": site.billing_contact,
+        "Customers": [_customer_ref(customer) for customer in site.customers],
+        "PrimaryContact": {
+            "GivenName": contact.given_name if contact else "",
+            "FamilyName": contact.family_name if contact else "",
+            "Title": contact.title if contact else "",
+            "Position": contact.position if contact else "",
+            "Email": contact.email if contact else "",
+            "WorkPhone": contact.work_phone if contact else "",
+            "CellPhone": contact.cell_phone if contact else "",
+            "Fax": contact.fax if contact else "",
+            "PreferredNotificationMethod": "Email",
+            "Contact": None,
+        },
+        "PublicNotes": site.public_notes,
+        "PrivateNotes": site.private_notes,
+        "Zone": _named_ref(site.zone),
+        "STCZone": None,
+        "VEECZone": None,
+        "PreferredTechs": [],
+        "PreferredTechnicians": [],
+        "CustomFields": _custom_fields(site.custom_field_values),
+        "Archived": site.archived,
+        "DateModified": site.date_modified.isoformat(),
     }

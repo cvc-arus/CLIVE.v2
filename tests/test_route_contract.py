@@ -12,9 +12,11 @@ from simpro_client.endpoints import (
     AssetsEndpoint,
     AttachmentsEndpoint,
     CompaniesEndpoint,
+    CompanyCustomersEndpoint,
     ContactsEndpoint,
     CustomersEndpoint,
     EmployeesEndpoint,
+    IndividualCustomersEndpoint,
     JobNotesEndpoint,
     JobsEndpoint,
     ProjectStatusCodesEndpoint,
@@ -25,9 +27,16 @@ from simpro_client.endpoints import (
 
 EXPECTED_ROUTES = {
     CompaniesEndpoint: ("/companies/", "/companies/{company_id}"),
-    CustomersEndpoint: (
-        "/companies/{company_id}/customers/",
-        "/companies/{company_id}/customers/{customer_id}",
+    # List only: Simpro publishes no /customers/{id} detail route, so the
+    # detail path is None and ``get()`` raises. See ADR-013 decision 2.
+    CustomersEndpoint: ("/companies/{company_id}/customers/", None),
+    IndividualCustomersEndpoint: (
+        "/companies/{company_id}/customers/individuals/",
+        "/companies/{company_id}/customers/individuals/{customer_id}",
+    ),
+    CompanyCustomersEndpoint: (
+        "/companies/{company_id}/customers/companies/",
+        "/companies/{company_id}/customers/companies/{customer_id}",
     ),
     JobsEndpoint: (
         "/companies/{company_id}/jobs/",
@@ -68,6 +77,17 @@ EXPECTED_ROUTES = {
 }
 
 
+#: Endpoints Simpro publishes a detail route for, and the one it does not.
+#: Split so the structural guards below parametrize over exactly the classes
+#: they apply to, rather than skipping most of their cases.
+WITH_DETAIL = tuple(
+    cls for cls, (_collection, detail) in EXPECTED_ROUTES.items() if detail is not None
+)
+WITHOUT_DETAIL = tuple(
+    cls for cls, (_collection, detail) in EXPECTED_ROUTES.items() if detail is None
+)
+
+
 @pytest.mark.parametrize("endpoint_type", EXPECTED_ROUTES, ids=lambda cls: cls.__name__)
 def test_route_templates_match_the_committed_contract(
     endpoint_type: type[ResourceEndpoint],
@@ -81,7 +101,7 @@ def test_route_templates_match_the_committed_contract(
     assert (endpoint_type.collection_path, endpoint_type.detail_path) == expected
 
 
-@pytest.mark.parametrize("endpoint_type", EXPECTED_ROUTES, ids=lambda cls: cls.__name__)
+@pytest.mark.parametrize("endpoint_type", WITH_DETAIL, ids=lambda cls: cls.__name__)
 def test_item_key_appears_in_the_detail_path(
     endpoint_type: type[ResourceEndpoint],
 ) -> None:
@@ -116,4 +136,21 @@ def test_contract_covers_every_registered_endpoint() -> None:
         f"{sorted(cls.__name__ for cls in exported - set(EXPECTED_ROUTES))}; "
         f"stale entries: "
         f"{sorted(cls.__name__ for cls in set(EXPECTED_ROUTES) - exported)}"
+    )
+
+
+@pytest.mark.parametrize(
+    "endpoint_type", WITHOUT_DETAIL, ids=lambda cls: cls.__name__
+)
+def test_endpoints_without_a_detail_route_refuse_get(
+    endpoint_type: type[ResourceEndpoint],
+) -> None:
+    """A ``None`` detail path obliges the class to override ``get()``.
+
+    Otherwise the inherited ``get()`` would format ``None`` and fail with an
+    obscure ``TypeError`` instead of saying which endpoint to use instead.
+    """
+    assert "get" in vars(endpoint_type), (
+        f"{endpoint_type.__name__}.detail_path is None but it does not "
+        f"override get()"
     )

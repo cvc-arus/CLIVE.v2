@@ -23,33 +23,48 @@ from simpro_mock.schemas import (
     AssetResponse,
     AttachmentDetailResponse,
     AttachmentListResponse,
+    CompanyCustomerDetailResponse,
+    CompanyCustomerListResponse,
     CompanyDetailResponse,
     CompanyListResponse,
-    ContactResponse,
-    CustomerResponse,
+    ContactDetailResponse,
+    ContactListResponse,
+    CustomerSummaryResponse,
     EmployeeDetailResponse,
     EmployeeListResponse,
     HealthResponse,
+    IndividualCustomerDetailResponse,
+    IndividualCustomerListResponse,
     JobNoteDetailResponse,
     JobNoteListResponse,
     JobResponse,
     ProjectStatusCodeDetailResponse,
     ProjectStatusCodeListResponse,
     QuoteResponse,
-    SiteResponse,
+    SiteDetailResponse,
+    SiteListResponse,
     TokenResponse,
 )
 from simpro_mock.serializers import (
     attachment_detail_dict,
     attachment_list_dict,
+    company_customer_detail_dict,
+    company_customer_list_dict,
     company_detail_dict,
     company_list_dict,
+    contact_detail_dict,
+    contact_list_dict,
+    customer_summary_dict,
     employee_detail_dict,
     employee_list_dict,
+    individual_customer_detail_dict,
+    individual_customer_list_dict,
     job_note_detail_dict,
     job_note_list_dict,
     project_status_code_detail_dict,
     project_status_code_list_dict,
+    site_detail_dict,
+    site_list_dict,
 )
 
 # Create separate routers for health, tokens, and API resources
@@ -128,12 +143,16 @@ def get_company(company_id: int, db: Session = Depends(get_db)):
 
 # ==========================================
 # 3. CUSTOMERS RESOURCE ROUTES
+#
+# Three routes, not two: /customers/ lists both kinds with a Type
+# discriminator and an _href, and the full record lives on a subtype route.
+# Simpro publishes no /customers/{id}. See ADR-013 decision 2.
 # ==========================================
 
 
 @api_router.get(
     "/companies/{company_id}/customers/",
-    response_model=list[CustomerResponse],
+    response_model=list[CustomerSummaryResponse],
 )
 def list_customers(
     company_id: int,
@@ -143,43 +162,58 @@ def list_customers(
     pageSize: int = Query(30, ge=1, le=250),
     db: Session = Depends(get_db),
 ):
-    """Retrieve all customers scoped to a company ID with filtering and pagination."""
+    """List both customer kinds together, with the Type discriminator."""
     query = db.query(Customer).filter(Customer.company_id == company_id)
     query = apply_filters(query, Customer, dict(request.query_params))
 
     items, total, total_pages = paginate_query(query, page, pageSize)
-
-    results = [
-        CustomerResponse(
-            ID=customer.id,
-            CompanyID=customer.company_id,
-            GivenName=customer.given_name,
-            FamilyName=customer.family_name,
-            Email=customer.email,
-            Phone=customer.phone,
-        )
-        for customer in items
-    ]
+    results = [customer_summary_dict(customer) for customer in items]
 
     set_pagination_headers(response, total, len(results), total_pages)
     return results
 
 
 @api_router.get(
-    "/companies/{company_id}/customers/{customer_id}",
-    response_model=CustomerResponse,
+    "/companies/{company_id}/customers/individuals/",
+    response_model=list[IndividualCustomerListResponse],
 )
-def get_customer(
+def list_individual_customers(
+    company_id: int,
+    request: Request,
+    response: Response,
+    page: int = Query(1, ge=1),
+    pageSize: int = Query(30, ge=1, le=250),
+    db: Session = Depends(get_db),
+):
+    """List only the customers who are people."""
+    query = db.query(Customer).filter(
+        Customer.company_id == company_id, Customer.type == "Individual"
+    )
+    query = apply_filters(query, Customer, dict(request.query_params))
+
+    items, total, total_pages = paginate_query(query, page, pageSize)
+    results = [individual_customer_list_dict(customer) for customer in items]
+
+    set_pagination_headers(response, total, len(results), total_pages)
+    return results
+
+
+@api_router.get(
+    "/companies/{company_id}/customers/individuals/{customer_id}",
+    response_model=IndividualCustomerDetailResponse,
+)
+def get_individual_customer(
     company_id: int,
     customer_id: int,
     db: Session = Depends(get_db),
 ):
-    """Fetch details of a single customer scoped to their respective company."""
+    """Fetch one individual customer. 404 if the id names a company."""
     customer = (
         db.query(Customer)
         .filter(
             Customer.id == customer_id,
             Customer.company_id == company_id,
+            Customer.type == "Individual",
         )
         .first()
     )
@@ -187,14 +221,58 @@ def get_customer(
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
 
-    return CustomerResponse(
-        ID=customer.id,
-        CompanyID=customer.company_id,
-        GivenName=customer.given_name,
-        FamilyName=customer.family_name,
-        Email=customer.email,
-        Phone=customer.phone,
+    return individual_customer_detail_dict(customer)
+
+
+@api_router.get(
+    "/companies/{company_id}/customers/companies/",
+    response_model=list[CompanyCustomerListResponse],
+)
+def list_company_customers(
+    company_id: int,
+    request: Request,
+    response: Response,
+    page: int = Query(1, ge=1),
+    pageSize: int = Query(30, ge=1, le=250),
+    db: Session = Depends(get_db),
+):
+    """List only the customers that are organisations."""
+    query = db.query(Customer).filter(
+        Customer.company_id == company_id, Customer.type == "Company"
     )
+    query = apply_filters(query, Customer, dict(request.query_params))
+
+    items, total, total_pages = paginate_query(query, page, pageSize)
+    results = [company_customer_list_dict(customer) for customer in items]
+
+    set_pagination_headers(response, total, len(results), total_pages)
+    return results
+
+
+@api_router.get(
+    "/companies/{company_id}/customers/companies/{customer_id}",
+    response_model=CompanyCustomerDetailResponse,
+)
+def get_company_customer(
+    company_id: int,
+    customer_id: int,
+    db: Session = Depends(get_db),
+):
+    """Fetch one company customer. 404 if the id names an individual."""
+    customer = (
+        db.query(Customer)
+        .filter(
+            Customer.id == customer_id,
+            Customer.company_id == company_id,
+            Customer.type == "Company",
+        )
+        .first()
+    )
+
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+
+    return company_customer_detail_dict(customer)
 
 
 # ==========================================
@@ -341,7 +419,7 @@ def get_quote(
 
 @api_router.get(
     "/companies/{company_id}/customers/{customer_id}/contacts/",
-    response_model=list[ContactResponse],
+    response_model=list[ContactListResponse],
 )
 def list_contacts(
     company_id: int,
@@ -357,26 +435,14 @@ def list_contacts(
     )
     query = apply_filters(query, Contact, dict(request.query_params))
     items, total, total_pages = paginate_query(query, page, pageSize)
-    results = [
-        ContactResponse(
-            ID=c.id,
-            CompanyID=c.company_id,
-            CustomerID=c.customer_id,
-            GivenName=c.given_name,
-            FamilyName=c.family_name,
-            Position=c.position,
-            Email=c.email,
-            Phone=c.phone,
-        )
-        for c in items
-    ]
+    results = [contact_list_dict(c) for c in items]
     set_pagination_headers(response, total, len(results), total_pages)
     return results
 
 
 @api_router.get(
     "/companies/{company_id}/customers/{customer_id}/contacts/{contact_id}",
-    response_model=ContactResponse,
+    response_model=ContactDetailResponse,
 )
 def get_contact(
     company_id: int, customer_id: int, contact_id: int, db: Session = Depends(get_db)
@@ -392,16 +458,7 @@ def get_contact(
     )
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
-    return ContactResponse(
-        ID=contact.id,
-        CompanyID=contact.company_id,
-        CustomerID=contact.customer_id,
-        GivenName=contact.given_name,
-        FamilyName=contact.family_name,
-        Position=contact.position,
-        Email=contact.email,
-        Phone=contact.phone,
-    )
+    return contact_detail_dict(contact)
 
 
 # ==========================================
@@ -409,7 +466,9 @@ def get_contact(
 # ==========================================
 
 
-@api_router.get("/companies/{company_id}/sites/", response_model=list[SiteResponse])
+@api_router.get(
+    "/companies/{company_id}/sites/", response_model=list[SiteListResponse]
+)
 def list_sites(
     company_id: int,
     request: Request,
@@ -421,42 +480,21 @@ def list_sites(
     query = db.query(Site).filter(Site.company_id == company_id)
     query = apply_filters(query, Site, dict(request.query_params))
     items, total, total_pages = paginate_query(query, page, pageSize)
-    results = [
-        SiteResponse(
-            ID=s.id,
-            CompanyID=s.company_id,
-            CustomerID=s.customer_id,
-            Name=s.name,
-            Address=s.address,
-            City=s.city,
-            Postcode=s.postcode,
-            State=s.state,
-            Country=s.country,
-        )
-        for s in items
-    ]
+    results = [site_list_dict(s) for s in items]
     set_pagination_headers(response, total, len(results), total_pages)
     return results
 
 
-@api_router.get("/companies/{company_id}/sites/{site_id}", response_model=SiteResponse)
+@api_router.get(
+    "/companies/{company_id}/sites/{site_id}", response_model=SiteDetailResponse
+)
 def get_site(company_id: int, site_id: int, db: Session = Depends(get_db)):
     site = (
         db.query(Site).filter(Site.id == site_id, Site.company_id == company_id).first()
     )
     if not site:
         raise HTTPException(status_code=404, detail="Site not found")
-    return SiteResponse(
-        ID=site.id,
-        CompanyID=site.company_id,
-        CustomerID=site.customer_id,
-        Name=site.name,
-        Address=site.address,
-        City=site.city,
-        Postcode=site.postcode,
-        State=site.state,
-        Country=site.country,
-    )
+    return site_detail_dict(site)
 
 
 # ==========================================

@@ -14,6 +14,8 @@ it is required here; where the containing object is itself nullable or
 optional, the *owning* model declares it optional, not these classes.
 """
 
+from datetime import date
+
 from pydantic import Field
 
 from simpro_client.models.base import SimproBaseModel
@@ -113,13 +115,163 @@ class NoteAttachment(SimproBaseModel):
     href: str = Field(alias="_href")
 
 
+class SiteBillingAddress(SimproBaseModel):
+    """A site's billing address.
+
+    Deliberately **not** :class:`AddressBlock`: the site billing address is the
+    one address shape in the contract with no ``Country`` member.
+    """
+
+    address: str = Field(alias="Address")
+    city: str = Field(alias="City")
+    state: str = Field(alias="State")
+    postal_code: str = Field(alias="PostalCode")
+
+
+class ContactRef(SimproBaseModel):
+    """A nullable pointer at a contact record, by name and id."""
+
+    id: int | None = Field(default=None, alias="ID")
+    given_name: str | None = Field(default=None, alias="GivenName")
+    family_name: str | None = Field(default=None, alias="FamilyName")
+    email: str | None = Field(default=None, alias="Email")
+
+
+class CustomerRef(SimproBaseModel):
+    """A customer as it appears inside another resource.
+
+    Carries both name shapes because the discriminator decides which is
+    meaningful: ``CompanyName`` for a company, ``GivenName``/``FamilyName`` for
+    an individual. Unlike the customers collection, this shape has no
+    ``_href``.
+    """
+
+    id: int | None = Field(default=None, alias="ID")
+    type: str | None = Field(default=None, alias="Type")
+    company_name: str | None = Field(default=None, alias="CompanyName")
+    given_name: str | None = Field(default=None, alias="GivenName")
+    family_name: str | None = Field(default=None, alias="FamilyName")
+
+
+class CustomerContactRef(SimproBaseModel):
+    """A contact listed on a customer, with its invoicing roles."""
+
+    id: int | None = Field(default=None, alias="ID")
+    given_name: str | None = Field(default=None, alias="GivenName")
+    family_name: str | None = Field(default=None, alias="FamilyName")
+    email: str | None = Field(default=None, alias="Email")
+    invoice_contact: bool | None = Field(default=None, alias="InvoiceContact")
+    primary_invoice_contact: bool | None = Field(
+        default=None, alias="PrimaryInvoiceContact"
+    )
+    statement_contact: bool | None = Field(default=None, alias="StatementContact")
+    primary_statement_contact: bool | None = Field(
+        default=None, alias="PrimaryStatementContact"
+    )
+
+
+class ContractRef(SimproBaseModel):
+    """A customer contract. Both dates are nullable upstream."""
+
+    id: int | None = Field(default=None, alias="ID")
+    name: str | None = Field(default=None, alias="Name")
+    contract_no: str | None = Field(default=None, alias="ContractNo")
+    start_date: date | None = Field(default=None, alias="StartDate")
+    end_date: date | None = Field(default=None, alias="EndDate")
+    expired: bool | None = Field(default=None, alias="Expired")
+
+
+class Currency(SimproBaseModel):
+    """A currency. Note ``ID`` is a *string* here, not an integer."""
+
+    id: str | None = Field(default=None, alias="ID")
+    name: str | None = Field(default=None, alias="Name")
+    visible: bool | None = Field(default=None, alias="Visible")
+
+
+class CustomerProfile(SimproBaseModel):
+    """A customer's ``Profile`` block: grouping, ownership and free notes."""
+
+    notes: str | None = Field(default=None, alias="Notes")
+    currency: Currency | None = Field(default=None, alias="Currency")
+    account_manager: NamedRef | None = Field(default=None, alias="AccountManager")
+    customer_group: NamedRef | None = Field(default=None, alias="CustomerGroup")
+    customer_profile: NamedRef | None = Field(default=None, alias="CustomerProfile")
+    service_job_cost_center: NamedRef | None = Field(
+        default=None, alias="ServiceJobCostCenter"
+    )
+
+
+class SitePrimaryContact(SimproBaseModel):
+    """A site's primary contact.
+
+    A different shape from :class:`EmployeeContact`: a site's contact is a
+    named person with a position, not a bundle of phone numbers.
+    """
+
+    given_name: str | None = Field(default=None, alias="GivenName")
+    family_name: str | None = Field(default=None, alias="FamilyName")
+    title: str | None = Field(default=None, alias="Title")
+    position: str | None = Field(default=None, alias="Position")
+    email: str | None = Field(default=None, alias="Email")
+    work_phone: str | None = Field(default=None, alias="WorkPhone")
+    cell_phone: str | None = Field(default=None, alias="CellPhone")
+    fax: str | None = Field(default=None, alias="Fax")
+    preferred_notification_method: str | None = Field(
+        default=None, alias="PreferredNotificationMethod"
+    )
+    contact: ContactRef | None = Field(default=None, alias="Contact")
+
+
+class PreferredTechnician(SimproBaseModel):
+    """A site's preferred technician, optionally scoped to an asset type."""
+
+    staff: StaffRef | None = Field(default=None, alias="Staff")
+    asset_type: NamedRef | None = Field(default=None, alias="AssetType")
+    service_level: NamedRef | None = Field(default=None, alias="ServiceLevel")
+
+
+class CustomFieldDefinition(SimproBaseModel):
+    """The definition half of a custom field: its name, type and options."""
+
+    id: int | None = Field(default=None, alias="ID")
+    name: str | None = Field(default=None, alias="Name")
+    type: str | None = Field(default=None, alias="Type")
+    is_mandatory: bool | None = Field(default=None, alias="IsMandatory")
+    list_items: list[str] | None = Field(default=None, alias="ListItems")
+
+
+class CustomFieldValue(SimproBaseModel):
+    """One custom field and its value on a record.
+
+    Simpro keeps asset serial numbers, models and manufacturers here, which is
+    why ``CustomFields`` is in ADR-013's fidelity scope at all.
+    """
+
+    custom_field: CustomFieldDefinition | None = Field(
+        default=None, alias="CustomField"
+    )
+    value: str | None = Field(default=None, alias="Value")
+
+
 __all__ = [
     "AddressBlock",
     "CompanyAddress",
+    "ContactRef",
+    "ContractRef",
+    "Currency",
+    "CustomFieldDefinition",
+    "CustomFieldValue",
+    "CustomerContactRef",
+    "CustomerProfile",
+    "CustomerRef",
     "EmployeeContact",
     "NamedRef",
     "NoteAttachment",
     "NoteReference",
     "NoteVisibility",
+    "PreferredTechnician",
+    "SiteBillingAddress",
+    "SitePrimaryContact",
     "StaffRef",
 ]

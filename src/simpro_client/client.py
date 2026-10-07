@@ -15,9 +15,11 @@ from simpro_client.endpoints import (
     AssetsEndpoint,
     AttachmentsEndpoint,
     CompaniesEndpoint,
+    CompanyCustomersEndpoint,
     ContactsEndpoint,
     CustomersEndpoint,
     EmployeesEndpoint,
+    IndividualCustomersEndpoint,
     JobNotesEndpoint,
     JobsEndpoint,
     ProjectStatusCodesEndpoint,
@@ -82,6 +84,8 @@ class SimproClient:
         self._now = _utc_now
         self.companies = CompaniesEndpoint(self)
         self.customers = CustomersEndpoint(self)
+        self.individual_customers = IndividualCustomersEndpoint(self)
+        self.company_customers = CompanyCustomersEndpoint(self)
         self.jobs = JobsEndpoint(self)
         self.quotes = QuotesEndpoint(self)
         self.contacts = ContactsEndpoint(self)
