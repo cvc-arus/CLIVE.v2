@@ -18,23 +18,30 @@ classes in ``schemas.py`` stay on each route's ``response_model``, so a typo
 here fails the request rather than silently serving a wrong shape.
 """
 
+from decimal import Decimal
 from typing import Any
 
 from simpro_mock.models import (
+    Asset,
     Attachment,
     Company,
     Contact,
     Customer,
+    CustomerContract,
     CustomFieldValue,
     Employee,
+    Job,
     JobNote,
+    Quote,
     Site,
     Status,
     Zone,
 )
 
 
-def _named_ref(row: Zone | Company | Site | None) -> dict[str, Any] | None:
+def _named_ref(
+    row: Zone | Company | Site | None,
+) -> dict[str, Any] | None:
     """Render an ``{"ID", "Name"}`` reference, or ``None`` when absent."""
     if row is None:
         return None
@@ -526,4 +533,198 @@ def site_detail_dict(site: Site) -> dict[str, Any]:
         "CustomFields": _custom_fields(site.custom_field_values),
         "Archived": site.archived,
         "DateModified": site.date_modified.isoformat(),
+    }
+
+
+# ----------------------------------------------------- jobs, quotes, assets
+
+
+def _money(ex_tax: Decimal, tax: Decimal, inc_tax: Decimal) -> dict[str, float]:
+    """Render a money total as the contract's three-way split.
+
+    **Floats on the wire, Decimals in the database.** The spec types money as
+    ``number``, and Pydantic would serialise a ``Decimal`` to a JSON *string*,
+    so the conversion happens here. The two-decimal column is what keeps the
+    value exact; the client parses it straight back into ``Decimal``
+    (ADR-013).
+    """
+    return {
+        "ExTax": float(ex_tax),
+        "Tax": float(tax),
+        "IncTax": float(inc_tax),
+    }
+
+
+def _status_ref(status: Status) -> dict[str, Any]:
+    """Render a job or quote status.
+
+    The id is a project status code id, shared with
+    ``/setup/statusCodes/projects/`` (ADR-013 §7), which is why this reads
+    from a joined row rather than from flat columns on the job.
+    """
+    return {"ID": status.id, "Name": status.name, "Color": status.color}
+
+
+def _contract_ref(contract: CustomerContract | None) -> dict[str, Any] | None:
+    """Render a customer contract, or ``None`` when there is none."""
+    if contract is None:
+        return None
+    return {
+        "ID": contract.id,
+        "Name": contract.name,
+        "ContractNo": contract.contract_no,
+        "StartDate": (contract.start_date.isoformat() if contract.start_date else None),
+        "EndDate": contract.end_date.isoformat() if contract.end_date else None,
+    }
+
+
+def job_list_dict(job: Job) -> dict[str, Any]:
+    """The three fields Simpro's job collection route returns.
+
+    Not even ``Name`` is included: the narrow projection is ``ID``,
+    ``Description`` and ``Total``, and ``Total`` is an object.
+    """
+    return {
+        "ID": job.id,
+        "Description": job.description,
+        "Total": _money(job.total_ex_tax, job.total_tax, job.total_inc_tax),
+    }
+
+
+def job_detail_dict(job: Job) -> dict[str, Any]:
+    """A job's documented detail fields.
+
+    ``Totals`` is omitted by ADR-013's fidelity scope.
+    ``ConvertedFrom`` is a required object with no required members, so ``{}``
+    is legal for a job that was not converted from anything.
+    """
+    return {
+        "ID": job.id,
+        "Description": job.description,
+        "Total": _money(job.total_ex_tax, job.total_tax, job.total_inc_tax),
+        "Name": job.name,
+        "Type": job.type,
+        "Stage": job.stage,
+        "Status": _status_ref(job.status),
+        "Customer": _customer_ref(job.customer),
+        "Site": {"ID": job.site.id, "Name": job.site.name},
+        "CustomerContract": _contract_ref(job.customer_contract),
+        "CustomerContact": None,
+        "SiteContact": None,
+        "ProjectManager": None,
+        "Salesperson": None,
+        "Technician": None,
+        "Technicians": [],
+        "AdditionalContacts": [],
+        "Tags": [],
+        "Notes": job.notes,
+        "OrderNo": job.order_no,
+        "RequestNo": job.request_no,
+        "DateIssued": job.date_issued.isoformat() if job.date_issued else None,
+        "DueDate": job.due_date.isoformat() if job.due_date else None,
+        "CompletedDate": (
+            job.completed_date.isoformat() if job.completed_date else None
+        ),
+        "DateModified": job.date_modified.isoformat(),
+        "AutoAdjustStatus": job.auto_adjust_status,
+        "IsVariation": job.is_variation,
+        "ConvertedFrom": {},
+        "ArchiveReason": None,
+        "ResponseTime": None,
+        "CustomFields": _custom_fields(job.custom_field_values),
+    }
+
+
+def quote_list_dict(quote: Quote) -> dict[str, Any]:
+    """The three fields Simpro's quote collection route returns."""
+    return {
+        "ID": quote.id,
+        "Description": quote.description,
+        "Total": _money(quote.total_ex_tax, quote.total_tax, quote.total_inc_tax),
+    }
+
+
+def quote_detail_dict(quote: Quote) -> dict[str, Any]:
+    """A quote's documented detail fields.
+
+    ``Totals`` and ``Forecast`` are omitted by ADR-013's fidelity scope. A
+    quote's ``Stage`` values differ from a job's.
+    """
+    return {
+        "ID": quote.id,
+        "Description": quote.description,
+        "Total": _money(quote.total_ex_tax, quote.total_tax, quote.total_inc_tax),
+        "Name": quote.name,
+        "Type": quote.type,
+        "Stage": quote.stage,
+        "CustomerStage": None,
+        "Status": _status_ref(quote.status),
+        "Customer": _customer_ref(quote.customer),
+        "Site": {"ID": quote.site.id, "Name": quote.site.name},
+        "CustomerContract": None,
+        "CustomerContact": None,
+        "SiteContact": None,
+        "ProjectManager": None,
+        "Salesperson": None,
+        "Technician": None,
+        "Technicians": [],
+        "AdditionalContacts": [],
+        "AdditionalCustomers": [],
+        "Tags": [],
+        "Notes": quote.notes,
+        "OrderNo": quote.order_no,
+        "RequestNo": quote.request_no,
+        "JobNo": None,
+        "LinkedJobID": None,
+        "DateIssued": quote.date_issued.isoformat() if quote.date_issued else None,
+        "DateApproved": (
+            quote.date_approved.isoformat() if quote.date_approved else None
+        ),
+        "DueDate": quote.due_date.isoformat() if quote.due_date else None,
+        "DateModified": quote.date_modified.isoformat(),
+        "ValidityDays": quote.validity_days,
+        "AutoAdjustStatus": quote.auto_adjust_status,
+        "IsVariation": quote.is_variation,
+        "IsClosed": quote.is_closed,
+        "ArchiveReason": None,
+        "CustomFields": _custom_fields(quote.custom_field_values),
+    }
+
+
+def asset_list_dict(asset: Asset) -> dict[str, Any]:
+    """The two fields Simpro's asset collection route returns."""
+    return {
+        "ID": asset.id,
+        "AssetType": {"ID": asset.asset_type.id, "Name": asset.asset_type.name},
+    }
+
+
+def asset_detail_dict(asset: Asset) -> dict[str, Any]:
+    """An asset's documented detail fields.
+
+    There is no ``AssetNo``, ``Name``, ``SerialNo``, ``Model`` or
+    ``Manufacturer``: the last three live in ``CustomFields``, which is where
+    Simpro keeps them. ``LastTest`` is a required object with no required
+    members, so an untested asset serves ``{}``.
+    """
+    last_test: dict[str, Any] = {}
+    if asset.last_test_date or asset.last_test_result:
+        last_test = {
+            "Date": (
+                asset.last_test_date.isoformat() if asset.last_test_date else None
+            ),
+            "Result": asset.last_test_result,
+            "ServiceLevel": None,
+        }
+    return {
+        "ID": asset.id,
+        "AssetType": {"ID": asset.asset_type.id, "Name": asset.asset_type.name},
+        "StartDate": asset.start_date.isoformat(),
+        "DisplayOrder": asset.display_order,
+        "Archived": asset.archived,
+        "ParentID": asset.parent_id,
+        "LastTest": last_test,
+        "CustomerContract": _contract_ref(asset.customer_contract),
+        "CustomFields": _custom_fields(asset.custom_field_values),
+        "DateModified": asset.date_modified.isoformat(),
     }

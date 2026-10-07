@@ -55,8 +55,11 @@ class SimproSettings(BaseSettings):
     company_id_projects: int = Field(
         default=2,
         description=(
-            "Company ID for CVC Projects. Reserved: nothing reads this. "
-            "Endpoints take an explicit company_id argument."
+            "Company ID for CVC Projects: the company whose jobs are projects. "
+            "Simpro has no Projects resource, so a project is a job with "
+            "Type='Project' (ADR-013); this is still just a company id, not a "
+            "resource selector. Reserved: nothing reads this. Endpoints take "
+            "an explicit company_id argument."
         ),
     )
     timeout: float = Field(

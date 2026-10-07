@@ -46,10 +46,8 @@ GET_CASES = [
         "/companies/1/jobs/3",
         {
             "ID": 3,
-            "CompanyID": 1,
-            "Name": "Service",
-            "Status": "Open",
-            "Total": 10.0,
+            "Description": "Camera replacement",
+            "Total": {"ExTax": "10.00", "Tax": "1.00", "IncTax": "11.00"},
         },
         Job,
     ),
@@ -60,10 +58,8 @@ GET_CASES = [
         "/companies/1/quotes/4",
         {
             "ID": 4,
-            "CompanyID": 1,
-            "Name": "Quote",
-            "Status": "Draft",
-            "Total": 20.0,
+            "Description": "Alarm upgrade quote",
+            "Total": {"ExTax": "20.00", "Tax": "2.00", "IncTax": "22.00"},
         },
         Quote,
     ),
@@ -88,13 +84,7 @@ GET_CASES = [
         7,
         {"company_id": 1, "site_id": 6},
         "/companies/1/sites/6/assets/7",
-        {
-            "ID": 7,
-            "CompanyID": 1,
-            "SiteID": 6,
-            "AssetNo": "A-7",
-            "Name": "Pump",
-        },
+        {"ID": 7, "AssetType": {"ID": 4, "Name": "Hikvision Dome Camera"}},
         Asset,
     ),
     (
@@ -172,11 +162,8 @@ def test_page_preserves_headers_filters_and_company_selection(mock_settings):
             json=[
                 {
                     "ID": 3,
-                    "CompanyID": 2,
-                    "Name": "Service",
-                    "Status": "Open",
-                    "DateIssued": "2026-09-07",
-                    "Total": 10.0,
+                    "Description": "Camera replacement",
+                    "Total": {"ExTax": "10.00", "Tax": "1.00", "IncTax": "11.00"},
                 }
             ],
             headers={
@@ -221,7 +208,11 @@ def test_columns_are_sent_as_csv_on_collections(mock_settings):
         return_value=Response(
             200,
             json=[
-                {"ID": 3, "CompanyID": 2, "Name": "S", "Status": "Open", "Total": 1.0}
+                {
+                    "ID": 3,
+                    "Description": "S",
+                    "Total": {"ExTax": "1.00", "Tax": "0.10", "IncTax": "1.10"},
+                }
             ],
             headers={
                 "Result-Total": "1",

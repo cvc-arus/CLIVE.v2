@@ -14,7 +14,14 @@ it is required here; where the containing object is itself nullable or
 optional, the *owning* model declares it optional, not these classes.
 """
 
-from datetime import date
+# Imported under an alias because two models below have a field *named*
+# ``date``. In an annotated assignment Python binds the name before it
+# evaluates the annotation, so a field called ``date`` annotated with the
+# bare ``date`` type resolves to the FieldInfo just assigned and raises
+# TypeError at import time.
+from datetime import date as date_type
+from datetime import datetime
+from decimal import Decimal
 
 from pydantic import Field
 
@@ -176,8 +183,8 @@ class ContractRef(SimproBaseModel):
     id: int | None = Field(default=None, alias="ID")
     name: str | None = Field(default=None, alias="Name")
     contract_no: str | None = Field(default=None, alias="ContractNo")
-    start_date: date | None = Field(default=None, alias="StartDate")
-    end_date: date | None = Field(default=None, alias="EndDate")
+    start_date: date_type | None = Field(default=None, alias="StartDate")
+    end_date: date_type | None = Field(default=None, alias="EndDate")
     expired: bool | None = Field(default=None, alias="Expired")
 
 
@@ -241,6 +248,78 @@ class CustomFieldDefinition(SimproBaseModel):
     list_items: list[str] | None = Field(default=None, alias="ListItems")
 
 
+class Money(SimproBaseModel):
+    r"""A monetary total, split by tax.
+
+    ``Decimal``, not ``float``: every money field in the contract carries the
+    pattern ``(^\d+(\.\d{1,2})?$)``, so the values are fixed at two decimal
+    places and binary floating point would misrepresent them (ADR-013).
+
+    Pydantic accepts a JSON number here as readily as a string, which matters
+    because the wire format is a number.
+    """
+
+    ex_tax: Decimal = Field(alias="ExTax")
+    tax: Decimal = Field(alias="Tax")
+    inc_tax: Decimal = Field(alias="IncTax")
+
+
+class StatusRef(SimproBaseModel):
+    """A job or quote status.
+
+    ``ID`` is a *project status code* id: the contract documents the ``Status``
+    field of the Job and Quote write bodies as "ID of a project status code",
+    so jobs, quotes and ``/setup/statusCodes/projects/`` share one id space
+    (ADR-013 §7). That is why the mock stores it as a real foreign key.
+    """
+
+    id: int | None = Field(default=None, alias="ID")
+    name: str | None = Field(default=None, alias="Name")
+    color: str | None = Field(default=None, alias="Color")
+
+
+class ConvertedFrom(SimproBaseModel):
+    """What a job was converted from, if anything.
+
+    Every member is optional upstream, so an empty object is a legal value for
+    a job that was created directly.
+    """
+
+    id: int | None = Field(default=None, alias="ID")
+    #: A date-*time* upstream, despite the field name.
+    date: datetime | None = Field(default=None, alias="Date")
+    type: str | None = Field(default=None, alias="Type")
+
+
+class ConvertedFromQuote(SimproBaseModel):
+    """The quote a job was converted from."""
+
+    id: int | None = Field(default=None, alias="ID")
+    description: str | None = Field(default=None, alias="Description")
+    total: Money | None = Field(default=None, alias="Total")
+
+
+class LastTest(SimproBaseModel):
+    """An asset's last test result.
+
+    A required object with no required members, so ``{}`` is legal for an
+    asset that has never been tested.
+    """
+
+    date: date_type | None = Field(default=None, alias="Date")
+    result: str | None = Field(default=None, alias="Result")
+    service_level: NamedRef | None = Field(default=None, alias="ServiceLevel")
+
+
+class StcDetails(SimproBaseModel):
+    """Small-scale Technology Certificate eligibility and value."""
+
+    stcs_eligible: bool | None = Field(default=None, alias="STCsEligible")
+    stc_value: Decimal | None = Field(default=None, alias="STCValue")
+    veecs_eligible: bool | None = Field(default=None, alias="VEECsEligible")
+    veec_value: Decimal | None = Field(default=None, alias="VEECValue")
+
+
 class CustomFieldValue(SimproBaseModel):
     """One custom field and its value on a record.
 
@@ -269,8 +348,14 @@ __all__ = [
     "NamedRef",
     "NoteAttachment",
     "NoteReference",
+    "ConvertedFrom",
+    "ConvertedFromQuote",
+    "LastTest",
+    "Money",
     "NoteVisibility",
     "PreferredTechnician",
+    "StatusRef",
+    "StcDetails",
     "SiteBillingAddress",
     "SitePrimaryContact",
     "StaffRef",

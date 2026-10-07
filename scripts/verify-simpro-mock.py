@@ -189,17 +189,7 @@ def main():
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/{site_id}/assets/",
-        [
-            "ID",
-            "CompanyID",
-            "SiteID",
-            "AssetNo",
-            "Name",
-            "SerialNo",
-            "Model",
-            "Manufacturer",
-            "InstalledDate",
-        ],
+        ["ID", "AssetType"],
         "Assets",
     )
     test_list_endpoint(
@@ -211,7 +201,7 @@ def main():
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/",
-        ["ID", "CompanyID", "Name", "Status", "DateIssued", "Total"],
+        ["ID", "Description", "Total"],
         "Jobs",
     )
     test_list_endpoint(
@@ -229,7 +219,7 @@ def main():
     test_list_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/quotes/",
-        ["ID", "CompanyID", "CustomerID", "Name", "Status", "Total"],
+        ["ID", "Description", "Total"],
         "Quotes",
     )
     test_list_endpoint(
@@ -352,14 +342,13 @@ def main():
             f"{BASE_URL}/api/v1.0/companies/{company_id}/sites/{site_id}/assets/{aid}",
             [
                 "ID",
-                "CompanyID",
-                "SiteID",
-                "AssetNo",
-                "Name",
-                "SerialNo",
-                "Model",
-                "Manufacturer",
-                "InstalledDate",
+                "AssetType",
+                "StartDate",
+                "DisplayOrder",
+                "Archived",
+                "LastTest",
+                "CustomFields",
+                "DateModified",
             ],
             "Asset",
         )
@@ -398,7 +387,26 @@ def main():
     test_single_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}",
-        ["ID", "CompanyID", "Name", "Status", "DateIssued", "Total"],
+        [
+            "ID",
+            "Description",
+            "Total",
+            "Name",
+            "Type",
+            "Stage",
+            "Status",
+            "Customer",
+            "Site",
+            "CustomerContract",
+            "Technicians",
+            "Tags",
+            "Notes",
+            "OrderNo",
+            "DateIssued",
+            "DateModified",
+            "ConvertedFrom",
+            "CustomFields",
+        ],
         "Job",
     )
 
@@ -467,7 +475,21 @@ def main():
         test_single_endpoint(
             headers,
             f"{BASE_URL}/api/v1.0/companies/{company_id}/quotes/{qid}",
-            ["ID", "CompanyID", "CustomerID", "Name", "Status", "Total"],
+            [
+                "ID",
+                "Description",
+                "Total",
+                "Name",
+                "Type",
+                "Stage",
+                "Status",
+                "Customer",
+                "Site",
+                "ValidityDays",
+                "IsClosed",
+                "DateModified",
+                "CustomFields",
+            ],
             "Quote",
         )
     else:

@@ -199,7 +199,13 @@ failures. (Missing route parameters currently raise `ValueError` from
   `docs/phase3/sprints/phase3-sprint4-contract.md`. That sprint report is a
   historical record and is no longer normative; do not rewrite it.)
 - Dates are `datetime.date`; timestamps are `datetime.datetime`. Money is
-  `Decimal`, because the spec constrains money to two decimal places.
+  `Decimal`, because the spec constrains money to two decimal places. Money
+  arrives as a nested `Money` object (`{ExTax, Tax, IncTax}`), not a bare
+  number, and the mock sends JSON numbers, which `Decimal` accepts.
+- A field whose wire name is `Date` cannot be annotated with a bare `date`:
+  in `x: ann = val` Python binds `x` before evaluating `ann`, so the field
+  shadows the type and raises `TypeError` at import. `models/common.py`
+  imports it as `date_type` for exactly this reason.
 - **One model serves both the list and the detail payload**, and Simpro's list
   projection is narrow (often just `ID` and `Name`). So a field may only be
   required if the contract marks it required on *both* legs. Everything else

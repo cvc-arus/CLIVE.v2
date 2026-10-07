@@ -5,6 +5,8 @@ from simpro_client.models.common import (
     CompanyAddress,
     ContactRef,
     ContractRef,
+    ConvertedFrom,
+    ConvertedFromQuote,
     Currency,
     CustomerContactRef,
     CustomerProfile,
@@ -12,6 +14,8 @@ from simpro_client.models.common import (
     CustomFieldDefinition,
     CustomFieldValue,
     EmployeeContact,
+    LastTest,
+    Money,
     NamedRef,
     NoteAttachment,
     NoteReference,
@@ -20,6 +24,8 @@ from simpro_client.models.common import (
     SiteBillingAddress,
     SitePrimaryContact,
     StaffRef,
+    StatusRef,
+    StcDetails,
 )
 from simpro_client.models.company import Company
 from simpro_client.models.contact import Contact
@@ -45,6 +51,8 @@ __all__ = [
     "Contact",
     "ContactRef",
     "ContractRef",
+    "ConvertedFrom",
+    "ConvertedFromQuote",
     "Currency",
     "CustomFieldDefinition",
     "CustomFieldValue",
@@ -57,6 +65,8 @@ __all__ = [
     "IndividualCustomer",
     "Job",
     "JobNote",
+    "LastTest",
+    "Money",
     "NamedRef",
     "NoteAttachment",
     "NoteReference",
@@ -68,4 +78,6 @@ __all__ = [
     "SiteBillingAddress",
     "SitePrimaryContact",
     "StaffRef",
+    "StatusRef",
+    "StcDetails",
 ]
