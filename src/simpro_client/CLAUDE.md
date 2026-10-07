@@ -53,7 +53,8 @@ Do not create `pagination.py` unless a task asks for it.
   construction rather than `SimproAuthError` at the first request.
 - Optional with defaults: `api_key`, `auth_mode`, `company_id_service` (1),
   `company_id_projects` (2), `timeout`, `max_retries` (3),
-  `limiter_capacity` (8), `limiter_refill_rate` (8.0).
+  `max_retry_delay` (60.0), `limiter_capacity` (8),
+  `limiter_refill_rate` (8.0).
 - `auth_mode` is `Literal["client_credentials", "api_key"]`. An unrecognised
   value raises `ValidationError` when settings are constructed; it no longer
   falls through to the OAuth path.
@@ -117,15 +118,20 @@ Response handling, as implemented:
 | `httpx.TimeoutException` / `httpx.NetworkError` | GET: retry up to `max_retries` with backoff; then (and for other methods) `SimproAPIError(status_code=0)` |
 | other `httpx.HTTPError` | `SimproAPIError(status_code=0)`, no retry |
 | 401 | invalidate token, retry once (separate budget); failed refresh → `SimproAuthRefreshError`; second 401 → `SimproClientError` |
-| 429 | retry up to `max_retries`; honour `Retry-After`, else backoff |
+| 429 | retry up to `max_retries`; honour `Retry-After` capped at `max_retry_delay`, else backoff |
 | 404 | `SimproNotFoundError` |
 | other 4xx | `SimproClientError` |
-| 502 / 503 / 504 | GET: retry up to `max_retries`; honour `Retry-After`, else backoff; then (and for other methods) `SimproServerError` |
+| 502 / 503 / 504 | GET: retry up to `max_retries`; honour `Retry-After` capped at `max_retry_delay`, else backoff; then (and for other methods) `SimproServerError` |
 | other 5xx | `SimproServerError`, no retry |
 | 204 | `None` from the raw methods |
 
-Retry details: `Retry-After` is parsed as **integer seconds** or an HTTP-date.
-If missing or unparseable, backoff is `min(60, 2**n * (0.5 + random()))`.
+Retry details: `Retry-After` is parsed as **integer seconds** or an HTTP-date,
+then capped at `max_retry_delay` (`SIMPRO_MAX_RETRY_DELAY`, default 60.0)
+before sleeping, so no single response can block the calling thread
+indefinitely (ADR-012 §2.1). `_parse_retry_after()` itself is uncapped, so
+`SimproRateLimitError.retry_after` reports what the server actually sent.
+If missing or unparseable, backoff is
+`min(max_retry_delay, 2**n * (0.5 + random()))`.
 The same correlation ID is reused on every attempt of one logical request.
 A 401 refresh followed by a 429 does not consume the 429 budget.
 429, transient 5xx and transient network errors share one `max_retries`

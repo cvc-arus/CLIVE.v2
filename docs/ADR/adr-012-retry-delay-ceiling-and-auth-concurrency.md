@@ -1,7 +1,7 @@
 # ADR-012: Retry Delay Ceiling and Token-Refresh Concurrency
 
-*   **Status:** **Proposed — open decision.** Drafted 2026-10-06 by Claude at
-    ARus's request. Not binding until §3 is filled in.
+*   **Status:** **Accepted (2026-10-06, ARus).** Supersedes ADR-010 §2.3 and
+    extends ADR-010 §2.1. Drafted 2026-10-06 by Claude at ARus's request.
 *   **Deciders:** ARus
 *   **Date:** 2026-10-06 UTC
 *   **Context/Phase:** Phase 3, `simpro_client`
@@ -139,11 +139,21 @@ acquire. B4 is rejected: it contradicts the deliberately lock-protected
 
 ## 3. Decision
 
-_Pending — to be filled in once confirmed._
+Accepted 2026-10-06 by ARus:
+
+- **§2.1 — Option A2.** The clamp lives in `_retry_delay()` and is bounded
+  by a new `SIMPRO_MAX_RETRY_DELAY` setting (default `60.0`).
+  `_parse_retry_after()` stays uncapped, so
+  `SimproRateLimitError.retry_after` keeps reporting the value the server
+  actually sent. No `OverflowError` handler is added, because the clamp
+  makes that branch unreachable.
+- **§2.2 — Options B1 and B2.** A double-checked `threading.Lock` in
+  `AuthManager`, together with token-aware `invalidate(token=...)`.
+  `RLock` (B3) was considered and not chosen.
 
 ---
 
-## 4. Consequences if A2, B1 and B2 are accepted
+## 4. Consequences
 
 *   **Positive:** Any single logical call is bounded by
     `max_retries × max_retry_delay` of sleeping, instead of being unbounded.
@@ -190,7 +200,7 @@ The decimal `Retry-After` deviation already recorded in
 
 ---
 
-## 6. Verification if accepted
+## 6. Verification
 
 - `tests/test_retries.py`: an over-ceiling `Retry-After` sleeps the ceiling,
   not the header value; `SimproRateLimitError.retry_after` still reports the

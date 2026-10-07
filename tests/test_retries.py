@@ -271,3 +271,77 @@ def test_second_401_after_refresh_raises_client_error(mock_settings):
         error = capture(SimproClientError, lambda: client.get("/jobs"))
     assert not isinstance(error, SimproAuthError)
     assert error.status_code == 401
+
+
+@pytest.mark.parametrize(
+    "header",
+    ["86400", "99999999999999999999", "Fri, 01 Jan 2100 00:00:00 GMT"],
+)
+@respx.mock
+def test_retry_after_is_capped_at_max_retry_delay(mock_settings, header):
+    settings = mock_settings.model_copy(update={"max_retries": 1})
+    token(settings)
+    respx.get(f"{settings.base_url}/jobs").mock(
+        side_effect=[
+            Response(429, headers={"Retry-After": header}),
+            Response(200, json=[]),
+        ]
+    )
+    delays = []
+    with SimproClient(settings) as client:
+        client._sleep = delays.append
+        assert client.get("/jobs") == []
+    assert delays == [settings.max_retry_delay]
+
+
+@respx.mock
+def test_capped_retry_after_still_reports_the_servers_value(mock_settings):
+    settings = mock_settings.model_copy(update={"max_retries": 1})
+    token(settings)
+    respx.get(f"{settings.base_url}/limited").mock(
+        return_value=Response(429, text="slow", headers={"Retry-After": "86400"})
+    )
+    delays = []
+    with SimproClient(settings) as client:
+        client._sleep = delays.append
+        error = capture(SimproRateLimitError, lambda: client.get("/limited"))
+    assert delays == [60.0]
+    assert error.retry_after == 86400.0
+    assert error.retry_count == 1
+    assert error.attempt_count == 2
+
+
+@respx.mock
+def test_max_retry_delay_is_configurable(mock_settings):
+    settings = mock_settings.model_copy(
+        update={"max_retries": 1, "max_retry_delay": 5.0}
+    )
+    token(settings)
+    respx.get(f"{settings.base_url}/jobs").mock(
+        side_effect=[
+            Response(429, headers={"Retry-After": "3600"}),
+            Response(200, json=[]),
+        ]
+    )
+    delays = []
+    with SimproClient(settings) as client:
+        client._sleep = delays.append
+        client.get("/jobs")
+    assert delays == [5.0]
+
+
+@respx.mock
+def test_backoff_is_bounded_by_max_retry_delay(mock_settings):
+    settings = mock_settings.model_copy(
+        update={"max_retries": 2, "max_retry_delay": 1.5}
+    )
+    token(settings)
+    respx.get(f"{settings.base_url}/jobs").mock(
+        side_effect=[Response(503), Response(503), Response(200, json=[])]
+    )
+    delays = []
+    with SimproClient(settings) as client:
+        client._sleep = delays.append
+        client._random = lambda: 1.0
+        client.get("/jobs")
+    assert delays == [1.5, 1.5]
