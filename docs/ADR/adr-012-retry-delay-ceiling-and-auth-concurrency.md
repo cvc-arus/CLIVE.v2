@@ -200,14 +200,46 @@ The decimal `Retry-After` deviation already recorded in
 
 ---
 
-## 6. Verification
+## 6. Follow-up on acceptance (done 2026-10-07)
+
+Implemented on branch `docs/adr-012-retry-delay-ceiling`:
+
+- `0c80cf7` — §2.1 (A2). `_retry_delay()` caps the parsed `Retry-After` at
+  the new `max_retry_delay` setting; `_backoff_delay()` reads the same
+  setting; `_MAX_RETRY_DELAY_SECONDS` removed. `SIMPRO_MAX_RETRY_DELAY`
+  added to `config.py` and `.env.example`.
+- `2404bf4` — §2.2 (B1 and B2). `AuthManager._lock`, double-checked in
+  `_get_oauth_token()`; `invalidate(token=None)`; `client.py` passes the
+  rejected token.
+
+Measured outcomes:
+
+- `Retry-After: 86400` now sleeps 60.0 s, not 86400.0 s. An HTTP-date in
+  2100 now sleeps 60.0 s, not 2311145768.8 s.
+  `Retry-After: 99999999999999999999` returns normally instead of raising
+  `OverflowError` out of `client.get()`.
+- `SimproRateLimitError.retry_after` still reports `86400.0`.
+- Eight concurrent `get_token()` calls now make 1 token request, not 8.
+- The mixed-recovery trace is unchanged: three attempts, two token fetches,
+  one stable correlation ID, independent budgets.
+- Offline suite 90 passed, 2 deselected (was 81). No new ruff violations.
+
+Documents updated in the same commits: `src/simpro_client/CLAUDE.md`,
+`docs/architecture.md`, `docs/CHANGELOG.md`, `docs/README.md` §3 and §5,
+root `CLAUDE.md` §4, `docs/ADR/ADR-index.md`, `adr-010`'s Status line,
+`tests/CLAUDE.md` §2 and `structure.txt`.
+
+---
+
+## 7. Verification
 
 - `tests/test_retries.py`: an over-ceiling `Retry-After` sleeps the ceiling,
   not the header value; `SimproRateLimitError.retry_after` still reports the
-  true uncapped value; `Retry-After: 99999999999999999999` raises a
-  `SimproError` subclass rather than `OverflowError`; a below-ceiling value
-  and the fallback backoff behave exactly as today; the transient-5xx path
-  is bounded the same way.
+  true uncapped value; `Retry-After: 99999999999999999999` is capped like
+  any other over-ceiling value, so the retry proceeds normally and no
+  `OverflowError` can reach `time.sleep()`; a below-ceiling value and the
+  fallback backoff behave exactly as today; the transient-5xx path is
+  bounded the same way.
 - `tests/test_auth.py`: concurrent `get_token()` calls produce exactly one
   token request; `invalidate(token=...)` does not clear a newer token.
 - The mixed-recovery trace (401, then 429, then 200) is unchanged: three

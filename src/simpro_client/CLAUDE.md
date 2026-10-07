@@ -96,9 +96,11 @@ Do not create `pagination.py` unless a task asks for it.
   `arg-type`/`reportArgumentType` on the `client_id` and `client_secret`
   entries of the `_refresh_token()` payload; narrow there (an `assert` or an
   explicit raise), not by widening the validator or retyping the fields.
-- `invalidate()` forces a refresh. The client uses it on a 401. If that
-  refresh fails, the client raises `SimproAuthRefreshError`; a failure on
-  the first token fetch still raises plain `SimproAuthError`.
+- `invalidate(token=None)` forces a refresh. The client uses it on a 401,
+  passing the token that was rejected, so the cache is cleared only if it
+  still holds that token (see §4). If that refresh fails, the client raises
+  `SimproAuthRefreshError`; a failure on the first token fetch still raises
+  plain `SimproAuthError`.
 - `SimproAuthError` carries optional `status_code` (the **token endpoint's**
   status; `None` for transport or configuration errors) and `method`, `url`,
   `correlation_id` of the API request that needed the token. `auth.py` sets
