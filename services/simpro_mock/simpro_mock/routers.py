@@ -20,7 +20,8 @@ from simpro_mock.models import (
     Status,
 )
 from simpro_mock.schemas import (
-    AssetResponse,
+    AssetDetailResponse,
+    AssetListResponse,
     AttachmentDetailResponse,
     AttachmentListResponse,
     CompanyCustomerDetailResponse,
@@ -35,17 +36,21 @@ from simpro_mock.schemas import (
     HealthResponse,
     IndividualCustomerDetailResponse,
     IndividualCustomerListResponse,
+    JobDetailResponse,
+    JobListResponse,
     JobNoteDetailResponse,
     JobNoteListResponse,
-    JobResponse,
     ProjectStatusCodeDetailResponse,
     ProjectStatusCodeListResponse,
-    QuoteResponse,
+    QuoteDetailResponse,
+    QuoteListResponse,
     SiteDetailResponse,
     SiteListResponse,
     TokenResponse,
 )
 from simpro_mock.serializers import (
+    asset_detail_dict,
+    asset_list_dict,
     attachment_detail_dict,
     attachment_list_dict,
     company_customer_detail_dict,
@@ -59,10 +64,14 @@ from simpro_mock.serializers import (
     employee_list_dict,
     individual_customer_detail_dict,
     individual_customer_list_dict,
+    job_detail_dict,
+    job_list_dict,
     job_note_detail_dict,
     job_note_list_dict,
     project_status_code_detail_dict,
     project_status_code_list_dict,
+    quote_detail_dict,
+    quote_list_dict,
     site_detail_dict,
     site_list_dict,
 )
@@ -282,7 +291,7 @@ def get_company_customer(
 
 @api_router.get(
     "/companies/{company_id}/jobs/",
-    response_model=list[JobResponse],
+    response_model=list[JobListResponse],
 )
 def list_jobs(
     company_id: int,
@@ -298,17 +307,7 @@ def list_jobs(
 
     items, total, total_pages = paginate_query(query, page, pageSize)
 
-    results = [
-        JobResponse(
-            ID=job.id,
-            CompanyID=job.company_id,
-            Name=job.name,
-            Status=job.status,
-            DateIssued=(job.date_issued.isoformat() if job.date_issued else None),
-            Total=job.total,
-        )
-        for job in items
-    ]
+    results = [job_list_dict(job) for job in items]
 
     set_pagination_headers(response, total, len(results), total_pages)
     return results
@@ -316,7 +315,7 @@ def list_jobs(
 
 @api_router.get(
     "/companies/{company_id}/jobs/{job_id}",
-    response_model=JobResponse,
+    response_model=JobDetailResponse,
 )
 def get_job(
     company_id: int,
@@ -336,14 +335,7 @@ def get_job(
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    return JobResponse(
-        ID=job.id,
-        CompanyID=job.company_id,
-        Name=job.name,
-        Status=job.status,
-        DateIssued=job.date_issued.isoformat() if job.date_issued else None,
-        Total=job.total,
-    )
+    return job_detail_dict(job)
 
 
 # ==========================================
@@ -353,7 +345,7 @@ def get_job(
 
 @api_router.get(
     "/companies/{company_id}/quotes/",
-    response_model=list[QuoteResponse],
+    response_model=list[QuoteListResponse],
 )
 def list_quotes(
     company_id: int,
@@ -369,17 +361,7 @@ def list_quotes(
 
     items, total, total_pages = paginate_query(query, page, pageSize)
 
-    results = [
-        QuoteResponse(
-            ID=quote.id,
-            CompanyID=quote.company_id,
-            CustomerID=quote.customer_id,
-            Name=quote.name,
-            Status=quote.status,
-            Total=quote.total,
-        )
-        for quote in items
-    ]
+    results = [quote_list_dict(quote) for quote in items]
 
     set_pagination_headers(response, total, len(results), total_pages)
     return results
@@ -387,7 +369,7 @@ def list_quotes(
 
 @api_router.get(
     "/companies/{company_id}/quotes/{quote_id}",
-    response_model=QuoteResponse,
+    response_model=QuoteDetailResponse,
 )
 def get_quote(
     company_id: int,
@@ -407,14 +389,7 @@ def get_quote(
     if not quote:
         raise HTTPException(status_code=404, detail="Quote not found")
 
-    return QuoteResponse(
-        ID=quote.id,
-        CompanyID=quote.company_id,
-        CustomerID=quote.customer_id,
-        Name=quote.name,
-        Status=quote.status,
-        Total=quote.total,
-    )
+    return quote_detail_dict(quote)
 
 
 @api_router.get(
@@ -504,7 +479,7 @@ def get_site(company_id: int, site_id: int, db: Session = Depends(get_db)):
 
 @api_router.get(
     "/companies/{company_id}/sites/{site_id}/assets/",
-    response_model=list[AssetResponse],
+    response_model=list[AssetListResponse],
 )
 def list_assets(
     company_id: int,
@@ -520,27 +495,14 @@ def list_assets(
     )
     query = apply_filters(query, Asset, dict(request.query_params))
     items, total, total_pages = paginate_query(query, page, pageSize)
-    results = [
-        AssetResponse(
-            ID=a.id,
-            CompanyID=a.company_id,
-            SiteID=a.site_id,
-            AssetNo=a.asset_no,
-            Name=a.name,
-            SerialNo=a.serial_no,
-            Model=a.model,
-            Manufacturer=a.manufacturer,
-            InstalledDate=a.installed_date.isoformat() if a.installed_date else None,
-        )
-        for a in items
-    ]
+    results = [asset_list_dict(a) for a in items]
     set_pagination_headers(response, total, len(results), total_pages)
     return results
 
 
 @api_router.get(
     "/companies/{company_id}/sites/{site_id}/assets/{asset_id}",
-    response_model=AssetResponse,
+    response_model=AssetDetailResponse,
 )
 def get_asset(
     company_id: int, site_id: int, asset_id: int, db: Session = Depends(get_db)
@@ -556,19 +518,7 @@ def get_asset(
     )
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
-    return AssetResponse(
-        ID=asset.id,
-        CompanyID=asset.company_id,
-        SiteID=asset.site_id,
-        AssetNo=asset.asset_no,
-        Name=asset.name,
-        SerialNo=asset.serial_no,
-        Model=asset.model,
-        Manufacturer=asset.manufacturer,
-        InstalledDate=asset.installed_date.isoformat()
-        if asset.installed_date
-        else None,
-    )
+    return asset_detail_dict(asset)
 
 
 # ==========================================

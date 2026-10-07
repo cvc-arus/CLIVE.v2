@@ -6,7 +6,6 @@ from sqlalchemy import (
     Column,
     Date,
     DateTime,
-    Float,
     ForeignKey,
     Integer,
     Numeric,
@@ -95,9 +94,6 @@ class Company(Base):
     employees: Mapped[list["Employee"]] = relationship(
         back_populates="company", cascade="all, delete-orphan"
     )
-    projects: Mapped[list["Project"]] = relationship(
-        back_populates="company", cascade="all, delete-orphan"
-    )
     statuses: Mapped[list["Status"]] = relationship(
         back_populates="company", cascade="all, delete-orphan"
     )
@@ -111,9 +107,7 @@ class Company(Base):
 site_customers = Table(
     "site_customers",
     Base.metadata,
-    Column(
-        "site_id", ForeignKey("sites.id", ondelete="CASCADE"), primary_key=True
-    ),
+    Column("site_id", ForeignKey("sites.id", ondelete="CASCADE"), primary_key=True),
     Column(
         "customer_id",
         ForeignKey("customers.id", ondelete="CASCADE"),
@@ -184,9 +178,7 @@ class Customer(Base):
     billing_postal_code: Mapped[str] = mapped_column(
         String(20), nullable=False, default=""
     )
-    billing_country: Mapped[str] = mapped_column(
-        String(50), nullable=False, default=""
-    )
+    billing_country: Mapped[str] = mapped_column(String(50), nullable=False, default="")
 
     date_created: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     date_modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
@@ -200,28 +192,123 @@ class Customer(Base):
     sites: Mapped[list["Site"]] = relationship(
         secondary=site_customers, back_populates="customers"
     )
-    projects: Mapped[list["Project"]] = relationship(back_populates="customer")
 
 
-class Job(Base):
-    __tablename__ = "jobs"
+class CustomerContract(Base):
+    """A contract between a customer and the business.
+
+    Needed as its own table because ``Job.CustomerContract`` is a **required**
+    object with five required members upstream, so it can be served neither as
+    ``null`` nor as ``{}``.
+    """
+
+    __tablename__ = "customer_contracts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    company_id: Mapped[int] = mapped_column(
+        ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    customer_id: Mapped[int] = mapped_column(
+        ForeignKey("customers.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    contract_no: Mapped[str] = mapped_column(String(50), nullable=False)
+    start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+
+class AssetType(Base):
+    """An asset type. Upstream an asset is identified by its type, not a name."""
+
+    __tablename__ = "asset_types"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     company_id: Mapped[int] = mapped_column(
         ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    status: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    # Relationships
+    assets: Mapped[list["Asset"]] = relationship(back_populates="asset_type")
+
+
+class Job(Base):
+    """A job. A *project* is a job with ``type="Project"``.
+
+    Simpro has no Projects resource, so the former ``projects`` table was
+    folded into this one (ADR-013 Wave C).
+    """
+
+    __tablename__ = "jobs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # Kept as a column even though CompanyID left the wire: it scopes the route.
+    company_id: Mapped[int] = mapped_column(
+        ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    customer_id: Mapped[int] = mapped_column(
+        ForeignKey("customers.id", ondelete="CASCADE"), nullable=False
+    )
+    site_id: Mapped[int] = mapped_column(
+        ForeignKey("sites.id", ondelete="CASCADE"), nullable=False
+    )
+    # A real FK, not three flat columns: a job's status draws its id from the
+    # project status-code list (ADR-013 §7), so the mock cannot emit a status
+    # id that exists nowhere.
+    status_id: Mapped[int] = mapped_column(
+        ForeignKey("statuses.id", ondelete="RESTRICT"), nullable=False
+    )
+    customer_contract_id: Mapped[int | None] = mapped_column(
+        ForeignKey("customer_contracts.id", ondelete="SET NULL"), nullable=True
+    )
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    type: Mapped[str] = mapped_column(String(10), nullable=False, default="Service")
+    stage: Mapped[str] = mapped_column(String(10), nullable=False, default="Pending")
+    notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    order_no: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    request_no: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+
+    # Total, split by tax. Numeric(12,2), not Float: money is exact to two
+    # decimal places (ADR-013).
+    total_ex_tax: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False, default=Decimal("0.00")
+    )
+    total_tax: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False, default=Decimal("0.00")
+    )
+    total_inc_tax: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False, default=Decimal("0.00")
+    )
+
     date_issued: Mapped[date | None] = mapped_column(Date, nullable=True)
-    total: Mapped[float] = mapped_column(Float, nullable=False)
+    due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    completed_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    date_modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    auto_adjust_status: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
+    is_variation: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     # Relationships
     company: Mapped["Company"] = relationship(back_populates="jobs")
-    notes: Mapped[list["JobNote"]] = relationship(
+    customer: Mapped["Customer"] = relationship()
+    site: Mapped["Site"] = relationship()
+    status: Mapped["Status"] = relationship()
+    customer_contract: Mapped["CustomerContract | None"] = relationship()
+    notes_list: Mapped[list["JobNote"]] = relationship(
         back_populates="job", cascade="all, delete-orphan"
     )
     attachments: Mapped[list["Attachment"]] = relationship(
         back_populates="job", cascade="all, delete-orphan"
+    )
+    custom_field_values: Mapped[list["CustomFieldValue"]] = relationship(
+        primaryjoin=(
+            "and_(CustomFieldValue.resource_type == 'Job', "
+            "foreign(CustomFieldValue.resource_id) == Job.id)"
+        ),
+        viewonly=True,
     )
 
 
@@ -229,19 +316,62 @@ class Quote(Base):
     __tablename__ = "quotes"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Kept as a column even though CompanyID left the wire: it scopes the route.
     company_id: Mapped[int] = mapped_column(
         ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
     )
-    customer_id: Mapped[int | None] = mapped_column(
-        ForeignKey("customers.id", ondelete="SET NULL"), nullable=True
+    customer_id: Mapped[int] = mapped_column(
+        ForeignKey("customers.id", ondelete="CASCADE"), nullable=False
     )
+    site_id: Mapped[int] = mapped_column(
+        ForeignKey("sites.id", ondelete="CASCADE"), nullable=False
+    )
+    # Same id space as a job's status (ADR-013 §7).
+    status_id: Mapped[int] = mapped_column(
+        ForeignKey("statuses.id", ondelete="RESTRICT"), nullable=False
+    )
+
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    status: Mapped[str] = mapped_column(String(100), nullable=False)
-    total: Mapped[float] = mapped_column(Float, nullable=False)
+    description: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    type: Mapped[str] = mapped_column(String(10), nullable=False, default="Service")
+    stage: Mapped[str] = mapped_column(String(12), nullable=False, default="InProgress")
+    notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    order_no: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    request_no: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+
+    total_ex_tax: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False, default=Decimal("0.00")
+    )
+    total_tax: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False, default=Decimal("0.00")
+    )
+    total_inc_tax: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False, default=Decimal("0.00")
+    )
+
+    date_issued: Mapped[date | None] = mapped_column(Date, nullable=True)
+    date_approved: Mapped[date | None] = mapped_column(Date, nullable=True)
+    due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    date_modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    validity_days: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
+    auto_adjust_status: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
+    is_variation: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_closed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     # Relationships
     company: Mapped["Company"] = relationship(back_populates="quotes")
     customer: Mapped["Customer"] = relationship(back_populates="quotes")
+    site: Mapped["Site"] = relationship()
+    status: Mapped["Status"] = relationship()
+    custom_field_values: Mapped[list["CustomFieldValue"]] = relationship(
+        primaryjoin=(
+            "and_(CustomFieldValue.resource_type == 'Quote', "
+            "foreign(CustomFieldValue.resource_id) == Quote.id)"
+        ),
+        viewonly=True,
+    )
 
 
 class Contact(Base):
@@ -369,29 +499,59 @@ class Site(Base):
     assets: Mapped[list["Asset"]] = relationship(
         back_populates="site", cascade="all, delete-orphan"
     )
-    projects: Mapped[list["Project"]] = relationship(back_populates="site")
 
 
 class Asset(Base):
+    """A site asset.
+
+    Upstream an asset has no ``AssetNo``, ``Name``, ``SerialNo``, ``Model`` or
+    ``Manufacturer``: it is identified by its **type**, and the serial number,
+    model and manufacturer live in custom fields. That is where Simpro keeps
+    CVC's CCTV asset data, which is why custom fields are in scope (ADR-013).
+    """
+
     __tablename__ = "assets"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Kept as a column even though CompanyID left the wire: it scopes the route.
     company_id: Mapped[int] = mapped_column(
         ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
     )
     site_id: Mapped[int] = mapped_column(
         ForeignKey("sites.id", ondelete="CASCADE"), nullable=False
     )
-    asset_no: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    serial_no: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    model: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    manufacturer: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    installed_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    asset_type_id: Mapped[int] = mapped_column(
+        ForeignKey("asset_types.id", ondelete="RESTRICT"), nullable=False
+    )
+    parent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("assets.id", ondelete="SET NULL"), nullable=True
+    )
+    customer_contract_id: Mapped[int | None] = mapped_column(
+        ForeignKey("customer_contracts.id", ondelete="SET NULL"), nullable=True
+    )
+
+    start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    date_modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    # LastTest is a required object with no required members, so an asset that
+    # has never been tested serves {} rather than null.
+    last_test_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    last_test_result: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # Relationships
     company: Mapped["Company"] = relationship(back_populates="assets")
     site: Mapped["Site"] = relationship(back_populates="assets")
+    asset_type: Mapped["AssetType"] = relationship(back_populates="assets")
+    customer_contract: Mapped["CustomerContract | None"] = relationship()
+    custom_field_values: Mapped[list["CustomFieldValue"]] = relationship(
+        primaryjoin=(
+            "and_(CustomFieldValue.resource_type == 'Asset', "
+            "foreign(CustomFieldValue.resource_id) == Asset.id)"
+        ),
+        viewonly=True,
+    )
 
 
 class Zone(Base):
@@ -458,29 +618,6 @@ class Employee(Base):
     )
 
 
-class Project(Base):
-    __tablename__ = "projects"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    company_id: Mapped[int] = mapped_column(
-        ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
-    )
-    customer_id: Mapped[int] = mapped_column(
-        ForeignKey("customers.id", ondelete="CASCADE"), nullable=False
-    )
-    site_id: Mapped[int | None] = mapped_column(
-        ForeignKey("sites.id", ondelete="SET NULL"), nullable=True
-    )
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    status: Mapped[str] = mapped_column(String(100), nullable=False)
-    total: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
-
-    # Relationships
-    company: Mapped["Company"] = relationship(back_populates="projects")
-    customer: Mapped["Customer"] = relationship(back_populates="projects")
-    site: Mapped["Site"] = relationship(back_populates="projects")
-
-
 class JobNote(Base):
     __tablename__ = "job_notes"
 
@@ -515,7 +652,7 @@ class JobNote(Base):
     )
 
     # Relationships
-    job: Mapped["Job"] = relationship(back_populates="notes")
+    job: Mapped["Job"] = relationship(back_populates="notes_list")
     submitted_by: Mapped["Employee | None"] = relationship(
         back_populates="job_notes", foreign_keys=[submitted_by_id]
     )

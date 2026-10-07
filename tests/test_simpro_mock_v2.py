@@ -107,3 +107,56 @@ def test_customer_summary_href_points_at_a_fetchable_route(token: str):
 
     assert detail.status_code == 200, f"_href {summary['_href']} did not resolve"
     assert detail.json()["ID"] == summary["ID"]
+
+
+def test_a_project_is_a_job_with_type_project(token: str):
+    """Projects are jobs, not a resource of their own.
+
+    Simpro publishes no Projects route; upstream a project is a job whose
+    ``Type`` is ``"Project"`` (ADR-013 Wave C). So the mock must serve them
+    through ``/jobs/`` and must not answer ``/projects/``.
+    """
+    headers = {"Authorization": f"Bearer {token}"}
+
+    assert (
+        httpx.get(f"{BASE}/api/v1.0/companies/1/projects/", headers=headers).status_code
+        == 404
+    ), "the mock still serves a Projects route"
+
+    jobs = httpx.get(
+        f"{BASE}/api/v1.0/companies/1/jobs/?pageSize=250", headers=headers
+    ).json()
+    assert jobs, "the mock seeded no jobs"
+
+    types = set()
+    for row in jobs:
+        detail = httpx.get(
+            f"{BASE}/api/v1.0/companies/1/jobs/{row['ID']}", headers=headers
+        ).json()
+        types.add(detail["Type"])
+    assert "Project" in types, f"no Type=Project jobs are seeded, only {sorted(types)}"
+    assert types <= {"Project", "Service", "Prepaid"}, f"undocumented Type in {types}"
+
+
+def test_job_total_is_a_nested_object_with_two_decimal_money(token: str):
+    """``Total`` is an object, and its members are exact to two places.
+
+    The old mock returned a bare float. Both the narrow list projection and
+    the detail route carry the three-way split (ADR-013).
+    """
+    headers = {"Authorization": f"Bearer {token}"}
+    listed = httpx.get(
+        f"{BASE}/api/v1.0/companies/1/jobs/?pageSize=1", headers=headers
+    ).json()[0]
+
+    assert set(listed) == {"ID", "Description", "Total"}, (
+        f"the job list projection should be exactly ID, Description and Total, "
+        f"got {sorted(listed)}"
+    )
+    assert set(listed["Total"]) == {"ExTax", "Tax", "IncTax"}
+
+    for key, value in listed["Total"].items():
+        assert isinstance(value, int | float), f"{key} is not a JSON number"
+        assert round(float(value), 2) == float(value), (
+            f"{key}={value} has more than two decimal places"
+        )
