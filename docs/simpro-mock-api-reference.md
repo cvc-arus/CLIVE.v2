@@ -92,6 +92,8 @@ Numeric operators (`gt`, `lt`, `ge`, `le`, `between`) attempt `int` then `float`
 
 For every resource below: all fields are returned in PascalCase; `ID` is always the primary key; nested resources are scoped under `/api/v1.0/companies/{company_id}/...`.
 
+**Routes** match Simpro's published spec, vendored at `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013). **Field sets do not yet** — they are still the mock's original invented shapes, and are re-shaped resource by resource in ADR-013's Waves A–C. `tests/test_spec_conformance.py` reports which resources still differ.
+
 ### Companies
 - `GET /api/v1.0/companies/` — list, filterable/paginated
 - `GET /api/v1.0/companies/{company_id}` — detail, `404` if not found
@@ -140,12 +142,6 @@ Fields: `ID`, `CompanyID`, `SiteID`, `AssetNo`, `Name`, `SerialNo` (nullable), `
 
 Fields: `ID`, `CompanyID`, `GivenName`, `FamilyName`, `Position` (nullable), `Email` (nullable), `Phone` (nullable)
 
-### Projects
-- `GET /api/v1.0/companies/{company_id}/projects/`
-- `GET /api/v1.0/companies/{company_id}/projects/{project_id}`
-
-Fields: `ID`, `CompanyID`, `CustomerID`, `SiteID` (nullable), `Name`, `Status`, `Total`
-
 ### Job Notes
 - `GET /api/v1.0/companies/{company_id}/jobs/{job_id}/notes/`
 - `GET /api/v1.0/companies/{company_id}/jobs/{job_id}/notes/{note_id}`
@@ -153,14 +149,16 @@ Fields: `ID`, `CompanyID`, `CustomerID`, `SiteID` (nullable), `Name`, `Status`, 
 Fields: `ID`, `JobID`, `Subject` (nullable), `Note` (nullable), `CreatedBy` (nullable, employee id), `CreatedAt` (nullable ISO datetime)
 
 ### Attachments
-- `GET /api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/`
-- `GET /api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/{attachment_id}`
+- `GET /api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/files/`
+- `GET /api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/files/{file_id}`
 
 Fields: `ID`, `JobID`, `Filename`, `MimeType` (nullable), `FileSize` (nullable, bytes), `UploadedAt` (nullable ISO datetime)
 
-### Statuses
-- `GET /api/v1.0/companies/{company_id}/statuses/`
-- `GET /api/v1.0/companies/{company_id}/statuses/{status_id}`
+### Project Status Codes
+- `GET /api/v1.0/companies/{company_id}/setup/statusCodes/projects/`
+- `GET /api/v1.0/companies/{company_id}/setup/statusCodes/projects/{status_code_id}`
+
+Job and quote statuses draw their IDs from this list: the spec documents the `Status` field of the Job POST, Job PATCH and Quote POST bodies as "ID of a project status code".
 
 Fields: `ID`, `CompanyID`, `Name`, `Category` (nullable, e.g. "Job"/"Quote"/"Project"), `IsDefault` (boolean)
 
@@ -182,4 +180,6 @@ Attachments are not seeded per company: `seed.py` adds 1–3 attachments to each
 - No real credential validation on `/oauth2/token` (any client_id/secret accepted)
 - No rate limiting — the mock never returns `429`, unlike real Simpro's documented 10 req/sec/build limit
 - No webhooks / async event callbacks
+- No Projects resource — correct, since Simpro has none (a project is a Job with `Type: "Project"`). The `projects` table is still seeded but unreachable; it becomes `Type="Project"` jobs in ADR-013's Wave C
+- `columns` is accepted and ignored. `simpro_client` sends it, so list routes still return every modelled field instead of Simpro's narrow default projection
 - Read-only: no POST/PATCH/DELETE routes, no business-logic state transitions (e.g. Quote → Job conversion)

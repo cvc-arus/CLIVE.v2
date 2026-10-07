@@ -229,12 +229,6 @@ def main():
     )
     test_list_endpoint(
         headers,
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/projects/",
-        ["ID", "CompanyID", "CustomerID", "SiteID", "Name", "Status", "Total"],
-        "Projects",
-    )
-    test_list_endpoint(
-        headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/",
         ["ID", "CompanyID", "Name", "Status", "DateIssued", "Total"],
         "Jobs",
@@ -247,7 +241,7 @@ def main():
     )
     test_list_endpoint(
         headers,
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/",
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/files/",
         ["ID", "JobID", "Filename", "MimeType", "FileSize", "UploadedAt"],
         "Attachments",
     )
@@ -259,9 +253,9 @@ def main():
     )
     test_list_endpoint(
         headers,
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/statuses/",
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/setup/statusCodes/projects/",
         ["ID", "CompanyID", "Name", "Category", "IsDefault"],
-        "Statuses",
+        "Project Status Codes",
     )
 
     # ---- 4. Single endpoints (using discovered IDs) ----
@@ -373,22 +367,6 @@ def main():
     else:
         print("⚠️  No employees found, skipping Employee single test")
 
-    # Projects
-    r = httpx.get(
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/projects/", headers=headers
-    )
-    projs = check_response(r, "Projects", expect_list=True)
-    if projs:
-        pid = projs[0]["ID"]
-        test_single_endpoint(
-            headers,
-            f"{BASE_URL}/api/v1.0/companies/{company_id}/projects/{pid}",
-            ["ID", "CompanyID", "CustomerID", "SiteID", "Name", "Status", "Total"],
-            "Project",
-        )
-    else:
-        print("⚠️  No projects found, skipping Project single test")
-
     # Job
     test_single_endpoint(
         headers,
@@ -416,7 +394,7 @@ def main():
 
     # Attachments
     r = httpx.get(
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/",
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/files/",
         headers=headers,
     )
     atts = check_response(r, "Attachments", expect_list=True)
@@ -424,7 +402,7 @@ def main():
         atid = atts[0]["ID"]
         test_single_endpoint(
             headers,
-            f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/{atid}",
+            f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/files/{atid}",
             ["ID", "JobID", "Filename", "MimeType", "FileSize", "UploadedAt"],
             "Attachment",
         )
@@ -447,21 +425,22 @@ def main():
     else:
         print("⚠️  No quotes found, skipping Quote single test")
 
-    # Statuses
+    # Project status codes
     r = httpx.get(
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/statuses/", headers=headers
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/setup/statusCodes/projects/",
+        headers=headers,
     )
-    statuses = check_response(r, "Statuses", expect_list=True)
+    statuses = check_response(r, "Project Status Codes", expect_list=True)
     if statuses:
         sid = statuses[0]["ID"]
         test_single_endpoint(
             headers,
-            f"{BASE_URL}/api/v1.0/companies/{company_id}/statuses/{sid}",
+            f"{BASE_URL}/api/v1.0/companies/{company_id}/setup/statusCodes/projects/{sid}",
             ["ID", "CompanyID", "Name", "Category", "IsDefault"],
-            "Status",
+            "Project Status Code",
         )
     else:
-        print("⚠️  No statuses found, skipping Status single test")
+        print("⚠️  No project status codes found, skipping single test")
 
     # ---- 5. 404 tests ----
     bogus = 99999
@@ -492,17 +471,12 @@ def main():
     )
     test_404(
         headers,
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/projects/{bogus}",
-        "Project",
-    )
-    test_404(
-        headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/notes/{bogus}",
         "JobNote",
     )
     test_404(
         headers,
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/{bogus}",
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/jobs/{job_id}/attachments/files/{bogus}",
         "Attachment",
     )
     test_404(
@@ -510,8 +484,8 @@ def main():
     )
     test_404(
         headers,
-        f"{BASE_URL}/api/v1.0/companies/{company_id}/statuses/{bogus}",
-        "Status",
+        f"{BASE_URL}/api/v1.0/companies/{company_id}/setup/statusCodes/projects/{bogus}",
+        "Project Status Code",
     )
 
     print("\n🎉 All integration tests passed!")

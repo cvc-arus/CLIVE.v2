@@ -96,7 +96,7 @@ services/simpro_mock/
     ├── filtering.py       # Simpro-style operator query filtering
     ├── models.py          # 12 SQLAlchemy 2.0 ORM models
     ├── schemas.py          # 12 Pydantic PascalCase response schemas
-    ├── routers.py          # 26 routes (health, token, 24 GET routes for 12 resources)
+    ├── routers.py          # 24 routes (health, token, 22 GET routes for 11 resources)
     └── seed.py            # Seeds two companies + representative data
 ```
 
@@ -106,20 +106,21 @@ services/simpro_mock/
 
 **Filtering (`filtering.py`):** Query params are mapped from Simpro's PascalCase field names (`ID`, `Name`, `CompanyID`, `GivenName`, `FamilyName`, `Email`, `Phone`, `Status`, `DateIssued`, `Total`, `CustomerID`) to snake_case SQLAlchemy columns via `PASCAL_TO_SNAKE`, then parsed for operator syntax: `gt()`, `lt()`, `le()`, `ge()`, `ne()`, `between()`, `in()`, `!in()`, with a plain value falling back to exact match. `search=all` (default) combines filters with AND; `search=any` combines with OR.
 
-### 5.3 Data model (12 resources)
+### 5.3 Data model (11 served resources)
 
 ```
 Company (1) ──< Customer ──< Contact
              ──< Customer ──< Site ──< Asset
-             ──< Customer ──< Project ──> Site
              ──< Job ──< JobNote ──> Employee
              ──< Job ──< Attachment
              ──< Quote ──> Customer
              ──< Employee
-             ──< Status
+             ──< Status          # served as project status codes
 ```
 
 All foreign keys cascade appropriately (`ondelete="CASCADE"` for strict ownership, `SET NULL` for optional links like `Quote.customer_id` and `Project.site_id`). Every relationship is declared with `back_populates` on both sides.
+
+The `projects` table still exists but **no route serves it**: Simpro has no Projects resource, so a project is a Job with `Type: "Project"` (ADR-013 §3). The table and its seed data are converted to jobs in ADR-013's Wave C, which is also when the table is dropped.
 
 ### 5.4 Endpoint surface (mock service, all read-only)
 
@@ -133,10 +134,11 @@ All foreign keys cascade appropriately (`ondelete="CASCADE"` for strict ownershi
 | Sites | `GET .../sites/` | `GET .../sites/{site_id}` | Company |
 | Assets | `GET .../sites/{site_id}/assets/` | `GET .../assets/{asset_id}` | Company → Site |
 | Employees | `GET .../employees/` | `GET .../employees/{employee_id}` | Company |
-| Projects | `GET .../projects/` | `GET .../projects/{project_id}` | Company |
 | Job Notes | `GET .../jobs/{job_id}/notes/` | `GET .../notes/{note_id}` | Company → Job |
-| Attachments | `GET .../jobs/{job_id}/attachments/` | `GET .../attachments/{attachment_id}` | Company → Job |
-| Statuses | `GET .../statuses/` | `GET .../statuses/{status_id}` | Company |
+| Attachments | `GET .../jobs/{job_id}/attachments/files/` | `GET .../attachments/files/{file_id}` | Company → Job |
+| Project status codes | `GET .../setup/statusCodes/projects/` | `GET .../setup/statusCodes/projects/{status_code_id}` | Company |
+
+Every route above matches Simpro's published spec, vendored at `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013). Collection routes accept `columns`, which `simpro_client` sends but the mock still ignores; the projection lands in a later sprint.
 
 Plus infrastructure routes: `GET /health` and `POST /oauth2/token`. Full parameter and response detail is in `docs/simpro-mock-api-reference.md`.
 

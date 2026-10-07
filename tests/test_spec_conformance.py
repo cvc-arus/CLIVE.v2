@@ -44,9 +44,9 @@ from simpro_client.models import (
     Employee,
     Job,
     JobNote,
+    ProjectStatusCode,
     Quote,
     Site,
-    Status,
 )
 
 API_PREFIX = "/api/v1.0"
@@ -117,8 +117,8 @@ RESOURCES: tuple[tuple[str, type[BaseModel], str, str], ...] = (
         "/companies/{companyID}/jobs/{jobID}/attachments/files/{fileID}",
     ),
     (
-        "Status",
-        Status,
+        "ProjectStatusCode",
+        ProjectStatusCode,
         "/companies/{companyID}/setup/statusCodes/projects/",
         "/companies/{companyID}/setup/statusCodes/projects/{statusCodeID}",
     ),

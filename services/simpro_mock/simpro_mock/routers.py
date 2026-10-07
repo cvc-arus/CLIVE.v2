@@ -15,7 +15,6 @@ from simpro_mock.models import (
     Employee,
     Job,
     JobNote,
-    Project,
     Quote,
     Site,
     Status,
@@ -30,7 +29,6 @@ from simpro_mock.schemas import (
     HealthResponse,
     JobNoteResponse,
     JobResponse,
-    ProjectResponse,
     QuoteResponse,
     SiteResponse,
     StatusResponse,
@@ -585,64 +583,7 @@ def get_employee(company_id: int, employee_id: int, db: Session = Depends(get_db
 
 
 # ==========================================
-# 10. PROJECTS
-# ==========================================
-
-
-@api_router.get(
-    "/companies/{company_id}/projects/", response_model=list[ProjectResponse]
-)
-def list_projects(
-    company_id: int,
-    request: Request,
-    response: Response,
-    page: int = Query(1, ge=1),
-    pageSize: int = Query(30, ge=1, le=250),
-    db: Session = Depends(get_db),
-):
-    query = db.query(Project).filter(Project.company_id == company_id)
-    query = apply_filters(query, Project, dict(request.query_params))
-    items, total, total_pages = paginate_query(query, page, pageSize)
-    results = [
-        ProjectResponse(
-            ID=p.id,
-            CompanyID=p.company_id,
-            CustomerID=p.customer_id,
-            SiteID=p.site_id,
-            Name=p.name,
-            Status=p.status,
-            Total=p.total,
-        )
-        for p in items
-    ]
-    set_pagination_headers(response, total, len(results), total_pages)
-    return results
-
-
-@api_router.get(
-    "/companies/{company_id}/projects/{project_id}", response_model=ProjectResponse
-)
-def get_project(company_id: int, project_id: int, db: Session = Depends(get_db)):
-    project = (
-        db.query(Project)
-        .filter(Project.id == project_id, Project.company_id == company_id)
-        .first()
-    )
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    return ProjectResponse(
-        ID=project.id,
-        CompanyID=project.company_id,
-        CustomerID=project.customer_id,
-        SiteID=project.site_id,
-        Name=project.name,
-        Status=project.status,
-        Total=project.total,
-    )
-
-
-# ==========================================
-# 11. JOB NOTES
+# 10. JOB NOTES
 # ==========================================
 
 
@@ -709,12 +650,12 @@ def get_job_note(
 
 
 # ==========================================
-# 12. ATTACHMENTS
+# 11. ATTACHMENTS
 # ==========================================
 
 
 @api_router.get(
-    "/companies/{company_id}/jobs/{job_id}/attachments/",
+    "/companies/{company_id}/jobs/{job_id}/attachments/files/",
     response_model=list[AttachmentResponse],
 )
 def list_attachments(
@@ -748,15 +689,15 @@ def list_attachments(
 
 
 @api_router.get(
-    "/companies/{company_id}/jobs/{job_id}/attachments/{attachment_id}",
+    "/companies/{company_id}/jobs/{job_id}/attachments/files/{file_id}",
     response_model=AttachmentResponse,
 )
 def get_attachment(
-    company_id: int, job_id: int, attachment_id: int, db: Session = Depends(get_db)
+    company_id: int, job_id: int, file_id: int, db: Session = Depends(get_db)
 ):
     attachment = (
         db.query(Attachment)
-        .filter(Attachment.id == attachment_id, Attachment.job_id == job_id)
+        .filter(Attachment.id == file_id, Attachment.job_id == job_id)
         .first()
     )
     if not attachment:
@@ -777,14 +718,15 @@ def get_attachment(
 
 
 # ==========================================
-# 13. STATUSES
+# 12. PROJECT STATUS CODES
 # ==========================================
 
 
 @api_router.get(
-    "/companies/{company_id}/statuses/", response_model=list[StatusResponse]
+    "/companies/{company_id}/setup/statusCodes/projects/",
+    response_model=list[StatusResponse],
 )
-def list_statuses(
+def list_project_status_codes(
     company_id: int,
     request: Request,
     response: Response,
@@ -810,16 +752,19 @@ def list_statuses(
 
 
 @api_router.get(
-    "/companies/{company_id}/statuses/{status_id}", response_model=StatusResponse
+    "/companies/{company_id}/setup/statusCodes/projects/{status_code_id}",
+    response_model=StatusResponse,
 )
-def get_status(company_id: int, status_id: int, db: Session = Depends(get_db)):
+def get_project_status_code(
+    company_id: int, status_code_id: int, db: Session = Depends(get_db)
+):
     status = (
         db.query(Status)
-        .filter(Status.id == status_id, Status.company_id == company_id)
+        .filter(Status.id == status_code_id, Status.company_id == company_id)
         .first()
     )
     if not status:
-        raise HTTPException(status_code=404, detail="Status not found")
+        raise HTTPException(status_code=404, detail="Project status code not found")
     return StatusResponse(
         ID=status.id,
         CompanyID=status.company_id,

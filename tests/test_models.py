@@ -14,12 +14,14 @@ from simpro_client.models import (
     Employee,
     Job,
     JobNote,
-    Project,
+    ProjectStatusCode,
     Quote,
     Site,
-    Status,
 )
 
+#: Payloads addressed by model, so the temporal test below never depends on
+#: list position. Resizing MODEL_CASES used to silently change what it
+#: asserted (ADR-013 re-shape; see tests/CLAUDE.md §7).
 MODEL_CASES = [
     (Company, {"ID": 1, "Name": "CVC"}, "Name", []),
     (
@@ -123,20 +125,6 @@ MODEL_CASES = [
         ["Position", "Email", "Phone"],
     ),
     (
-        Project,
-        {
-            "ID": 9,
-            "CompanyID": 2,
-            "CustomerID": 2,
-            "SiteID": 6,
-            "Name": "Upgrade",
-            "Status": "Active",
-            "Total": 1000.0,
-        },
-        "CustomerID",
-        ["SiteID"],
-    ),
-    (
         JobNote,
         {
             "ID": 10,
@@ -163,7 +151,7 @@ MODEL_CASES = [
         ["MimeType", "FileSize", "UploadedAt"],
     ),
     (
-        Status,
+        ProjectStatusCode,
         {
             "ID": 12,
             "CompanyID": 1,
@@ -177,8 +165,13 @@ MODEL_CASES = [
 ]
 
 
+PAYLOADS = {case[0]: case[1] for case in MODEL_CASES}
+
+
 @pytest.mark.parametrize(
-    ("model_type", "payload", "required_alias", "optional_aliases"), MODEL_CASES
+    ("model_type", "payload", "required_alias", "optional_aliases"),
+    MODEL_CASES,
+    ids=[case[0].__name__ for case in MODEL_CASES],
 )
 def test_models_accept_aliases_and_ignore_unknown_fields(
     model_type, payload, required_alias, optional_aliases
@@ -202,9 +195,10 @@ def test_models_accept_aliases_and_ignore_unknown_fields(
 
 
 def test_temporal_fields_use_python_types():
-    assert isinstance(Job.model_validate(MODEL_CASES[2][1]).date_issued, date)
-    assert isinstance(Asset.model_validate(MODEL_CASES[6][1]).installed_date, date)
-    assert isinstance(JobNote.model_validate(MODEL_CASES[9][1]).created_at, datetime)
+    """Date and timestamp aliases parse into Python types, not strings."""
+    assert isinstance(Job.model_validate(PAYLOADS[Job]).date_issued, date)
+    assert isinstance(Asset.model_validate(PAYLOADS[Asset]).installed_date, date)
+    assert isinstance(JobNote.model_validate(PAYLOADS[JobNote]).created_at, datetime)
     assert isinstance(
-        Attachment.model_validate(MODEL_CASES[10][1]).uploaded_at, datetime
+        Attachment.model_validate(PAYLOADS[Attachment]).uploaded_at, datetime
     )

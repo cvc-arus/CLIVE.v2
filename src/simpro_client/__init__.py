@@ -12,10 +12,9 @@ from simpro_client.models import (
     Employee,
     Job,
     JobNote,
-    Project,
+    ProjectStatusCode,
     Quote,
     Site,
-    Status,
 )
 
 __all__ = [
@@ -28,12 +27,11 @@ __all__ = [
     "Job",
     "JobNote",
     "Page",
-    "Project",
+    "ProjectStatusCode",
     "Quote",
     "SimproClient",
     "SimproSettings",
     "Site",
-    "Status",
     "get_settings",
 ]
 __version__ = "0.1.0"

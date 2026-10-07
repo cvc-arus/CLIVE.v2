@@ -111,6 +111,22 @@
     "fixed_by": "S3",
     "reason": "JobID:missing"
   },
+  "ProjectStatusCode.detail.full": {
+    "fixed_by": "S3",
+    "reason": "CompanyID:missing; IsDefault:missing"
+  },
+  "ProjectStatusCode.detail.minimal": {
+    "fixed_by": "S3",
+    "reason": "CompanyID:missing; IsDefault:missing"
+  },
+  "ProjectStatusCode.list.full": {
+    "fixed_by": "S3",
+    "reason": "CompanyID:missing; IsDefault:missing"
+  },
+  "ProjectStatusCode.list.minimal": {
+    "fixed_by": "S3",
+    "reason": "CompanyID:missing; IsDefault:missing"
+  },
   "Quote.detail.full": {
     "fixed_by": "S5",
     "reason": "CompanyID:missing; Status:string_type; Total:float_type"
@@ -142,21 +158,5 @@
   "Site.list.minimal": {
     "fixed_by": "S4",
     "reason": "CompanyID:missing; CustomerID:missing"
-  },
-  "Status.detail.full": {
-    "fixed_by": "S3",
-    "reason": "CompanyID:missing; IsDefault:missing"
-  },
-  "Status.detail.minimal": {
-    "fixed_by": "S3",
-    "reason": "CompanyID:missing; IsDefault:missing"
-  },
-  "Status.list.full": {
-    "fixed_by": "S3",
-    "reason": "CompanyID:missing; IsDefault:missing"
-  },
-  "Status.list.minimal": {
-    "fixed_by": "S3",
-    "reason": "CompanyID:missing; IsDefault:missing"
   }
 }

@@ -53,9 +53,14 @@ matching client change, updated tests, and Alex's approval:
   `/redoc` require `Authorization: Bearer <SIMPRO_MOCK_MOCK_ACCESS_TOKEN>`.
   Failures return 401 with a JSON `detail`.
 - Collection routes end with `/`; detail routes do not.
-- 12 resources. Nesting: contacts under customers, assets under sites, notes
-  and attachments under jobs. Everything else is under
-  `/companies/{company_id}/`.
+- **11 served resources, and the routes come from Simpro's published spec**
+  (`docs/contracts/simpro-openapi-v1-get-subset.json`, ADR-013) — not from
+  what is convenient here. Nesting: contacts under customers, assets under
+  sites, notes and attachments under jobs. Everything else is under
+  `/companies/{company_id}/`. Three spellings are not the obvious ones:
+  attachments live at `.../jobs/{job_id}/attachments/files/`, project status
+  codes at `.../setup/statusCodes/projects/`, and there is **no Projects
+  route** — upstream, a project is a Job with `Type: "Project"`.
 - Response fields are PascalCase and built explicitly in `routers.py`.
   Schema field names in `schemas.py` are the wire contract.
 - List routes accept `page` (≥1, default 1) and `pageSize` (1–250,
@@ -75,7 +80,10 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
   changes a documented ADR limitation, so update the ADR too.
 - `filtering.py`'s `PASCAL_TO_SNAKE` maps only 11 fields. Unmapped filter
   params (e.g. `SiteID`, `Position`) are **silently ignored**.
-- `columns`, `orderby`, `limit` are accepted but ignored.
+- `columns`, `orderby`, `limit` are accepted but ignored. `simpro_client`
+  already sends `columns`, so the projection is the next thing owed here;
+  until it lands, list routes return every modelled field rather than the
+  narrow default projection real Simpro returns.
 - `search` is applied, but only as a mode switch: `search=any` joins the
   field filters with OR; anything else (default `all`) joins them with AND
   (`apply_filters()` in `filtering.py`). It is not a free-text search.
@@ -142,7 +150,11 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
   identical data.
 - Changes daily: all dates and timestamps are relative to `date.today()`.
   Tests must still not assert exact seeded values.
-- New seeded tables must be added to `truncate_tables()`.
+- `truncate_tables()` is driven off `reversed(Base.metadata.sorted_tables)`,
+  so a table added by a migration is picked up automatically. Do not
+  reintroduce a hardcoded table list.
+- The `projects` table is still seeded but no route serves it; it is
+  converted to `Type="Project"` jobs and dropped in ADR-013's Wave C.
 
 ## 8. Docker
 

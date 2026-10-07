@@ -231,8 +231,17 @@ failures. (Missing route parameters currently raise `ValueError` from
   on a missing or invalid `Result-Pages` value, on a page past the last page,
   or on an empty page before the last page.
 - Query parameters sent are `page` and `pageSize` (camelCase, as Simpro
-  expects), plus caller `filters`. The client does not enforce the server's
-  `pageSize` maximum of 250.
+  expects), plus caller `filters` and, when asked for, `columns` as a csv
+  list. `_page_params()` rejects `page < 1` and a `page_size` outside
+  1–250 with `ValueError` before any request, matching the spec's declared
+  `minimum`/`maximum`.
+- `get()`, `fetch_page()` and `iter_all()` all take an optional
+  `columns=` sequence. Simpro's list routes return a narrow default
+  projection without it (jobs and quotes return only `ID`, `Description`
+  and `Total`), and it is accepted on detail routes too. The mock still
+  ignores it.
+- `get()` takes `item_id: int | str`, because `Attachment.ID` is a string
+  upstream.
 
 ## 10. Rate limiting (`rate_limiter.py`)
 
