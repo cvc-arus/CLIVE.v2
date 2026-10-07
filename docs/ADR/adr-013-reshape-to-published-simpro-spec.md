@@ -2,18 +2,17 @@
 
 ## Status
 
-**Proposed** — 2026-10-07.
+**Accepted** — 2026-10-07, by Alex.
 
 Supersedes the "Capabilities & Coverage" list of `adr-mock-simpro-api.md`
 (that ADR's Decision to build a containerised FastAPI + PostgreSQL mock
 stands; only its claims about route count and payload fidelity are replaced).
 
 - **Deciders:** Alex (approver), Claude (drafted)
-- **Scope decisions taken by Alex in conversation on 2026-10-07** are recorded
-  as the recommended option in each subsection below: fidelity scope (§2), the
-  clean break on the public API (§4), `columns` on both sides (§5), `Decimal`
-  money (§6) and two tables for `CustomFields` (§8). They are not binding
-  until Alex marks this ADR Accepted.
+- **Scope decisions taken by Alex on 2026-10-07**, recorded in each subsection
+  below and now binding: fidelity scope (§2), the clean break on the public
+  API (§4), `columns` on both sides (§5), `Decimal` money (§6) and two tables
+  for `CustomFields` (§8).
 
 ## Context
 
