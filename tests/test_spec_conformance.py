@@ -60,7 +60,7 @@ BASELINE_PATH = Path(__file__).resolve().parent / "spec_conformance_baseline.jso
 
 #: The baseline may never grow. Lower this literal as entries are deleted;
 #: raising it means the re-shape went backwards.
-MAX_BASELINE_ENTRIES = 40
+MAX_BASELINE_ENTRIES = 24
 
 #: ``(name, model, list path, detail path)`` for every resource the client
 #: reads. ``Project`` is absent on purpose: Simpro has no Projects resource,

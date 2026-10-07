@@ -21,18 +21,35 @@ from simpro_mock.models import (
 )
 from simpro_mock.schemas import (
     AssetResponse,
-    AttachmentResponse,
-    CompanyResponse,
+    AttachmentDetailResponse,
+    AttachmentListResponse,
+    CompanyDetailResponse,
+    CompanyListResponse,
     ContactResponse,
     CustomerResponse,
-    EmployeeResponse,
+    EmployeeDetailResponse,
+    EmployeeListResponse,
     HealthResponse,
-    JobNoteResponse,
+    JobNoteDetailResponse,
+    JobNoteListResponse,
     JobResponse,
+    ProjectStatusCodeDetailResponse,
+    ProjectStatusCodeListResponse,
     QuoteResponse,
     SiteResponse,
-    StatusResponse,
     TokenResponse,
+)
+from simpro_mock.serializers import (
+    attachment_detail_dict,
+    attachment_list_dict,
+    company_detail_dict,
+    company_list_dict,
+    employee_detail_dict,
+    employee_list_dict,
+    job_note_detail_dict,
+    job_note_list_dict,
+    project_status_code_detail_dict,
+    project_status_code_list_dict,
 )
 
 # Create separate routers for health, tokens, and API resources
@@ -78,7 +95,7 @@ def issue_token(
 # ==========================================
 
 
-@api_router.get("/companies/", response_model=list[CompanyResponse])
+@api_router.get("/companies/", response_model=list[CompanyListResponse])
 def list_companies(
     request: Request,
     response: Response,
@@ -92,19 +109,13 @@ def list_companies(
 
     items, total, total_pages = paginate_query(query, page, pageSize)
 
-    results = [
-        CompanyResponse(
-            ID=company.id,
-            Name=company.name,
-        )
-        for company in items
-    ]
+    results = [company_list_dict(company) for company in items]
 
     set_pagination_headers(response, total, len(results), total_pages)
     return results
 
 
-@api_router.get("/companies/{company_id}", response_model=CompanyResponse)
+@api_router.get("/companies/{company_id}", response_model=CompanyDetailResponse)
 def get_company(company_id: int, db: Session = Depends(get_db)):
     """Fetch a single company by its unique identifier."""
     company = db.query(Company).filter(Company.id == company_id).first()
@@ -112,10 +123,7 @@ def get_company(company_id: int, db: Session = Depends(get_db)):
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
 
-    return CompanyResponse(
-        ID=company.id,
-        Name=company.name,
-    )
+    return company_detail_dict(company)
 
 
 # ==========================================
@@ -531,7 +539,7 @@ def get_asset(
 
 
 @api_router.get(
-    "/companies/{company_id}/employees/", response_model=list[EmployeeResponse]
+    "/companies/{company_id}/employees/", response_model=list[EmployeeListResponse]
 )
 def list_employees(
     company_id: int,
@@ -544,24 +552,14 @@ def list_employees(
     query = db.query(Employee).filter(Employee.company_id == company_id)
     query = apply_filters(query, Employee, dict(request.query_params))
     items, total, total_pages = paginate_query(query, page, pageSize)
-    results = [
-        EmployeeResponse(
-            ID=e.id,
-            CompanyID=e.company_id,
-            GivenName=e.given_name,
-            FamilyName=e.family_name,
-            Position=e.position,
-            Email=e.email,
-            Phone=e.phone,
-        )
-        for e in items
-    ]
+    results = [employee_list_dict(e) for e in items]
     set_pagination_headers(response, total, len(results), total_pages)
     return results
 
 
 @api_router.get(
-    "/companies/{company_id}/employees/{employee_id}", response_model=EmployeeResponse
+    "/companies/{company_id}/employees/{employee_id}",
+    response_model=EmployeeDetailResponse,
 )
 def get_employee(company_id: int, employee_id: int, db: Session = Depends(get_db)):
     employee = (
@@ -571,15 +569,7 @@ def get_employee(company_id: int, employee_id: int, db: Session = Depends(get_db
     )
     if not employee:
         raise HTTPException(status_code=404, detail="Employee not found")
-    return EmployeeResponse(
-        ID=employee.id,
-        CompanyID=employee.company_id,
-        GivenName=employee.given_name,
-        FamilyName=employee.family_name,
-        Position=employee.position,
-        Email=employee.email,
-        Phone=employee.phone,
-    )
+    return employee_detail_dict(employee)
 
 
 # ==========================================
@@ -588,7 +578,8 @@ def get_employee(company_id: int, employee_id: int, db: Session = Depends(get_db
 
 
 @api_router.get(
-    "/companies/{company_id}/jobs/{job_id}/notes/", response_model=list[JobNoteResponse]
+    "/companies/{company_id}/jobs/{job_id}/notes/",
+    response_model=list[JobNoteListResponse],
 )
 def list_job_notes(
     company_id: int,
@@ -606,24 +597,14 @@ def list_job_notes(
     query = db.query(JobNote).filter(JobNote.job_id == job_id)
     query = apply_filters(query, JobNote, dict(request.query_params))
     items, total, total_pages = paginate_query(query, page, pageSize)
-    results = [
-        JobNoteResponse(
-            ID=n.id,
-            JobID=n.job_id,
-            Subject=n.subject,
-            Note=n.note,
-            CreatedBy=n.created_by,
-            CreatedAt=n.created_at.isoformat() if n.created_at else None,
-        )
-        for n in items
-    ]
+    results = [job_note_list_dict(n) for n in items]
     set_pagination_headers(response, total, len(results), total_pages)
     return results
 
 
 @api_router.get(
     "/companies/{company_id}/jobs/{job_id}/notes/{note_id}",
-    response_model=JobNoteResponse,
+    response_model=JobNoteDetailResponse,
 )
 def get_job_note(
     company_id: int, job_id: int, note_id: int, db: Session = Depends(get_db)
@@ -639,14 +620,7 @@ def get_job_note(
     job = db.query(Job).filter(Job.id == job_id, Job.company_id == company_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    return JobNoteResponse(
-        ID=note.id,
-        JobID=note.job_id,
-        Subject=note.subject,
-        Note=note.note,
-        CreatedBy=note.created_by,
-        CreatedAt=note.created_at.isoformat() if note.created_at else None,
-    )
+    return job_note_detail_dict(note)
 
 
 # ==========================================
@@ -656,7 +630,7 @@ def get_job_note(
 
 @api_router.get(
     "/companies/{company_id}/jobs/{job_id}/attachments/files/",
-    response_model=list[AttachmentResponse],
+    response_model=list[AttachmentListResponse],
 )
 def list_attachments(
     company_id: int,
@@ -673,27 +647,17 @@ def list_attachments(
     query = db.query(Attachment).filter(Attachment.job_id == job_id)
     query = apply_filters(query, Attachment, dict(request.query_params))
     items, total, total_pages = paginate_query(query, page, pageSize)
-    results = [
-        AttachmentResponse(
-            ID=a.id,
-            JobID=a.job_id,
-            Filename=a.filename,
-            MimeType=a.mime_type,
-            FileSize=a.file_size,
-            UploadedAt=a.uploaded_at.isoformat() if a.uploaded_at else None,
-        )
-        for a in items
-    ]
+    results = [attachment_list_dict(a) for a in items]
     set_pagination_headers(response, total, len(results), total_pages)
     return results
 
 
 @api_router.get(
     "/companies/{company_id}/jobs/{job_id}/attachments/files/{file_id}",
-    response_model=AttachmentResponse,
+    response_model=AttachmentDetailResponse,
 )
 def get_attachment(
-    company_id: int, job_id: int, file_id: int, db: Session = Depends(get_db)
+    company_id: int, job_id: int, file_id: str, db: Session = Depends(get_db)
 ):
     attachment = (
         db.query(Attachment)
@@ -705,16 +669,7 @@ def get_attachment(
     job = db.query(Job).filter(Job.id == job_id, Job.company_id == company_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    return AttachmentResponse(
-        ID=attachment.id,
-        JobID=attachment.job_id,
-        Filename=attachment.filename,
-        MimeType=attachment.mime_type,
-        FileSize=attachment.file_size,
-        UploadedAt=attachment.uploaded_at.isoformat()
-        if attachment.uploaded_at
-        else None,
-    )
+    return attachment_detail_dict(attachment)
 
 
 # ==========================================
@@ -724,7 +679,7 @@ def get_attachment(
 
 @api_router.get(
     "/companies/{company_id}/setup/statusCodes/projects/",
-    response_model=list[StatusResponse],
+    response_model=list[ProjectStatusCodeListResponse],
 )
 def list_project_status_codes(
     company_id: int,
@@ -737,23 +692,14 @@ def list_project_status_codes(
     query = db.query(Status).filter(Status.company_id == company_id)
     query = apply_filters(query, Status, dict(request.query_params))
     items, total, total_pages = paginate_query(query, page, pageSize)
-    results = [
-        StatusResponse(
-            ID=s.id,
-            CompanyID=s.company_id,
-            Name=s.name,
-            Category=s.category,
-            IsDefault=bool(s.is_default),
-        )
-        for s in items
-    ]
+    results = [project_status_code_list_dict(s) for s in items]
     set_pagination_headers(response, total, len(results), total_pages)
     return results
 
 
 @api_router.get(
     "/companies/{company_id}/setup/statusCodes/projects/{status_code_id}",
-    response_model=StatusResponse,
+    response_model=ProjectStatusCodeDetailResponse,
 )
 def get_project_status_code(
     company_id: int, status_code_id: int, db: Session = Depends(get_db)
@@ -765,10 +711,4 @@ def get_project_status_code(
     )
     if not status:
         raise HTTPException(status_code=404, detail="Project status code not found")
-    return StatusResponse(
-        ID=status.id,
-        CompanyID=status.company_id,
-        Name=status.name,
-        Category=status.category,
-        IsDefault=bool(status.is_default),
-    )
+    return project_status_code_detail_dict(status)

@@ -20,6 +20,7 @@ from simpro_mock.models import (
     Quote,
     Site,
     Status,
+    Zone,
 )
 
 # Fixed seed so every start produces identical data (same day; see seed_data).
@@ -42,10 +43,47 @@ def truncate_tables(db: Session):
     print(f"✅ All {len(tables)} tables truncated.")
 
 
-def get_or_create_company(db: Session, name: str) -> Company:
+def get_or_create_company(db: Session, name: str, now: datetime) -> Company:
+    """Create a company with the configuration block its detail route serves.
+
+    Every field below is required by Simpro's company detail response
+    (ADR-013), so the mock has to hold a real value for each one rather than
+    leaving it null.
+    """
     company = db.query(Company).filter(Company.name == name).first()
     if not company:
-        company = Company(name=name)
+        slug = name.lower().replace(" ", "")
+        company = Company(
+            name=name,
+            address_line1="Level 2",
+            address_line2="140 Queen Street",
+            billing_address_line1="PO Box 1234",
+            billing_address_line2="Melbourne VIC 3001",
+            phone="03 9000 0000",
+            fax="03 9000 0001",
+            email=f"accounts@{slug}.com.au",
+            website=f"https://www.{slug}.com.au",
+            country="Australia",
+            currency="AUD",
+            timezone="Australia/Melbourne",
+            timezone_offset="+10:00",
+            company_no="ACN 000 000 000",
+            ein="",
+            employer_tax_ref_no="",
+            cis_cert_no="",
+            licence="SEC-LIC-00000",
+            tax_name="GST",
+            default_language="en_AU",
+            single_cost_center_mode=True,
+            simpro_payments=False,
+            template=False,
+            multi_company_label=name,
+            multi_company_color="#1f6feb",
+            schedule_format=30,
+            ui_date_format="d/m/Y",
+            ui_time_format="H:i",
+            date_modified=now,
+        )
         db.add(company)
         db.flush()
     return company
@@ -62,9 +100,16 @@ def seed_data():
 
     # ---- 1. Companies ----
     companies = [
-        get_or_create_company(db, "CVC Service"),
-        get_or_create_company(db, "CVC Projects"),
+        get_or_create_company(db, "CVC Service", seed_now),
+        get_or_create_company(db, "CVC Projects", seed_now),
     ]
+    db.commit()
+
+    # ---- 1b. Zones (Employee.DefaultZone; Site.Zone reuses these in Wave B) ----
+    zone_names = ["Metro North", "Metro South", "Regional"]
+    for company in companies:
+        for zone_name in zone_names:
+            db.add(Zone(company_id=company.id, name=zone_name))
     db.commit()
 
     # ---- 2. Customers (16) ----
@@ -177,15 +222,29 @@ def seed_data():
         ("Olivia", "Black", "Systems Integrator"),
     ]
     for company in companies:
+        company_zones = db.query(Zone).filter(Zone.company_id == company.id).all()
         for emp in employee_data[:6]:  # 6 per company = total 12
             given, family, pos = emp
             employee = Employee(
                 company_id=company.id,
-                given_name=given,
-                family_name=family,
+                name=f"{given} {family}",
                 position=pos,
                 email=f"{given.lower()}.{family.lower()}@cvc.com.au",
-                phone=f"04{random.randint(10000000, 99999999)}",
+                secondary_email="",
+                work_phone=f"04{random.randint(10000000, 99999999)}",
+                cell_phone=f"04{random.randint(10000000, 99999999)}",
+                extension=str(random.randint(100, 999)),
+                fax="",
+                preferred_notification_method="Email",
+                address=f"{random.randint(1, 200)} Collins Street",
+                city="Melbourne",
+                state="VIC",
+                postal_code="3000",
+                country="Australia",
+                default_zone_id=random.choice(company_zones).id,
+                archived=False,
+                date_created=seed_now - timedelta(days=random.randint(200, 900)),
+                date_modified=seed_now - timedelta(days=random.randint(0, 30)),
             )
             db.add(employee)
     db.commit()
@@ -205,13 +264,28 @@ def seed_data():
         ("Planning", "Project"),
         ("Closed", "Project"),
     ]
+    status_colors = [
+        "#6e7781",
+        "#1f6feb",
+        "#bf8700",
+        "#1a7f37",
+        "#9a6700",
+        "#cf222e",
+        "#8250df",
+        "#0969da",
+        "#1a7f37",
+        "#cf222e",
+        "#6e7781",
+        "#24292f",
+    ]
     for company in companies:
-        for name, category in status_names:
+        for priority, (name, _category) in enumerate(status_names, start=1):
             status = Status(
                 company_id=company.id,
                 name=name,
-                category=category,
-                is_default=1 if name == "Pending" else 0,
+                color=status_colors[priority - 1],
+                priority=priority,
+                date_modified=seed_now - timedelta(days=random.randint(0, 60)),
             )
             db.add(status)
     db.commit()
@@ -336,8 +410,25 @@ def seed_data():
                 job_id=job.id,
                 subject=random.choice(note_subjects),
                 note=random.choice(note_bodies),
-                created_by=random.choice(employees).id if employees else None,
-                created_at=seed_now - timedelta(days=random.randint(1, 90)),
+                date_created=seed_now - timedelta(days=random.randint(1, 90)),
+                follow_up_date=(
+                    (seed_now + timedelta(days=random.randint(1, 30))).date()
+                    if random.random() < 0.5
+                    else None
+                ),
+                visibility_admin=True,
+                visibility_customer=random.random() < 0.3,
+                reference_text=f"Job #{job.id}",
+                reference_number=str(job.id),
+                reference_type="Job",
+                submitted_by_id=(
+                    random.choice(employees).id if employees else None
+                ),
+                assign_to_id=(
+                    random.choice(employees).id
+                    if employees and random.random() < 0.5
+                    else None
+                ),
             )
             db.add(note)
     db.commit()
@@ -365,16 +456,26 @@ def seed_data():
         "dwg": "application/acad",
     }
     jobs = db.query(Job).order_by(Job.id).all()
+    employees = db.query(Employee).order_by(Employee.id).all()
+    # Attachment.ID is an opaque string upstream, not an autoincrementing
+    # integer, so the seed assigns it explicitly. The counter keeps it
+    # deterministic, and the "file-" prefix keeps it visibly non-numeric.
+    file_counter = 0
     for job in jobs[:10]:  # attach to first 10 jobs
         for _ in range(random.randint(1, 3)):
             fname = random.choice(file_names)
             ext = fname.split(".")[-1]
+            file_counter += 1
             attach = Attachment(
+                id=f"file-{file_counter:04d}",
                 job_id=job.id,
                 filename=fname,
                 mime_type=mime_types.get(ext, "application/octet-stream"),
-                file_size=random.randint(50000, 5000000),
-                uploaded_at=seed_now - timedelta(days=random.randint(0, 60)),
+                file_size_bytes=random.randint(50000, 5000000),
+                date_added=seed_now - timedelta(days=random.randint(0, 60)),
+                public=random.random() < 0.5,
+                email=random.random() < 0.3,
+                added_by_id=random.choice(employees).id if employees else None,
             )
             db.add(attach)
     db.commit()
