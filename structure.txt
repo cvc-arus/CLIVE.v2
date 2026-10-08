@@ -95,6 +95,7 @@
 │       │   ├── main.py
 │       │   ├── middleware.py
 │       │   ├── models.py
+│       │   ├── projection.py
 │       │   ├── routers.py
 │       │   ├── schemas.py
 │       │   ├── seed.py
@@ -161,4 +162,4 @@
 │   └── test_spec_conformance.py
 └── uv.lock
 
-25 directories, 136 files
+25 directories, 137 files

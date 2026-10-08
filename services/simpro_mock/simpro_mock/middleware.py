@@ -49,10 +49,22 @@ def paginate_query(query, page: int, page_size: int):
     return items, total, total_pages
 
 
+def pagination_headers(total: int, count: int, total_pages: int) -> dict[str, str]:
+    """Render the Simpro pagination headers as a plain dict.
+
+    The dict form exists because a projected response is returned as its own
+    ``JSONResponse``, and headers set on the injected ``Response`` are
+    discarded in that case, so they have to be passed in explicitly.
+    """
+    return {
+        "Result-Total": str(total),
+        "Result-Count": str(count),
+        "Result-Pages": str(total_pages),
+    }
+
+
 def set_pagination_headers(
     response: Response, total: int, count: int, total_pages: int
 ):
     """Set Simpro-compatible pagination response headers."""
-    response.headers["Result-Total"] = str(total)
-    response.headers["Result-Count"] = str(count)
-    response.headers["Result-Pages"] = str(total_pages)
+    response.headers.update(pagination_headers(total, count, total_pages))

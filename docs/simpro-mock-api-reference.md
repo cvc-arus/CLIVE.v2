@@ -66,7 +66,25 @@ Response headers on every list endpoint:
 
 ## 4. Filtering
 
-List endpoints accept arbitrary query params matching a known PascalCase field name. Supported fields: `ID`, `Name`, `CompanyID`, `GivenName`, `FamilyName`, `Email`, `Phone`, `Status`, `DateIssued`, `Total`, `CustomerID`. Unrecognized field names are silently ignored (not an error).
+List endpoints accept query params matching a filterable PascalCase field name. **The filterable set is per resource**, defined by `FILTER_MAPS` in `services/simpro_mock/simpro_mock/filtering.py`:
+
+| Resource | Filterable fields |
+|---|---|
+| Companies | `ID`, `Name` |
+| Customers | `ID`, `Type`, `CompanyName`, `GivenName`, `FamilyName`, `Email`, `Phone`, `CustomerType`, `Archived` |
+| Contacts | `ID`, `GivenName`, `FamilyName`, `Email`, `Position`, `Department` |
+| Sites | `ID`, `Name`, `Archived` |
+| Assets | `ID`, `StartDate`, `DisplayOrder`, `Archived` |
+| Employees | `ID`, `Name`, `Position`, `Archived` |
+| Jobs | `ID`, `Name`, `Description`, `Type`, `Stage`, `OrderNo`, `RequestNo`, `DateIssued` |
+| Quotes | `ID`, `Name`, `Description`, `Type`, `Stage`, `DateIssued`, `IsClosed` |
+| Job Notes | `ID`, `Subject` |
+| Attachments | `ID`, `Filename`, `MimeType`, `Public` |
+| Project Status Codes | `ID`, `Name`, `Priority` |
+
+**An unrecognised field name returns `400`**, with a body naming the parameter, the resource and the fields that would have worked. It used to be ignored, which meant a caller received unfiltered data believing it was filtered — a renamed field could pass every test while doing nothing.
+
+Only **scalar columns** are filterable. A nested wire object such as `Job.Total` or `Job.Status` is composed from several columns and is not one, so filtering on it is a `400` rather than a silent no-op. Real Simpro supports some nested filters, so this is narrower than upstream rather than different.
 
 **Operators** — wrap the value in an operator function:
 
@@ -87,6 +105,16 @@ Numeric operators (`gt`, `lt`, `ge`, `le`, `between`) attempt `int` then `float`
 **Combining filters:** `search=all` (default) ANDs every filter together; `search=any` ORs them.
 
 `page`, `pageSize`, `columns`, `orderby`, `search`, and `limit` are reserved and never treated as filter fields.
+
+### `columns` projection
+
+`columns` is a csv list and is accepted on **detail routes as well as collections**, matching the contract. It selects **top-level keys only**, and a selected key yields its whole nested block — `columns=Status` on a job returns the entire `{ID, Name, Color}` object.
+
+- `ID` is always included, even when not requested. **Unverified against live Simpro**; re-check on first live access.
+- Unknown column names are ignored rather than rejected, because a caller may legitimately ask for a field the contract documents but this mock does not serve (such as `Totals`). Unlike an ignored filter, a missing column is visible in the response.
+- `?columns=` with an empty value behaves as if omitted.
+- A projected response still carries `Result-Total`, `Result-Count` and `Result-Pages`.
+- Callers using the typed client must keep every field their model marks required: `Job` requires `ID`, `Description` and `Total`, so `columns=Description` returns a body the model rejects.
 
 ## 5. Resources
 
@@ -250,6 +278,6 @@ Attachments are not seeded per company: `seed.py` adds 1–3 attachments to each
 - No webhooks / async event callbacks
 - No Projects resource — correct, since Simpro has none. A project is a job with `Type: "Project"`, and the `projects` table has been dropped; its rows are now `Type="Project"` jobs
 - Not served, although documented upstream: the `Totals` block on jobs and quotes, `Forecast` on quotes, `Banking`/`Rates` on customers, `Rates` on sites, `Banking`/`PayRates` on employees — all out of ADR-013's fidelity scope. Also `Job.ConvertedFromQuote` and `STC`: the spec marks them required, but they are only meaningful for a converted job, and inventing values is the problem ADR-013 exists to fix. All are additive later and non-breaking, because the client models set `extra="ignore"`
-- `columns` is accepted and ignored. `simpro_client` sends it, but the mock cannot yet narrow a response to the requested fields (ADR-013 S6). Wave A resources do return Simpro's narrow default projection from their collection routes; resources awaiting their wave return every modelled field on both legs
+- `orderby` and `limit` are accepted and ignored — the last two documented query parameters the mock does not honour
 - Thin data behind correct shapes in the re-shaped resources: `Attachment.Folder`, `Company.DefaultCostCenter`, `Customer.Contracts`, `Customer.ResponseTimes`, `Contact.Contact`, `Site.STCZone` and `Site.VEECZone` are always `null`; `JobNote.Attachments`, `Customer.Tags`, `Customer.PreferredTechs`, `Customer.CustomFields`, `Contact.CustomFields`, `Site.PreferredTechs` and `Site.PreferredTechnicians` are always `[]`; `Employee.Zones` holds only that employee's default zone
 - Read-only: no POST/PATCH/DELETE routes, no business-logic state transitions (e.g. Quote → Job conversion)

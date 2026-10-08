@@ -22,6 +22,7 @@ from collections.abc import Iterator
 
 import httpx
 import pytest
+from pydantic import ValidationError
 
 from simpro_client import SimproClient, SimproSettings
 from simpro_client.endpoints.base import ResourceEndpoint
@@ -176,3 +177,40 @@ def test_endpoint_iter_all_against_the_mock(
 
     assert len(walked) == page.total
     assert all(isinstance(item, endpoint.model) for item in walked)
+
+
+def test_columns_round_trips_through_the_client(
+    client: SimproClient, scope_ids: dict[str, int]
+) -> None:
+    """A ``columns`` projection survives the client's validation.
+
+    The client has sent ``columns`` since S2 but the mock ignored it until S6,
+    so nothing proved the two agreed on the projection. ``Company`` is used
+    because its required fields are just ``ID`` and ``Name``: see the caveat
+    below.
+    """
+    page = client.companies.fetch_page(page_size=2, columns=["Name"])
+
+    assert page.items, "the mock returned an empty first page"
+    assert all(isinstance(item, client.companies.model) for item in page.items)
+    assert all(item.id and item.name for item in page.items)
+    # The projection must not disturb the pagination contract.
+    assert page.count == len(page.items)
+    assert page.total >= len(page.items)
+
+
+def test_projecting_away_a_required_field_fails_validation(
+    client: SimproClient, scope_ids: dict[str, int]
+) -> None:
+    """Narrowing past a model's required fields raises, and that is correct.
+
+    A model's required fields are the ones the contract marks required on
+    *both* legs — for ``Job`` that is ``ID``, ``Description`` and ``Total``.
+    Asking for fewer returns a body the model legitimately rejects. This is
+    not a mock quirk: real Simpro would behave the same way, so Phase 4 has
+    to keep every required field in any ``columns`` list it builds.
+    """
+    with pytest.raises(ValidationError):
+        client.jobs.fetch_page(
+            company_id=scope_ids["company_id"], page_size=1, columns=["Description"]
+        )
