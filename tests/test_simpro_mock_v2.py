@@ -160,3 +160,119 @@ def test_job_total_is_a_nested_object_with_two_decimal_money(token: str):
         assert round(float(value), 2) == float(value), (
             f"{key}={value} has more than two decimal places"
         )
+
+
+def test_columns_narrows_a_collection_and_keeps_pagination_headers(token: str):
+    """``columns`` projects the body without disturbing the headers.
+
+    A projected response is returned as its own ``JSONResponse``, which
+    discards headers set on the injected ``Response``, so this is the test
+    that catches the pagination headers going missing (ADR-013 S6).
+    """
+    headers = {"Authorization": f"Bearer {token}"}
+    url = f"{BASE}/api/v1.0/companies/1/jobs/?pageSize=2&columns=Description"
+
+    response = httpx.get(url, headers=headers)
+
+    assert response.status_code == 200
+    rows = response.json()
+    assert rows, "the mock returned an empty first page"
+    for row in rows:
+        # ID is always included, even though only Description was asked for.
+        assert set(row) == {"ID", "Description"}, f"unexpected keys {sorted(row)}"
+
+    assert response.headers["Result-Count"] == str(len(rows))
+    assert int(response.headers["Result-Total"]) >= len(rows)
+    assert int(response.headers["Result-Pages"]) >= 1
+
+
+def test_columns_selects_whole_nested_blocks_on_a_detail_route(token: str):
+    """``columns`` picks top-level keys, and a key brings its whole object.
+
+    The contract documents ``columns`` on detail routes as well as
+    collections, and a selected key yields its entire nested block rather
+    than a partial traversal.
+    """
+    headers = {"Authorization": f"Bearer {token}"}
+
+    full = httpx.get(f"{BASE}/api/v1.0/companies/1/jobs/1", headers=headers).json()
+    projected = httpx.get(
+        f"{BASE}/api/v1.0/companies/1/jobs/1?columns=Name,Status", headers=headers
+    ).json()
+
+    assert set(projected) == {"ID", "Name", "Status"}
+    # The nested Status object arrives intact, not flattened or truncated.
+    assert projected["Status"] == full["Status"]
+    assert set(projected["Status"]) == {"ID", "Name", "Color"}
+    assert len(full) > len(projected), "the unprojected record should be wider"
+
+
+def test_omitting_columns_returns_the_whole_record(token: str):
+    """No ``columns`` means no projection, and an empty value is not one either."""
+    headers = {"Authorization": f"Bearer {token}"}
+
+    full = httpx.get(f"{BASE}/api/v1.0/companies/1/jobs/1", headers=headers).json()
+    empty_param = httpx.get(
+        f"{BASE}/api/v1.0/companies/1/jobs/1?columns=", headers=headers
+    ).json()
+
+    assert empty_param == full, "?columns= should behave as if omitted"
+
+
+def test_an_unknown_filter_is_rejected_loudly(token: str):
+    """An unmapped filter parameter returns 400 naming what would work.
+
+    It used to be ignored, so the caller got unfiltered data and believed it
+    was filtered. ``Status`` is the sharp case: jobs had a ``status`` text
+    column before ADR-013 and now have a ``Status`` *object* composed from a
+    foreign key, so the old filter name is no longer a column.
+    """
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = httpx.get(
+        f"{BASE}/api/v1.0/companies/1/jobs/?Status=Open", headers=headers
+    )
+
+    assert response.status_code == 400, (
+        f"expected 400 for an unknown filter, got {response.status_code}"
+    )
+    body = response.json()
+    assert body["parameter"] == "Status"
+    assert body["resource"] == "Job"
+    assert "Stage" in body["filterable"], (
+        f"the error should name the usable fields, got {body['filterable']}"
+    )
+
+
+def test_a_known_filter_actually_narrows_the_result(token: str):
+    """A mapped filter changes the result, rather than being accepted and ignored."""
+    headers = {"Authorization": f"Bearer {token}"}
+    base = f"{BASE}/api/v1.0/companies/1/jobs/?pageSize=250"
+
+    everything = httpx.get(base, headers=headers)
+    projects = httpx.get(f"{base}&Type=Project", headers=headers)
+
+    assert projects.status_code == 200
+    assert projects.json(), "Type=Project matched nothing; the seed should have some"
+    assert int(projects.headers["Result-Total"]) < int(
+        everything.headers["Result-Total"]
+    ), "the filter did not narrow anything, so it is being ignored"
+
+
+def test_request_control_parameters_are_not_treated_as_filters(token: str):
+    """page, pageSize, columns, orderby, search and limit must not 400.
+
+    They control the request rather than filtering it, so the loud-filter
+    check has to skip them.
+    """
+    headers = {"Authorization": f"Bearer {token}"}
+    url = (
+        f"{BASE}/api/v1.0/companies/1/jobs/"
+        "?page=1&pageSize=5&columns=ID&orderby=Name&search=all&limit=5"
+    )
+
+    response = httpx.get(url, headers=headers)
+
+    assert response.status_code == 200, (
+        f"a request-control parameter was mistaken for a filter: {response.text}"
+    )

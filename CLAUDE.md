@@ -81,7 +81,7 @@ it. When documents and code disagree, say so explicitly. Do not quietly
 | 010 | Resilience: token bucket, 401/429 budgets, error hierarchy | Approved; implemented with deviations (see `src/simpro_client/CLAUDE.md`). §2.5 superseded by ADR-011 |
 | 011 | Exception hierarchy and `SimproAuthError` context (supersedes ADR-010 §2.5) | Accepted 2026-10-06, implemented |
 | 012 | Retry delay ceiling (`SIMPRO_MAX_RETRY_DELAY`) and token-refresh concurrency | Accepted 2026-10-06 (supersedes ADR-010 §2.3, extends §2.1) |
-| 013 | Re-shape mock and client to Simpro's published OpenAPI spec | Accepted 2026-10-07. Implementation in progress: S1–S5 of 7 landed. **All 50 conformance checks pass and `tests/spec_conformance_baseline.json` is empty**, so every client model validates payloads generated from Simpro's published contract. Field names, types and optionality are governed by `docs/contracts/simpro-openapi-v1-get-subset.json`. Remaining: S6 (mock `columns` projection and loud filters) and S7 (documentation close-out) |
+| 013 | Re-shape mock and client to Simpro's published OpenAPI spec | Accepted 2026-10-07. Implementation in progress: S1–S6 of 7 landed. **All 50 conformance checks pass and `tests/spec_conformance_baseline.json` is empty**, so every client model validates payloads generated from Simpro's published contract. Field names, types and optionality are governed by `docs/contracts/simpro-openapi-v1-get-subset.json`. Remaining: S7 (documentation close-out). S6 landed the mock's `columns` projection, per-model filter maps and a 400 on an unknown filter |
 
 Re-verify this table before relying on it; it is a snapshot.
 

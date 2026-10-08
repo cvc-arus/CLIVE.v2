@@ -31,11 +31,12 @@ services/simpro_mock/
   Dockerfile, alembic.ini, pyproject.toml, uv.lock, configuration.md
   alembic/env.py, alembic/versions/*.py
   simpro_mock/
-    main.py        app + BearerAuthMiddleware + 3 routers
+    main.py        app + BearerAuthMiddleware + 3 routers + 400 for bad filters
     config.py      Settings, prefix SIMPRO_MOCK_
     database.py    sync engine, SessionLocal, Base, get_db()
-    middleware.py  BearerAuthMiddleware, paginate_query, set_pagination_headers
-    filtering.py   Simpro-style query filters
+    middleware.py  BearerAuthMiddleware, paginate_query, pagination headers
+    filtering.py   per-model filter maps; an unknown param raises
+    projection.py  the `columns` projection and the response helpers
     models.py      19 SQLAlchemy ORM models/tables
     schemas.py     PascalCase Pydantic response schemas
     serializers.py ORM row -> wire-shaped dict, per resource and leg
@@ -97,6 +98,13 @@ matching client change, updated tests, and Alex's approval:
 - List routes accept `page` (≥1, default 1) and `pageSize` (1–250,
   default 30) and set `Result-Total`, `Result-Count`, `Result-Pages`.
   `pageSize` is camelCase on purpose. Do not rename it to satisfy ruff `N803`.
+- **`columns` is implemented**, on detail routes as well as collections. It
+  selects top-level keys only, and a selected key yields its whole nested
+  block. `ID` is always included. Unknown column names are ignored, because a
+  caller may legitimately ask for a documented field this mock does not serve.
+- **An unknown filter parameter is a 400**, naming the fields that would have
+  worked. Silently ignoring it meant a caller got unfiltered data and believed
+  it was filtered.
 - Missing records raise `HTTPException(404)`.
 - GET only (plus the token POST). Do not add write routes without a scope
   change.
@@ -109,12 +117,16 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
 `docs/simpro-mock-api-reference.md`, or found in review):
 - No rate limiting; the mock never returns 429. Adding 429 simulation
   changes a documented ADR limitation, so update the ADR too.
-- `filtering.py`'s `PASCAL_TO_SNAKE` maps only 11 fields. Unmapped filter
-  params (e.g. `SiteID`, `Position`) are **silently ignored**.
-- `columns`, `orderby`, `limit` are accepted but ignored. `simpro_client`
-  already sends `columns`, so the projection is the next thing owed here;
-  until it lands, list routes return every modelled field rather than the
-  narrow default projection real Simpro returns.
+- `orderby` and `limit` are still accepted and ignored. They are the last two
+  documented query parameters the mock does not honour.
+- Whether real Simpro always includes `ID` in a projected response is
+  **unverified** — the mock does (`projection.ALWAYS_INCLUDED`). Re-check on
+  first live access, and do not let callers depend on it meanwhile.
+- `FILTER_MAPS` covers only scalar columns. A nested wire object such as
+  `Job.Total` or `Job.Status` is composed by `serializers.py` and is not a
+  column, so it cannot be filtered on; asking to is a 400, not a silent
+  no-op. Real Simpro supports some nested filters, so this is narrower than
+  upstream rather than wrong.
 - `search` is applied, but only as a mode switch: `search=any` joins the
   field filters with OR; anything else (default `all`) joins them with AND
   (`apply_filters()` in `filtering.py`). It is not a free-text search.
@@ -160,6 +172,14 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
   `schemas.py`, and both stay on their route's `response_model`. The
   `response_model` is what catches a typo in a serializer, so do not drop it
   when returning a dict.
+- Handlers return through `projection.collection_response()` /
+  `detail_response()`, which project the body when `columns` was supplied.
+  A projected body is a `JSONResponse`, so it **bypasses the
+  `response_model`** — unavoidable, since the body no longer has the declared
+  shape. The unprojected path keeps its validation, so only a caller who
+  asked for a projection gives that up. Returning a `Response` also
+  **discards headers set on the injected `Response`**, which is why
+  `collection_response()` passes the pagination headers in explicitly.
 - The database stores composite values **flat, one column each**; the nested
   wire shape (`Employee.PrimaryContact`, `Company.Address`) is assembled in
   `serializers.py`. Do not add JSON columns to mirror the wire shape.

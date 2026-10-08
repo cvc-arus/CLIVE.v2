@@ -179,11 +179,11 @@ def test_page_preserves_headers_filters_and_company_selection(mock_settings):
             company_id=2,
             page=2,
             page_size=2,
-            filters={"Status": "Open"},
+            filters={"Stage": "Progress"},
         )
 
     request = route.calls.last.request
-    assert request.url.params["Status"] == "Open"
+    assert request.url.params["Stage"] == "Progress"
     assert request.url.params["page"] == "2"
     assert request.url.params["pageSize"] == "2"
     assert isinstance(result.items[0], Job)
