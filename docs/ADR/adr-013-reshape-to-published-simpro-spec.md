@@ -16,8 +16,10 @@ empty** (it began at 40 of 44 combinations failing). Two scope deviations, each
 explained in its sprint report: the shared `custom_fields` tables moved from
 Wave A's migration to Wave B, where Site first consumes them; and `company_id` /
 `job_id` / `customer_id` survive as columns on several tables, because they
-scope the routes even though they left the wire. `orderby` and `limit` remain
-accepted and ignored by the mock (§5 covers `columns` only).
+scope the routes even though they left the wire. `orderby` and `limit` were
+left accepted-and-ignored by S6, whose scope was `columns` only; both were
+implemented on 2026-10-08, after this ADR, in `ordering.py` and
+`paginate_query` (see `docs/known-issues.md`).
 
 - **Deciders:** Alex (approver), Claude (drafted)
 - **Scope decisions taken by Alex on 2026-10-07**, recorded in each subsection
