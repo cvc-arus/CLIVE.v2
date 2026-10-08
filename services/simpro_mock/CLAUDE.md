@@ -37,7 +37,7 @@ services/simpro_mock/
     middleware.py  BearerAuthMiddleware, paginate_query, pagination headers
     filtering.py   per-model filter maps; an unknown param raises
     projection.py  the `columns` projection and the response helpers
-    models.py      19 SQLAlchemy ORM models/tables
+    models.py      16 ORM classes + the site_customers association table
     schemas.py     PascalCase Pydantic response schemas
     serializers.py ORM row -> wire-shaped dict, per resource and leg
     routers.py     health, /oauth2/token, /api/v1.0/... routes

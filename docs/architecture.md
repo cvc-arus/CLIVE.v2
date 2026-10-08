@@ -77,7 +77,9 @@ Library-first design: importable by any future phase without requiring a network
 
 This is implemented with deviations from ADR-010; they are listed in `src/simpro_client/CLAUDE.md`.
 
-Typed client layer: `models/` (one Pydantic model per resource, PascalCase-aliased), `endpoints/` (generic `ResourceEndpoint` in `base.py`, with `get()`, `fetch_page()` and `iter_all()` for pagination, plus one module per resource, exposed as attributes such as `client.jobs`), and `rate_limiter.py` (`TokenBucket`, configured by `SIMPRO_LIMITER_CAPACITY` / `SIMPRO_LIMITER_REFILL_RATE`). There is no separate `pagination.py`.
+Typed client layer: `models/` (13 resource models plus 25 nested value objects in `models/common.py`, all PascalCase-aliased), `endpoints/` (generic `ResourceEndpoint` in `base.py`, with `get()`, `fetch_page()` and `iter_all()`, plus 13 endpoint classes across 12 modules — customers need three — exposed as attributes such as `client.jobs`), and `rate_limiter.py` (`TokenBucket`, configured by `SIMPRO_LIMITER_CAPACITY` / `SIMPRO_LIMITER_REFILL_RATE`). There is no separate `pagination.py`.
+
+Field names, types and required/optional status are governed by the vendored contract, not by the mock (ADR-013). Money is `Decimal` and arrives as a nested `Money` object, because every money field in the spec is constrained to two decimal places. `get()`, `fetch_page()` and `iter_all()` all take an optional `columns=` sequence; a projection must retain every field its model marks required, or validation raises. Counts verified 2026-10-08 by importing the package.
 
 ### 5.2 `simpro_mock` (FastAPI service, `services/simpro_mock/`)
 
@@ -89,45 +91,73 @@ services/simpro_mock/
 ├── alembic.ini, alembic/            # schema migrations
 ├── pyproject.toml
 └── simpro_mock/
-    ├── main.py          # FastAPI app, registers health/token/api routers + auth middleware
+    ├── main.py          # FastAPI app, registers health/token/api routers + auth
+    │                    #   middleware, and the 400 handler for bad filters
     ├── config.py         # Settings, env prefix SIMPRO_MOCK_
     ├── database.py       # SQLAlchemy engine/session/Base/get_db
-    ├── middleware.py      # BearerAuthMiddleware, paginate_query, set_pagination_headers
-    ├── filtering.py       # Simpro-style operator query filtering
-    ├── models.py          # 12 SQLAlchemy 2.0 ORM models
-    ├── schemas.py          # 12 Pydantic PascalCase response schemas
-    ├── routers.py          # 24 routes (health, token, 22 GET routes for 11 resources)
+    ├── middleware.py      # BearerAuthMiddleware, paginate_query, pagination headers
+    ├── filtering.py       # per-model filter maps + operator query filtering
+    ├── projection.py      # the `columns` projection and the response helpers
+    ├── models.py          # 16 SQLAlchemy 2.0 ORM classes + 1 association table
+    ├── schemas.py          # Pydantic PascalCase response schemas (list + detail)
+    ├── serializers.py      # ORM row -> wire-shaped dict, per resource and leg
+    ├── routers.py          # 27 routes (health, token, 25 GET routes)
     └── seed.py            # Seeds two companies + representative data
 ```
+
+Counts verified 2026-10-08 by importing the package: 16 ORM classes, 17 tables
+(`site_customers` is association-only), 25 API routes (13 collection + 12
+detail), 11 per-model filter maps.
 
 **Auth flow:** `POST /oauth2/token` accepts any form-encoded `client_id`/`client_secret` (development-only — no real credential check) and returns a static bearer token (`mock-access-token-simpro` by default) with a configurable `expires_in`. `BearerAuthMiddleware` then requires `Authorization: Bearer <that exact token>` on every route except `/health`, `/oauth2/token`, `/docs`, `/openapi.json`, `/redoc`.
 
 **Pagination:** `paginate_query()` in `middleware.py` takes `page` (default 1) and `pageSize` (default 30, max 250), computes total/offset/total_pages, and `set_pagination_headers()` writes `Result-Total`, `Result-Count`, `Result-Pages` on the response — matching real Simpro's documented header contract.
 
-**Filtering (`filtering.py`):** Query params are mapped from Simpro's PascalCase field names (`ID`, `Name`, `CompanyID`, `GivenName`, `FamilyName`, `Email`, `Phone`, `Status`, `DateIssued`, `Total`, `CustomerID`) to snake_case SQLAlchemy columns via `PASCAL_TO_SNAKE`, then parsed for operator syntax: `gt()`, `lt()`, `le()`, `ge()`, `ne()`, `between()`, `in()`, `!in()`, with a plain value falling back to exact match. `search=all` (default) combines filters with AND; `search=any` combines with OR.
+**Response composition (`serializers.py`):** Every served resource has a `<resource>_list_dict()` and a `<resource>_detail_dict()` that build a PascalCase dict from the ORM row. The database stores composite values **flat, one column each**; the nested wire shape (`Job.Total`, `Employee.PrimaryContact`, `Company.Address`) is assembled here. Collection and detail routes return **different projections**, matching real Simpro, so each resource has both an `XListResponse` and an `XDetailResponse` in `schemas.py`, and both stay on their route's `response_model`.
 
-### 5.3 Data model (11 served resources)
+**`columns` projection (`projection.py`):** Honoured on all 25 routes, detail as well as collection. It selects top-level keys only, and a selected key yields its whole nested block. `ID` is always included — **unverified against live Simpro**, so callers must not depend on it. Unknown column names are ignored, because a caller may legitimately ask for a documented field this mock does not serve. A projected body is returned as its own `JSONResponse`, which bypasses the route's `response_model` and discards headers set on the injected `Response`, so the pagination headers are passed in explicitly; the unprojected path keeps its validation.
+
+**Filtering (`filtering.py`):** Query params are PascalCase wire names mapped to SQLAlchemy columns by **per-model** `FILTER_MAPS` (one map per resource — `Name` means a different column on each route, and most resources no longer have the fields a single shared map once assumed). Values are parsed for operator syntax: `gt()`, `lt()`, `le()`, `ge()`, `ne()`, `between()`, `in()`, `!in()`, with a plain value falling back to exact match. `search=all` (default) combines filters with AND; `search=any` with OR. **An unrecognised filter parameter returns `400`**, naming the fields that would have worked; it used to be ignored, so a caller received unfiltered data believing it was filtered. Only scalar columns are filterable: a nested wire object such as `Job.Total` is composed from several columns and is not one. `orderby` and `limit` are still accepted and ignored.
+
+### 5.3 Data model (17 tables, 16 ORM classes)
 
 ```
 Company (1) ──< Customer ──< Contact
-             ──< Customer ──< Site ──< Asset
-             ──< Job ──< JobNote ──> Employee
-             ──< Job ──< Attachment
-             ──< Quote ──> Customer
-             ──< Employee
-             ──< Status          # served as project status codes
+             ──< Customer >──< Site          # many-to-many: site_customers
+             ──< Site ──< Asset ──> AssetType
+             ──< Site ──> Zone
+             ──< Job ──> Customer, Site, Status, CustomerContract
+             ──< Job ──< JobNote ──> Employee   # SubmittedBy / AssignTo
+             ──< Job ──< Attachment ──> Employee  # AddedBy
+             ──< Quote ──> Customer, Site, Status
+             ──< Employee ──> Zone             # DefaultZone
+             ──< Status                        # the project status-code list
+             ──< Zone
+             ──< AssetType
+             ──< CustomerContract ──> Customer
+             ──< CustomField ──< CustomFieldValue   # Site, Asset
 ```
 
-All foreign keys cascade appropriately (`ondelete="CASCADE"` for strict ownership, `SET NULL` for optional links like `Quote.customer_id` and `Project.site_id`). Every relationship is declared with `back_populates` on both sides.
+Foreign keys cascade by ownership (`ondelete="CASCADE"`), `SET NULL` for optional links (`Employee.default_zone_id`, `JobNote.submitted_by_id`, `Attachment.added_by_id`, `Site.zone_id`), and `RESTRICT` where a row must not be orphaned (`Job.status_id`, `Quote.status_id`, `Asset.asset_type_id`). Relationships declare `back_populates` on both sides except the read-only `custom_field_values` joins, which are `viewonly`.
 
-The `projects` table still exists but **no route serves it**: Simpro has no Projects resource, so a project is a Job with `Type: "Project"` (ADR-013 §3). The table and its seed data are converted to jobs in ADR-013's Wave C, which is also when the table is dropped.
+Three things are worth calling out, because each replaced something the mock had invented:
+
+- **`jobs.status_id` and `quotes.status_id` are real foreign keys** to `statuses`, not text columns. The contract documents a job's `Status` as "ID of a project status code", so jobs, quotes and `/setup/statusCodes/projects/` share one id space. Text columns let the mock emit a status that existed nowhere.
+- **Sites and customers are many-to-many**, through `site_customers`. `Site.Customers` and `Customer.Sites` are both required arrays upstream and are the same relation; the single `sites.customer_id` FK could not express it.
+- **`custom_fields` + `custom_field_values` are two tables, not a JSON column** (ADR-013). `resource_type` + `resource_id` is a deliberate loose reference, because one pair of tables serves sites and assets. Simpro keeps asset serial numbers, models and manufacturers here, which is CVC's CCTV asset data.
+
+The `projects` table is **gone**. Simpro has no Projects resource: a project is a Job with `Type: "Project"`, and the former project rows are now such jobs.
 
 ### 5.4 Endpoint surface (mock service, all read-only)
+
+25 routes: 13 collection, 12 detail.
 
 | Resource | List | Detail | Nested under |
 |---|---|---|---|
 | Companies | `GET /api/v1.0/companies/` | `GET /api/v1.0/companies/{company_id}` | — |
-| Customers | `GET .../customers/` | `GET .../customers/{customer_id}` | Company |
+| Customers (polymorphic) | `GET .../customers/` | **none upstream** | Company |
+| Individual customers | `GET .../customers/individuals/` | `GET .../customers/individuals/{customer_id}` | Company |
+| Company customers | `GET .../customers/companies/` | `GET .../customers/companies/{customer_id}` | Company |
 | Jobs | `GET .../jobs/` | `GET .../jobs/{job_id}` | Company |
 | Quotes | `GET .../quotes/` | `GET .../quotes/{quote_id}` | Company |
 | Contacts | `GET .../customers/{customer_id}/contacts/` | `GET .../contacts/{contact_id}` | Company → Customer |
@@ -138,7 +168,13 @@ The `projects` table still exists but **no route serves it**: Simpro has no Proj
 | Attachments | `GET .../jobs/{job_id}/attachments/files/` | `GET .../attachments/files/{file_id}` | Company → Job |
 | Project status codes | `GET .../setup/statusCodes/projects/` | `GET .../setup/statusCodes/projects/{status_code_id}` | Company |
 
-Every route above matches Simpro's published spec, vendored at `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013). Collection routes accept `columns`, which `simpro_client` sends but the mock still ignores; the projection lands in a later sprint.
+**Customers are polymorphic.** `/customers/` lists both kinds with a `Type` discriminator and an `_href`; the full record is on the subtype route, and Simpro publishes **no `/customers/{id}`**. Each subtype detail route is type-scoped and returns `404` for an id of the other kind. On the client, the list-only `CustomersEndpoint` carries `detail_path = None` and a `get()` that raises, naming the two endpoints that work.
+
+There is **no Projects route**, correctly: a project is a job with `Type: "Project"`.
+
+Every route and every field name, type and required/optional status above comes from Simpro's published spec, vendored at `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013) — not from what was convenient here. `tests/test_spec_conformance.py` enforces it: every check passes and its baseline file, `tests/spec_conformance_baseline.json`, is empty. Run `uv run pytest -q tests/test_spec_conformance.py` for the current result.
+
+All routes accept `columns`, which the mock now honours (§5.2).
 
 Plus infrastructure routes: `GET /health` and `POST /oauth2/token`. Full parameter and response detail is in `docs/simpro-mock-api-reference.md`.
 
@@ -146,7 +182,9 @@ Write operations (POST/PATCH/DELETE) are out of scope for both the mock and `sim
 
 ### 5.5 Two-company model
 
-`seed.py` seeds exactly two companies matching CVC's real Simpro setup: **CVC Service** (`company_id=1`) and **CVC Projects** (`company_id=2`), each with representative Customers, Jobs, Quotes, Contacts, Sites, Assets, Employees, Projects, Job Notes, Attachments, and Statuses (8 customers per company, 8 jobs per company, etc.). `simpro_client`'s `SimproSettings.company_id_service` / `company_id_projects` (defaulting to 1/2) mirror this, but are **reserved**: no client code reads them, and endpoint calls take an explicit `company_id` argument.
+`seed.py` seeds exactly two companies matching CVC's real Simpro setup: **CVC Service** (`company_id=1`) and **CVC Projects** (`company_id=2`), each with representative Customers, Jobs, Quotes, Contacts, Sites, Assets, Employees, Job Notes, Attachments, Statuses, Zones, Asset Types, Customer Contracts and Custom Fields — 8 customers per company (alternating individual and company, so both subtype routes always have data) and 13 jobs (8 `Service` + 5 `Project`).
+
+`simpro_client`'s `SimproSettings.company_id_service` / `company_id_projects` (defaulting to 1/2) mirror this, but are **reserved**: no client code reads them, and endpoint calls take an explicit `company_id` argument. `company_id_projects` names the company whose *jobs* are projects; it is a company id, not a resource selector.
 
 ## 6. Planned but Not Yet Decided
 

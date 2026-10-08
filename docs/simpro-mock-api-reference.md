@@ -120,7 +120,7 @@ Numeric operators (`gt`, `lt`, `ge`, `le`, `between`) attempt `int` then `float`
 
 For every resource below: all fields are returned in PascalCase; `ID` is always the primary key; nested resources are scoped under `/api/v1.0/companies/{company_id}/...`.
 
-**Routes and field sets both match Simpro's published spec**, vendored at `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013). All 50 checks in `tests/test_spec_conformance.py` pass and its baseline file is empty, so every documented field name, type and optionality below is the vendor's, not the mock's.
+**Routes and field sets both match Simpro's published spec**, vendored at `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013). Every check in `tests/test_spec_conformance.py` passes and its baseline file is empty, so every documented field name, type and optionality below is the vendor's, not the mock's.
 
 Every resource returns a **narrow projection from the collection route** and the full record from the detail route, as real Simpro does. Both field sets are listed below.
 
