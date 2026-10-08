@@ -11,6 +11,39 @@ The root `pyproject.toml` defines dev dependencies under `[dependency-groups]` (
 
 Observed 2026-10-02. `services/simpro_mock/simpro_mock/config.py` defines `mock_client_id` and `mock_client_secret`, but nothing reads them: `issue_token` in `services/simpro_mock/simpro_mock/routers.py` ignores the submitted credentials and always returns the static token. Removing the two settings is a later code task.
 
+## The mock accepts `orderby` and `limit` and silently ignores them
+
+Observed 2026-10-08. `services/simpro_mock/simpro_mock/filtering.py` lists both
+in `PAGINATION_PARAMS`, so they are skipped as request controls rather than
+rejected as unknown filters, and nothing implements either: there is no
+`order_by` anywhere in `routers.py`, and the only `.limit()` in the service is
+`paginate_query`'s `page_size`. A caller who sends `?orderby=Name` or
+`?limit=10` therefore receives a `200` with unsorted, unlimited data and no
+indication that the parameter did nothing.
+
+This is the same failure class that ADR-013 S6 fixed for filter parameters,
+which now raise `UnknownFilterParameterError` and return a `400`. It is recorded
+in ADR-013's Status section as a deliberate scope boundary (S6 covered `columns`
+only), but it is a real discrepancy against the contract, which documents both
+parameters, so it belongs here as an open item. Implementing them, or rejecting
+them with a `400`, is a later code task and needs a decision about which —
+real Simpro honours them, so a `400` would be a divergence from upstream.
+
+## Collection routes paginate without an `ORDER BY`
+
+Observed 2026-10-08 while verifying the entry above.
+`paginate_query` in `services/simpro_mock/simpro_mock/middleware.py` applies
+`.offset().limit()` to a query that has no ordering, and no route in
+`routers.py` adds one (`grep -c order_by` returns 0). PostgreSQL gives no
+ordering guarantee for an unordered query, so page boundaries are not
+guaranteed stable: in principle a row can repeat on two pages or be skipped
+entirely while `iter_all()` walks them.
+
+In practice the seeded tables are small and returned in insertion order, which
+is why no test has caught it, but the behaviour is not enforced anywhere. Add a
+deterministic `ORDER BY id` to the paginated query; this is also the
+precondition for implementing `orderby`.
+
 ## RESOLVED 2026-10-08 — "only `SIMPRO_BASE_URL` changes at cutover" was unverified
 
 Raised 2026-10-07. Five documents asserted that switching from the mock to live
