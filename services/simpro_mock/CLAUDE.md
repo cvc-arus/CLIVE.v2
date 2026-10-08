@@ -105,6 +105,17 @@ matching client change, updated tests, and Alex's approval:
 - **An unknown filter parameter is a 400**, naming the fields that would have
   worked. Silently ignoring it meant a caller got unfiltered data and believed
   it was filtered.
+- **`orderby` is implemented** (`ordering.py`), on all 13 collection routes: a
+  csv list of wire column names, `-` prefix for descending, translated through
+  the same `FILTER_MAPS` as filters, because the orderable set is the scalar
+  columns. An unorderable field is a **400**, for the same reason an unknown
+  filter is.
+- **Every paginated query is ordered**, by `id` when no `orderby` was given and
+  with `id` as the final tiebreak otherwise. `paginate_query` applies
+  `.offset().limit()`, which has no defined row order in PostgreSQL without
+  it. Do not add a paginated route that skips `apply_ordering`.
+- **`limit` is implemented**, as a narrowing of `pageSize`. See the fidelity
+  gaps below: its exact upstream meaning is unverified.
 - Missing records raise `HTTPException(404)`.
 - GET only (plus the token POST). Do not add write routes without a scope
   change.
@@ -117,8 +128,15 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
 `docs/simpro-mock-api-reference.md`, or found in review):
 - No rate limiting; the mock never returns 429. Adding 429 simulation
   changes a documented ADR limitation, so update the ADR too.
-- `orderby` and `limit` are still accepted and ignored. They are the last two
-  documented query parameters the mock does not honour.
+- `limit` is honoured, but the contract describes it only as "Set the limit of
+  number of records in a request", so its **exact semantics are unverified**.
+  The mock reads it as a narrowing of `pageSize`; "in a request" could instead
+  mean a cap on the whole result set across pages. Re-check on first live
+  access.
+- The contract documents **no `page`, `pageSize` or `limit` on `/companies/`** —
+  that collection is unpaginated upstream. The mock paginates it like every
+  other collection, which predates ADR-013 and is left alone because the client
+  pages it; `orderby`, which the contract *does* document there, is honoured.
 - Whether real Simpro always includes `ID` in a projected response is
   **unverified** — the mock does (`projection.ALWAYS_INCLUDED`). Re-check on
   first live access, and do not let callers depend on it meanwhile.
