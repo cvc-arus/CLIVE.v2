@@ -104,7 +104,7 @@ Numeric operators (`gt`, `lt`, `ge`, `le`, `between`) attempt `int` then `float`
 
 **Combining filters:** `search=all` (default) ANDs every filter together; `search=any` ORs them.
 
-`page`, `pageSize`, `columns`, `orderby`, `search`, and `limit` are reserved and never treated as filter fields.
+`page`, `pageSize`, `columns`, `orderby`, `search`, and `limit` are reserved and never treated as filter fields. All six are honoured, except that `/companies/` has no `limit` upstream (see §7).
 
 ### `columns` projection
 
@@ -115,6 +115,29 @@ Numeric operators (`gt`, `lt`, `ge`, `le`, `between`) attempt `int` then `float`
 - `?columns=` with an empty value behaves as if omitted.
 - A projected response still carries `Result-Total`, `Result-Count` and `Result-Pages`.
 - Callers using the typed client must keep every field their model marks required: `Job` requires `ID`, `Description` and `Total`, so `columns=Description` returns a body the model rejects.
+
+### `orderby` and `limit`
+
+`orderby` is a csv list of column names; prefixing one with `-` reverses it, so
+`orderby=Stage,-ID` sorts by stage ascending then by id descending. The names
+are the same wire names the filters use, and for the same reason: only scalar
+columns are orderable, so `orderby=Total` on a job is a `400` naming the fields
+that would have worked.
+
+- Ordering a column the response does not contain is fine — the job list
+  projection is only `ID`, `Description` and `Total`, but `orderby=Stage` works.
+- **Every collection is ordered even without `orderby`**, by `ID`, and `ID` is
+  the final tiebreak when `orderby` is given. Without it, `.offset().limit()`
+  has no defined row order in PostgreSQL and page boundaries would not be
+  stable.
+
+`limit` narrows the page: the effective page size is the smaller of `pageSize`
+and `limit`, `Result-Pages` is recomputed from it, and `Result-Total` still
+reports the full filtered count. `limit=0` is a `422`.
+
+**`limit`'s exact upstream semantics are unverified.** The contract says only
+"Set the limit of number of records in a request"; "in a request" could instead
+mean a cap on the whole result set across pages. Re-check on first live access.
 
 ## 5. Resources
 
@@ -278,6 +301,7 @@ Attachments are not seeded per company: `seed.py` adds 1–3 attachments to each
 - No webhooks / async event callbacks
 - No Projects resource — correct, since Simpro has none. A project is a job with `Type: "Project"`, and the `projects` table has been dropped; its rows are now `Type="Project"` jobs
 - Not served, although documented upstream: the `Totals` block on jobs and quotes, `Forecast` on quotes, `Banking`/`Rates` on customers, `Rates` on sites, `Banking`/`PayRates` on employees — all out of ADR-013's fidelity scope. Also `Job.ConvertedFromQuote` and `STC`: the spec marks them required, but they are only meaningful for a converted job, and inventing values is the problem ADR-013 exists to fix. All are additive later and non-breaking, because the client models set `extra="ignore"`
-- `orderby` and `limit` are accepted and ignored — the last two documented query parameters the mock does not honour
+- `limit` is honoured as a narrowing of `pageSize`, but the contract defines it only as "the limit of number of records in a request", so its exact semantics are **unverified** (see §4)
+- The contract documents no `page`, `pageSize` or `limit` on `/companies/` — that collection is unpaginated upstream. The mock paginates it like every other collection; this predates ADR-013 and is left as is because the typed client pages it
 - Thin data behind correct shapes in the re-shaped resources: `Attachment.Folder`, `Company.DefaultCostCenter`, `Customer.Contracts`, `Customer.ResponseTimes`, `Contact.Contact`, `Site.STCZone` and `Site.VEECZone` are always `null`; `JobNote.Attachments`, `Customer.Tags`, `Customer.PreferredTechs`, `Customer.CustomFields`, `Contact.CustomFields`, `Site.PreferredTechs` and `Site.PreferredTechnicians` are always `[]`; `Employee.Zones` holds only that employee's default zone
 - Read-only: no POST/PATCH/DELETE routes, no business-logic state transitions (e.g. Quote → Job conversion)

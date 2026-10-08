@@ -11,7 +11,7 @@ The root `pyproject.toml` defines dev dependencies under `[dependency-groups]` (
 
 Observed 2026-10-02. `services/simpro_mock/simpro_mock/config.py` defines `mock_client_id` and `mock_client_secret`, but nothing reads them: `issue_token` in `services/simpro_mock/simpro_mock/routers.py` ignores the submitted credentials and always returns the static token. Removing the two settings is a later code task.
 
-## The mock accepts `orderby` and `limit` and silently ignores them
+## RESOLVED 2026-10-08 — the mock accepted `orderby` and `limit` and silently ignored them
 
 Observed 2026-10-08. `services/simpro_mock/simpro_mock/filtering.py` lists both
 in `PAGINATION_PARAMS`, so they are skipped as request controls rather than
@@ -21,15 +21,28 @@ rejected as unknown filters, and nothing implements either: there is no
 `?limit=10` therefore receives a `200` with unsorted, unlimited data and no
 indication that the parameter did nothing.
 
-This is the same failure class that ADR-013 S6 fixed for filter parameters,
-which now raise `UnknownFilterParameterError` and return a `400`. It is recorded
-in ADR-013's Status section as a deliberate scope boundary (S6 covered `columns`
-only), but it is a real discrepancy against the contract, which documents both
-parameters, so it belongs here as an open item. Implementing them, or rejecting
-them with a `400`, is a later code task and needs a decision about which —
-real Simpro honours them, so a `400` would be a divergence from upstream.
+This was the same failure class that ADR-013 S6 fixed for filter parameters,
+which raise `UnknownFilterParameterError` and return a `400`. S6's scope was
+`columns` only, so these two were left behind.
 
-## Collection routes paginate without an `ORDER BY`
+**Resolved 2026-10-08.** Both are now honoured on all 13 collection routes.
+`orderby` is implemented in the new
+`services/simpro_mock/simpro_mock/ordering.py`: a csv list of wire column
+names, with a `-` prefix for descending, translated through the same
+`FILTER_MAPS` that filters use, because the orderable set is the scalar
+columns. An unorderable field returns a `400` naming the fields that would
+have worked, matching what S6 did for filters — implementing them rather than
+rejecting them, because real Simpro honours both and a `400` would have been a
+divergence from upstream. `limit` narrows the effective page size in
+`paginate_query`.
+
+One caveat carried forward: the contract describes `limit` only as "Set the
+limit of number of records in a request", so **its exact upstream semantics are
+unverified**. The mock reads it as a narrowing of `pageSize`; "in a request"
+could instead mean a cap on the whole result set across pages. Re-check on
+first live access.
+
+## RESOLVED 2026-10-08 — collection routes paginated without an `ORDER BY`
 
 Observed 2026-10-08 while verifying the entry above.
 `paginate_query` in `services/simpro_mock/simpro_mock/middleware.py` applies
@@ -39,10 +52,16 @@ ordering guarantee for an unordered query, so page boundaries are not
 guaranteed stable: in principle a row can repeat on two pages or be skipped
 entirely while `iter_all()` walks them.
 
-In practice the seeded tables are small and returned in insertion order, which
-is why no test has caught it, but the behaviour is not enforced anywhere. Add a
-deterministic `ORDER BY id` to the paginated query; this is also the
-precondition for implementing `orderby`.
+In practice the seeded tables were small and returned in insertion order, which
+is why no test caught it, but the behaviour was not enforced anywhere.
+
+**Resolved 2026-10-08.** Every paginated query now goes through
+`ordering.apply_ordering`, which orders by `id` when no `orderby` was given and
+always appends `id` as the final tiebreak otherwise — `orderby=Name` over rows
+sharing a name would be just as unstable as no ordering at all.
+`tests/test_simpro_mock_v2.py::test_collection_pagination_visits_every_row_exactly_once`
+walks a collection two rows at a time and asserts the walk covers
+`Result-Total` rows with no repeat.
 
 ## RESOLVED 2026-10-08 — "only `SIMPRO_BASE_URL` changes at cutover" was unverified
 

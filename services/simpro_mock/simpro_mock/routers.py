@@ -19,6 +19,7 @@ from simpro_mock.models import (
     Site,
     Status,
 )
+from simpro_mock.ordering import apply_ordering
 from simpro_mock.projection import collection_response, detail_response
 from simpro_mock.schemas import (
     AssetDetailResponse,
@@ -127,13 +128,16 @@ def list_companies(
     page: int = Query(1, ge=1),
     pageSize: int = Query(30, ge=1, le=250),
     columns: str | None = Query(None),
+    orderby: str | None = Query(None),
+    limit: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
 ):
     """Retrieve all seeded company entities with filtering and pagination."""
     query = db.query(Company)
     query = apply_filters(query, Company, dict(request.query_params))
+    query = apply_ordering(query, Company, orderby)
 
-    items, total, total_pages = paginate_query(query, page, pageSize)
+    items, total, total_pages = paginate_query(query, page, pageSize, limit)
 
     results = [company_list_dict(company) for company in items]
 
@@ -173,13 +177,16 @@ def list_customers(
     page: int = Query(1, ge=1),
     pageSize: int = Query(30, ge=1, le=250),
     columns: str | None = Query(None),
+    orderby: str | None = Query(None),
+    limit: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
 ):
     """List both customer kinds together, with the Type discriminator."""
     query = db.query(Customer).filter(Customer.company_id == company_id)
     query = apply_filters(query, Customer, dict(request.query_params))
+    query = apply_ordering(query, Customer, orderby)
 
-    items, total, total_pages = paginate_query(query, page, pageSize)
+    items, total, total_pages = paginate_query(query, page, pageSize, limit)
     results = [customer_summary_dict(customer) for customer in items]
 
     return collection_response(response, results, total, total_pages, columns)
@@ -196,6 +203,8 @@ def list_individual_customers(
     page: int = Query(1, ge=1),
     pageSize: int = Query(30, ge=1, le=250),
     columns: str | None = Query(None),
+    orderby: str | None = Query(None),
+    limit: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
 ):
     """List only the customers who are people."""
@@ -203,8 +212,9 @@ def list_individual_customers(
         Customer.company_id == company_id, Customer.type == "Individual"
     )
     query = apply_filters(query, Customer, dict(request.query_params))
+    query = apply_ordering(query, Customer, orderby)
 
-    items, total, total_pages = paginate_query(query, page, pageSize)
+    items, total, total_pages = paginate_query(query, page, pageSize, limit)
     results = [individual_customer_list_dict(customer) for customer in items]
 
     return collection_response(response, results, total, total_pages, columns)
@@ -248,6 +258,8 @@ def list_company_customers(
     page: int = Query(1, ge=1),
     pageSize: int = Query(30, ge=1, le=250),
     columns: str | None = Query(None),
+    orderby: str | None = Query(None),
+    limit: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
 ):
     """List only the customers that are organisations."""
@@ -255,8 +267,9 @@ def list_company_customers(
         Customer.company_id == company_id, Customer.type == "Company"
     )
     query = apply_filters(query, Customer, dict(request.query_params))
+    query = apply_ordering(query, Customer, orderby)
 
-    items, total, total_pages = paginate_query(query, page, pageSize)
+    items, total, total_pages = paginate_query(query, page, pageSize, limit)
     results = [company_customer_list_dict(customer) for customer in items]
 
     return collection_response(response, results, total, total_pages, columns)
@@ -305,13 +318,16 @@ def list_jobs(
     page: int = Query(1, ge=1),
     pageSize: int = Query(30, ge=1, le=250),
     columns: str | None = Query(None),
+    orderby: str | None = Query(None),
+    limit: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
 ):
     """Retrieve all jobs scoped to a company with filtering and pagination."""
     query = db.query(Job).filter(Job.company_id == company_id)
     query = apply_filters(query, Job, dict(request.query_params))
+    query = apply_ordering(query, Job, orderby)
 
-    items, total, total_pages = paginate_query(query, page, pageSize)
+    items, total, total_pages = paginate_query(query, page, pageSize, limit)
 
     results = [job_list_dict(job) for job in items]
 
@@ -360,13 +376,16 @@ def list_quotes(
     page: int = Query(1, ge=1),
     pageSize: int = Query(30, ge=1, le=250),
     columns: str | None = Query(None),
+    orderby: str | None = Query(None),
+    limit: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
 ):
     """Retrieve all quotes scoped to a company with filtering and pagination."""
     query = db.query(Quote).filter(Quote.company_id == company_id)
     query = apply_filters(query, Quote, dict(request.query_params))
+    query = apply_ordering(query, Quote, orderby)
 
-    items, total, total_pages = paginate_query(query, page, pageSize)
+    items, total, total_pages = paginate_query(query, page, pageSize, limit)
 
     results = [quote_list_dict(quote) for quote in items]
 
@@ -411,13 +430,16 @@ def list_contacts(
     page: int = Query(1, ge=1),
     pageSize: int = Query(30, ge=1, le=250),
     columns: str | None = Query(None),
+    orderby: str | None = Query(None),
+    limit: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
 ):
     query = db.query(Contact).filter(
         Contact.company_id == company_id, Contact.customer_id == customer_id
     )
     query = apply_filters(query, Contact, dict(request.query_params))
-    items, total, total_pages = paginate_query(query, page, pageSize)
+    query = apply_ordering(query, Contact, orderby)
+    items, total, total_pages = paginate_query(query, page, pageSize, limit)
     results = [contact_list_dict(c) for c in items]
     return collection_response(response, results, total, total_pages, columns)
 
@@ -460,11 +482,14 @@ def list_sites(
     page: int = Query(1, ge=1),
     pageSize: int = Query(30, ge=1, le=250),
     columns: str | None = Query(None),
+    orderby: str | None = Query(None),
+    limit: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
 ):
     query = db.query(Site).filter(Site.company_id == company_id)
     query = apply_filters(query, Site, dict(request.query_params))
-    items, total, total_pages = paginate_query(query, page, pageSize)
+    query = apply_ordering(query, Site, orderby)
+    items, total, total_pages = paginate_query(query, page, pageSize, limit)
     results = [site_list_dict(s) for s in items]
     return collection_response(response, results, total, total_pages, columns)
 
@@ -503,13 +528,16 @@ def list_assets(
     page: int = Query(1, ge=1),
     pageSize: int = Query(30, ge=1, le=250),
     columns: str | None = Query(None),
+    orderby: str | None = Query(None),
+    limit: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
 ):
     query = db.query(Asset).filter(
         Asset.company_id == company_id, Asset.site_id == site_id
     )
     query = apply_filters(query, Asset, dict(request.query_params))
-    items, total, total_pages = paginate_query(query, page, pageSize)
+    query = apply_ordering(query, Asset, orderby)
+    items, total, total_pages = paginate_query(query, page, pageSize, limit)
     results = [asset_list_dict(a) for a in items]
     return collection_response(response, results, total, total_pages, columns)
 
@@ -554,11 +582,14 @@ def list_employees(
     page: int = Query(1, ge=1),
     pageSize: int = Query(30, ge=1, le=250),
     columns: str | None = Query(None),
+    orderby: str | None = Query(None),
+    limit: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
 ):
     query = db.query(Employee).filter(Employee.company_id == company_id)
     query = apply_filters(query, Employee, dict(request.query_params))
-    items, total, total_pages = paginate_query(query, page, pageSize)
+    query = apply_ordering(query, Employee, orderby)
+    items, total, total_pages = paginate_query(query, page, pageSize, limit)
     results = [employee_list_dict(e) for e in items]
     return collection_response(response, results, total, total_pages, columns)
 
@@ -600,6 +631,8 @@ def list_job_notes(
     page: int = Query(1, ge=1),
     pageSize: int = Query(30, ge=1, le=250),
     columns: str | None = Query(None),
+    orderby: str | None = Query(None),
+    limit: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
 ):
     # Optional: verify that the job belongs to the company
@@ -608,7 +641,8 @@ def list_job_notes(
         raise HTTPException(status_code=404, detail="Job not found")
     query = db.query(JobNote).filter(JobNote.job_id == job_id)
     query = apply_filters(query, JobNote, dict(request.query_params))
-    items, total, total_pages = paginate_query(query, page, pageSize)
+    query = apply_ordering(query, JobNote, orderby)
+    items, total, total_pages = paginate_query(query, page, pageSize, limit)
     results = [job_note_list_dict(n) for n in items]
     return collection_response(response, results, total, total_pages, columns)
 
@@ -655,6 +689,8 @@ def list_attachments(
     page: int = Query(1, ge=1),
     pageSize: int = Query(30, ge=1, le=250),
     columns: str | None = Query(None),
+    orderby: str | None = Query(None),
+    limit: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
 ):
     job = db.query(Job).filter(Job.id == job_id, Job.company_id == company_id).first()
@@ -662,7 +698,8 @@ def list_attachments(
         raise HTTPException(status_code=404, detail="Job not found")
     query = db.query(Attachment).filter(Attachment.job_id == job_id)
     query = apply_filters(query, Attachment, dict(request.query_params))
-    items, total, total_pages = paginate_query(query, page, pageSize)
+    query = apply_ordering(query, Attachment, orderby)
+    items, total, total_pages = paginate_query(query, page, pageSize, limit)
     results = [attachment_list_dict(a) for a in items]
     return collection_response(response, results, total, total_pages, columns)
 
@@ -707,11 +744,14 @@ def list_project_status_codes(
     page: int = Query(1, ge=1),
     pageSize: int = Query(30, ge=1, le=250),
     columns: str | None = Query(None),
+    orderby: str | None = Query(None),
+    limit: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
 ):
     query = db.query(Status).filter(Status.company_id == company_id)
     query = apply_filters(query, Status, dict(request.query_params))
-    items, total, total_pages = paginate_query(query, page, pageSize)
+    query = apply_ordering(query, Status, orderby)
+    items, total, total_pages = paginate_query(query, page, pageSize, limit)
     results = [project_status_code_list_dict(s) for s in items]
     return collection_response(response, results, total, total_pages, columns)
 

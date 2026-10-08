@@ -4,6 +4,7 @@ from starlette.responses import JSONResponse
 
 from simpro_mock.filtering import UnknownFilterParameterError
 from simpro_mock.middleware import BearerAuthMiddleware
+from simpro_mock.ordering import UnknownOrderFieldError
 from simpro_mock.routers import api_router, health_router, token_router
 
 app = FastAPI(title="Simpro Mock API", version="0.1.0")
@@ -29,6 +30,27 @@ async def unknown_filter_handler(
             "parameter": exc.name,
             "resource": exc.model_name,
             "filterable": exc.allowed,
+        },
+    )
+
+
+@app.exception_handler(UnknownOrderFieldError)
+async def unknown_order_field_handler(
+    request: Request, exc: UnknownOrderFieldError
+) -> JSONResponse:
+    """Turn an unorderable ``orderby`` field into a 400.
+
+    Same reasoning as the filter handler above: returning 200 with unsorted
+    rows would leave the caller unable to tell from the response that the
+    parameter did nothing.
+    """
+    return JSONResponse(
+        status_code=400,
+        content={
+            "detail": str(exc),
+            "field": exc.name,
+            "resource": exc.model_name,
+            "orderable": exc.allowed,
         },
     )
 
