@@ -8,6 +8,17 @@ Supersedes the "Capabilities & Coverage" list of `adr-mock-simpro-api.md`
 (that ADR's Decision to build a containerised FastAPI + PostgreSQL mock
 stands; only its claims about route count and payload fidelity are replaced).
 
+**Implementation complete — 2026-10-08.** All seven sprints landed. The
+central deliverable is measured, not asserted: `tests/test_spec_conformance.py`
+validates every client model against payloads generated from the vendored
+contract, **all 50 checks pass, and `tests/spec_conformance_baseline.json` is
+empty** (it began at 40 of 44 combinations failing). Two scope deviations, each
+explained in its sprint report: the shared `custom_fields` tables moved from
+Wave A's migration to Wave B, where Site first consumes them; and `company_id` /
+`job_id` / `customer_id` survive as columns on several tables, because they
+scope the routes even though they left the wire. `orderby` and `limit` remain
+accepted and ignored by the mock (§5 covers `columns` only).
+
 - **Deciders:** Alex (approver), Claude (drafted)
 - **Scope decisions taken by Alex on 2026-10-07**, recorded in each subsection
   below and now binding: fidelity scope (§2), the clean break on the public
