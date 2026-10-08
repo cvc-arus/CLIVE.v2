@@ -31,12 +31,13 @@ services/simpro_mock/
   Dockerfile, alembic.ini, pyproject.toml, uv.lock, configuration.md
   alembic/env.py, alembic/versions/*.py
   simpro_mock/
-    main.py        app + BearerAuthMiddleware + 3 routers
+    main.py        app + BearerAuthMiddleware + 3 routers + 400 for bad filters
     config.py      Settings, prefix SIMPRO_MOCK_
     database.py    sync engine, SessionLocal, Base, get_db()
-    middleware.py  BearerAuthMiddleware, paginate_query, set_pagination_headers
-    filtering.py   Simpro-style query filters
-    models.py      16 SQLAlchemy ORM models/tables
+    middleware.py  BearerAuthMiddleware, paginate_query, pagination headers
+    filtering.py   per-model filter maps; an unknown param raises
+    projection.py  the `columns` projection and the response helpers
+    models.py      16 ORM classes + the site_customers association table
     schemas.py     PascalCase Pydantic response schemas
     serializers.py ORM row -> wire-shaped dict, per resource and leg
     routers.py     health, /oauth2/token, /api/v1.0/... routes
@@ -78,9 +79,32 @@ matching client change, updated tests, and Alex's approval:
   re-shaped resources now behave this way; the ones still awaiting their wave
   return every modelled field on both legs.
 - `Attachment.ID` is a **string**, not an integer (`file-0001` in the seed).
+- **Money is a nested object, not a number.** `Job.Total` and `Quote.Total`
+  are `{ExTax, Tax, IncTax}`, stored as three `Numeric(12, 2)` columns and
+  emitted as JSON **numbers** — `serializers._money()` does the conversion,
+  because Pydantic would serialise a `Decimal` to a string and the spec says
+  `number`. Never widen these to `Float`.
+- **A project is a job with `type="Project"`.** The `projects` table is gone.
+  `SIMPRO_COMPANY_ID_PROJECTS` names the company whose jobs are projects; it
+  is a company id, not a resource selector.
+- `jobs.status_id` and `quotes.status_id` are **real foreign keys** to
+  `statuses`, because a job's status id comes from the project status-code
+  list. Do not flatten them into text columns: the mock would then be able to
+  emit a status id that exists nowhere, which is the invented-convenience
+  problem ADR-013 exists to fix.
+- An asset has **no** `AssetNo`, `Name`, `SerialNo`, `Model` or
+  `Manufacturer`. It is identified by `AssetType`, and the last three live in
+  custom fields — which is where Simpro keeps CVC's CCTV asset data.
 - List routes accept `page` (≥1, default 1) and `pageSize` (1–250,
   default 30) and set `Result-Total`, `Result-Count`, `Result-Pages`.
   `pageSize` is camelCase on purpose. Do not rename it to satisfy ruff `N803`.
+- **`columns` is implemented**, on detail routes as well as collections. It
+  selects top-level keys only, and a selected key yields its whole nested
+  block. `ID` is always included. Unknown column names are ignored, because a
+  caller may legitimately ask for a documented field this mock does not serve.
+- **An unknown filter parameter is a 400**, naming the fields that would have
+  worked. Silently ignoring it meant a caller got unfiltered data and believed
+  it was filtered.
 - Missing records raise `HTTPException(404)`.
 - GET only (plus the token POST). Do not add write routes without a scope
   change.
@@ -93,15 +117,27 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
 `docs/simpro-mock-api-reference.md`, or found in review):
 - No rate limiting; the mock never returns 429. Adding 429 simulation
   changes a documented ADR limitation, so update the ADR too.
-- `filtering.py`'s `PASCAL_TO_SNAKE` maps only 11 fields. Unmapped filter
-  params (e.g. `SiteID`, `Position`) are **silently ignored**.
-- `columns`, `orderby`, `limit` are accepted but ignored. `simpro_client`
-  already sends `columns`, so the projection is the next thing owed here;
-  until it lands, list routes return every modelled field rather than the
-  narrow default projection real Simpro returns.
+- `orderby` and `limit` are still accepted and ignored. They are the last two
+  documented query parameters the mock does not honour.
+- Whether real Simpro always includes `ID` in a projected response is
+  **unverified** — the mock does (`projection.ALWAYS_INCLUDED`). Re-check on
+  first live access, and do not let callers depend on it meanwhile.
+- `FILTER_MAPS` covers only scalar columns. A nested wire object such as
+  `Job.Total` or `Job.Status` is composed by `serializers.py` and is not a
+  column, so it cannot be filtered on; asking to is a 400, not a silent
+  no-op. Real Simpro supports some nested filters, so this is narrower than
+  upstream rather than wrong.
 - `search` is applied, but only as a mode switch: `search=any` joins the
   field filters with OR; anything else (default `all`) joins them with AND
   (`apply_filters()` in `filtering.py`). It is not a free-text search.
+- Out of ADR-013's fidelity scope, so **not served at all**: the `Totals`
+  analytic block on jobs and quotes, `Forecast` on quotes, `Banking` and
+  `Rates` on customers, `Rates` on sites, and `Banking`/`PayRates` on
+  employees. The client models do not declare them either, and
+  `extra="ignore"` means adding them later is not a breaking change.
+  `Job.ConvertedFromQuote` and `STC` are also unserved: the spec marks them
+  required, but they are only meaningful for a converted job, and inventing
+  values would be the problem ADR-013 exists to fix.
 - Thin data behind correct shapes, in the re-shaped resources:
   `Customer.Contracts`, `Customer.ResponseTimes`, `Contact.Contact`,
   `Site.STCZone` and `Site.VEECZone` are always `null`; `Customer.Tags`,
@@ -129,13 +165,21 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
   `<resource>_detail_dict()` that build a PascalCase dict from the ORM row;
   the handler calls one and returns it. Dates are serialised with
   `.isoformat()` there. Handlers must not hand-build response bodies.
-  (Resources not yet re-shaped — jobs, quotes, assets — still build theirs
-  inline. They move to `serializers.py` in Wave C; do not convert them early.)
+  **Every served resource now goes through `serializers.py`.** No handler
+  builds a response body itself; if you add one that does, it is wrong.
 - Collection and detail routes return **different projections**, so a
   re-shaped resource has both an `XListResponse` and an `XDetailResponse` in
   `schemas.py`, and both stay on their route's `response_model`. The
   `response_model` is what catches a typo in a serializer, so do not drop it
   when returning a dict.
+- Handlers return through `projection.collection_response()` /
+  `detail_response()`, which project the body when `columns` was supplied.
+  A projected body is a `JSONResponse`, so it **bypasses the
+  `response_model`** — unavoidable, since the body no longer has the declared
+  shape. The unprojected path keeps its validation, so only a caller who
+  asked for a projection gives that up. Returning a `Response` also
+  **discards headers set on the injected `Response`**, which is why
+  `collection_response()` passes the pagination headers in explicitly.
 - The database stores composite values **flat, one column each**; the nested
   wire shape (`Employee.PrimaryContact`, `Company.Address`) is assembled in
   `serializers.py`. Do not add JSON columns to mirror the wire shape.
@@ -203,8 +247,10 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
   (`file-0001`, …), not autoincremented. Keep it deterministic.
 - Customers alternate `Individual` / `Company` within each company, so both
   subtype routes always have data. Do not make one kind empty.
-- `custom_fields` / `custom_field_values` are seeded for **sites** only; jobs
-  and assets join in Wave C.
+- `custom_fields` / `custom_field_values` are seeded for **sites** and
+  **assets**. Each asset carries Serial No, Model and Manufacturer there.
+- Each company seeds 13 jobs: 8 `type="Service"` and 5 `type="Project"`.
+  Keep both kinds non-empty.
 
 ## 8. Docker
 

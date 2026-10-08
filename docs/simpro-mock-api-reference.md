@@ -66,7 +66,25 @@ Response headers on every list endpoint:
 
 ## 4. Filtering
 
-List endpoints accept arbitrary query params matching a known PascalCase field name. Supported fields: `ID`, `Name`, `CompanyID`, `GivenName`, `FamilyName`, `Email`, `Phone`, `Status`, `DateIssued`, `Total`, `CustomerID`. Unrecognized field names are silently ignored (not an error).
+List endpoints accept query params matching a filterable PascalCase field name. **The filterable set is per resource**, defined by `FILTER_MAPS` in `services/simpro_mock/simpro_mock/filtering.py`:
+
+| Resource | Filterable fields |
+|---|---|
+| Companies | `ID`, `Name` |
+| Customers | `ID`, `Type`, `CompanyName`, `GivenName`, `FamilyName`, `Email`, `Phone`, `CustomerType`, `Archived` |
+| Contacts | `ID`, `GivenName`, `FamilyName`, `Email`, `Position`, `Department` |
+| Sites | `ID`, `Name`, `Archived` |
+| Assets | `ID`, `StartDate`, `DisplayOrder`, `Archived` |
+| Employees | `ID`, `Name`, `Position`, `Archived` |
+| Jobs | `ID`, `Name`, `Description`, `Type`, `Stage`, `OrderNo`, `RequestNo`, `DateIssued` |
+| Quotes | `ID`, `Name`, `Description`, `Type`, `Stage`, `DateIssued`, `IsClosed` |
+| Job Notes | `ID`, `Subject` |
+| Attachments | `ID`, `Filename`, `MimeType`, `Public` |
+| Project Status Codes | `ID`, `Name`, `Priority` |
+
+**An unrecognised field name returns `400`**, with a body naming the parameter, the resource and the fields that would have worked. It used to be ignored, which meant a caller received unfiltered data believing it was filtered — a renamed field could pass every test while doing nothing.
+
+Only **scalar columns** are filterable. A nested wire object such as `Job.Total` or `Job.Status` is composed from several columns and is not one, so filtering on it is a `400` rather than a silent no-op. Real Simpro supports some nested filters, so this is narrower than upstream rather than different.
 
 **Operators** — wrap the value in an operator function:
 
@@ -88,13 +106,23 @@ Numeric operators (`gt`, `lt`, `ge`, `le`, `between`) attempt `int` then `float`
 
 `page`, `pageSize`, `columns`, `orderby`, `search`, and `limit` are reserved and never treated as filter fields.
 
+### `columns` projection
+
+`columns` is a csv list and is accepted on **detail routes as well as collections**, matching the contract. It selects **top-level keys only**, and a selected key yields its whole nested block — `columns=Status` on a job returns the entire `{ID, Name, Color}` object.
+
+- `ID` is always included, even when not requested. **Unverified against live Simpro**; re-check on first live access.
+- Unknown column names are ignored rather than rejected, because a caller may legitimately ask for a field the contract documents but this mock does not serve (such as `Totals`). Unlike an ignored filter, a missing column is visible in the response.
+- `?columns=` with an empty value behaves as if omitted.
+- A projected response still carries `Result-Total`, `Result-Count` and `Result-Pages`.
+- Callers using the typed client must keep every field their model marks required: `Job` requires `ID`, `Description` and `Total`, so `columns=Description` returns a body the model rejects.
+
 ## 5. Resources
 
 For every resource below: all fields are returned in PascalCase; `ID` is always the primary key; nested resources are scoped under `/api/v1.0/companies/{company_id}/...`.
 
-**Routes** match Simpro's published spec, vendored at `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013). **Field sets match for Waves A and B** — Companies, Customers, Contacts, Sites, Employees, Job Notes, Attachments and Project Status Codes. Jobs, Quotes and Assets are still the mock's original invented shapes and are re-shaped in Wave C. `tests/test_spec_conformance.py` reports which resources still differ.
+**Routes and field sets both match Simpro's published spec**, vendored at `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013). Every check in `tests/test_spec_conformance.py` passes and its baseline file is empty, so every documented field name, type and optionality below is the vendor's, not the mock's.
 
-Re-shaped resources return a **narrow projection from the collection route** and the full record from the detail route, as real Simpro does. Both field sets are listed below.
+Every resource returns a **narrow projection from the collection route** and the full record from the detail route, as real Simpro does. Both field sets are listed below.
 
 ### Companies
 - `GET /api/v1.0/companies/` — list, filterable/paginated
@@ -134,13 +162,27 @@ Company detail adds: `CompanyName`, `CompanyNumber`, `EIN`, `Fax`, `Website`
 - `GET /api/v1.0/companies/{company_id}/jobs/`
 - `GET /api/v1.0/companies/{company_id}/jobs/{job_id}`
 
-Fields: `ID`, `CompanyID`, `Name`, `Status`, `DateIssued` (nullable ISO date), `Total`
+A **project is a job with `Type: "Project"`** — Simpro has no Projects resource, and the mock's `projects` table is gone.
+
+List fields: `ID`, `Description`, `Total`. That is the whole projection — not even `Name`.
+
+`Total` is an **object**, `{ExTax, Tax, IncTax}`, each a JSON number exact to two decimal places (stored as `Numeric(12,2)`).
+
+Detail fields: the above plus `Name`, `Type` (`Project`|`Service`|`Prepaid`), `Stage` (`Pending`|`Progress`|`Complete`|`Invoiced`|`Archived`), `Status` (`{ID, Name, Color}`), `Customer`, `Site`, `CustomerContract`, `CustomerContact` (null), `SiteContact` (null), `ProjectManager` (null), `Salesperson` (null), `Technician` (null), `Technicians` (`[]`), `AdditionalContacts` (`[]`), `Tags` (`[]`), `Notes`, `OrderNo`, `RequestNo`, `DateIssued`, `DueDate`, `CompletedDate`, `DateModified`, `AutoAdjustStatus`, `IsVariation`, `ConvertedFrom` (`{}`), `ArchiveReason` (null), `ResponseTime` (null), `CustomFields`
+
+`Status.ID` is a **project status code id**: jobs, quotes and `/setup/statusCodes/projects/` share one id space, so `jobs.status_id` is a real foreign key. There is no `CompanyID`.
+
+`Totals`, `ConvertedFromQuote` and `STC` are documented upstream but not served (see §7).
 
 ### Quotes
 - `GET /api/v1.0/companies/{company_id}/quotes/`
 - `GET /api/v1.0/companies/{company_id}/quotes/{quote_id}`
 
-Fields: `ID`, `CompanyID`, `CustomerID` (nullable), `Name`, `Status`, `Total`
+List fields: `ID`, `Description`, `Total` (the same object shape as a job's).
+
+Detail fields: the above plus `Name`, `Type`, `Stage` (`InProgress`|`Complete`|`Approved` — different values from a job's), `CustomerStage` (null), `Status`, `Customer`, `Site`, `CustomerContract` (null), `CustomerContact` (null), `SiteContact` (null), `ProjectManager` (null), `Salesperson` (null), `Technician` (null), `Technicians` (`[]`), `AdditionalContacts` (`[]`), `AdditionalCustomers` (`[]`), `Tags` (`[]`), `Notes`, `OrderNo`, `RequestNo`, `JobNo` (null), `LinkedJobID` (null), `DateIssued`, `DateApproved`, `DueDate`, `DateModified`, `ValidityDays`, `AutoAdjustStatus`, `IsVariation`, `IsClosed`, `ArchiveReason` (null), `CustomFields`
+
+There is no `CustomerID` — `Customer` is an object. `Totals` and `Forecast` are out of ADR-013's fidelity scope.
 
 ### Contacts
 - `GET /api/v1.0/companies/{company_id}/customers/{customer_id}/contacts/`
@@ -166,7 +208,11 @@ A site belongs to **several** customers, through the `site_customers` table: `Si
 - `GET /api/v1.0/companies/{company_id}/sites/{site_id}/assets/`
 - `GET /api/v1.0/companies/{company_id}/sites/{site_id}/assets/{asset_id}`
 
-Fields: `ID`, `CompanyID`, `SiteID`, `AssetNo`, `Name`, `SerialNo` (nullable), `Model` (nullable), `Manufacturer` (nullable), `InstalledDate` (nullable ISO date)
+List fields: `ID`, `AssetType` (`{ID, Name}`)
+
+Detail fields: `ID`, `AssetType`, `StartDate`, `DisplayOrder`, `Archived`, `ParentID` (nullable), `LastTest` (`{Date, Result, ServiceLevel}`; `{}` for an untested asset), `CustomerContract` (nullable), `CustomFields`, `DateModified`
+
+**There is no `AssetNo`, `Name`, `SerialNo`, `Model` or `Manufacturer`.** An asset is identified by its type, and the serial number, model and manufacturer live in `CustomFields` — which is where Simpro keeps them, and the reason custom fields are in ADR-013's fidelity scope at all. There is no `CompanyID` or `SiteID` either; both are in the path.
 
 ### Employees
 - `GET /api/v1.0/companies/{company_id}/employees/`
@@ -216,10 +262,10 @@ Two companies are seeded on container start (`simpro_mock/seed.py`, run via the 
 
 | Company | ID | Approx. seeded volume |
 |---|---|---|
-| CVC Service | 1 | 8 customers (4 individuals, 4 companies), 8 jobs, 3 zones, plus proportional sites/contacts/assets/projects/notes/statuses |
-| CVC Projects | 2 | 8 customers (4 individuals, 4 companies), 8 jobs, 3 zones, plus proportional sites/contacts/assets/projects/notes/statuses |
+| CVC Service | 1 | 8 customers (4 individuals, 4 companies), 13 jobs (8 `Service` + 5 `Project`), 8 quotes, 3 zones, 8 asset types, plus proportional sites/contacts/assets/notes/statuses |
+| CVC Projects | 2 | 8 customers (4 individuals, 4 companies), 13 jobs (8 `Service` + 5 `Project`), 8 quotes, 3 zones, 8 asset types, plus proportional sites/contacts/assets/notes/statuses |
 
-Customers alternate between the two kinds within each company, so both subtype routes always return data. Custom fields are seeded for **sites** only; jobs and assets follow in Wave C.
+Customers alternate between the two kinds within each company, so both subtype routes always return data. Custom fields are seeded for **sites** and **assets**; each asset carries Serial No, Model and Manufacturer there.
 
 Attachments are not seeded per company: `seed.py` adds 1–3 attachments to each of the first 10 jobs returned by its job query (`jobs[:10]`).
 
@@ -230,7 +276,8 @@ Attachments are not seeded per company: `seed.py` adds 1–3 attachments to each
 - No real credential validation on `/oauth2/token` (any client_id/secret accepted)
 - No rate limiting — the mock never returns `429`, unlike real Simpro's documented 10 req/sec/build limit
 - No webhooks / async event callbacks
-- No Projects resource — correct, since Simpro has none (a project is a Job with `Type: "Project"`). The `projects` table is still seeded but unreachable; it becomes `Type="Project"` jobs in ADR-013's Wave C
-- `columns` is accepted and ignored. `simpro_client` sends it, but the mock cannot yet narrow a response to the requested fields (ADR-013 S6). Wave A resources do return Simpro's narrow default projection from their collection routes; resources awaiting their wave return every modelled field on both legs
+- No Projects resource — correct, since Simpro has none. A project is a job with `Type: "Project"`, and the `projects` table has been dropped; its rows are now `Type="Project"` jobs
+- Not served, although documented upstream: the `Totals` block on jobs and quotes, `Forecast` on quotes, `Banking`/`Rates` on customers, `Rates` on sites, `Banking`/`PayRates` on employees — all out of ADR-013's fidelity scope. Also `Job.ConvertedFromQuote` and `STC`: the spec marks them required, but they are only meaningful for a converted job, and inventing values is the problem ADR-013 exists to fix. All are additive later and non-breaking, because the client models set `extra="ignore"`
+- `orderby` and `limit` are accepted and ignored — the last two documented query parameters the mock does not honour
 - Thin data behind correct shapes in the re-shaped resources: `Attachment.Folder`, `Company.DefaultCostCenter`, `Customer.Contracts`, `Customer.ResponseTimes`, `Contact.Contact`, `Site.STCZone` and `Site.VEECZone` are always `null`; `JobNote.Attachments`, `Customer.Tags`, `Customer.PreferredTechs`, `Customer.CustomFields`, `Contact.CustomFields`, `Site.PreferredTechs` and `Site.PreferredTechnicians` are always `[]`; `Employee.Zones` holds only that employee's default zone
 - Read-only: no POST/PATCH/DELETE routes, no business-logic state transitions (e.g. Quote → Job conversion)

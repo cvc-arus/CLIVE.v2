@@ -10,16 +10,17 @@ from sqlalchemy.orm import Session
 from simpro_mock.database import Base, SessionLocal
 from simpro_mock.models import (
     Asset,
+    AssetType,
     Attachment,
     Company,
     Contact,
     Customer,
+    CustomerContract,
     CustomField,
     CustomFieldValue,
     Employee,
     Job,
     JobNote,
-    Project,
     Quote,
     Site,
     Status,
@@ -437,8 +438,26 @@ def seed_data():
             db.add(status)
     db.commit()
 
+    # ---- 6b. Customer contracts (Job.CustomerContract is required) ----
+    for company in companies:
+        company_customers = [c for c in customers if c.company_id == company.id]
+        for index, cust in enumerate(company_customers[:4], start=1):
+            db.add(
+                CustomerContract(
+                    company_id=company.id,
+                    customer_id=cust.id,
+                    name=f"Service Agreement {index}",
+                    contract_no=f"CT-{company.id}{index:03d}",
+                    start_date=(seed_now - timedelta(days=365)).date(),
+                    end_date=(seed_now + timedelta(days=365)).date(),
+                )
+            )
+    db.commit()
+
     # ---- 7. Assets (40) ----
-    asset_types = [
+    # Upstream an asset is identified by its *type*; the serial number, model
+    # and manufacturer live in custom fields (ADR-013).
+    asset_type_data = [
         ("Hikvision Dome Camera", "DS-2CD2347G2-LU", "Hikvision"),
         ("Axis Network Camera", "P3265-LV", "Axis"),
         ("Access Control Panel", "AC-2000", "HID"),
@@ -448,26 +467,76 @@ def seed_data():
         ("Motion Sensor", "MS-200", "Bosch"),
         ("Card Reader", "CR-500", "HID"),
     ]
+    for company in companies:
+        for type_name, _model, _manufacturer in asset_type_data:
+            db.add(AssetType(company_id=company.id, name=type_name))
+        for field_name in ("Serial No", "Model", "Manufacturer"):
+            db.add(
+                CustomField(
+                    company_id=company.id,
+                    resource_type="Asset",
+                    name=field_name,
+                    field_type="Text",
+                    is_mandatory=False,
+                    list_items="",
+                )
+            )
+    db.commit()
+
     sites = db.query(Site).order_by(Site.id).all()
+    specs_by_type = {name: (model, maker) for name, model, maker in asset_type_data}
     for site in sites:
+        company_types = (
+            db.query(AssetType)
+            .filter(AssetType.company_id == site.company_id)
+            .order_by(AssetType.id)
+            .all()
+        )
         for _ in range(random.randint(2, 3)):
-            asset_name, model, manufacturer = random.choice(asset_types)
-            asset_no = f"{manufacturer[:3].upper()}-{random.randint(100, 999)}-{random.randint(1000, 9999)}"
+            asset_type = random.choice(company_types)
             asset = Asset(
                 company_id=site.company_id,
                 site_id=site.id,
-                asset_no=asset_no,
-                name=asset_name,
-                serial_no=f"SN-{random.randint(100000, 999999)}",
-                model=model,
-                manufacturer=manufacturer,
-                installed_date=date.today() - timedelta(days=random.randint(0, 730)),
+                asset_type_id=asset_type.id,
+                start_date=date.today() - timedelta(days=random.randint(0, 730)),
+                display_order=random.randint(1, 20),
+                archived=False,
+                date_modified=seed_now - timedelta(days=random.randint(0, 90)),
+                last_test_date=date.today() - timedelta(days=random.randint(0, 365)),
+                last_test_result=random.choice(["Pass", "Fail"]),
             )
             db.add(asset)
+            db.flush()
+            model, manufacturer = specs_by_type[asset_type.name]
+            values = {
+                "Serial No": f"SN-{random.randint(100000, 999999)}",
+                "Model": model,
+                "Manufacturer": manufacturer,
+            }
+            definitions = (
+                db.query(CustomField)
+                .filter(
+                    CustomField.company_id == site.company_id,
+                    CustomField.resource_type == "Asset",
+                )
+                .order_by(CustomField.id)
+                .all()
+            )
+            for definition in definitions:
+                db.add(
+                    CustomFieldValue(
+                        custom_field_id=definition.id,
+                        resource_type="Asset",
+                        resource_id=asset.id,
+                        value=values[definition.name],
+                    )
+                )
     db.commit()
 
-    # ---- 8. Projects (10) ----
-    project_statuses = ["Planning", "In Progress", "On Hold", "Complete"]
+    # ---- 8. Projects are jobs with type="Project" ----
+    # Simpro has no Projects resource, so these are seeded straight into jobs
+    # (ADR-013 Wave C). SIMPRO_COMPANY_ID_PROJECTS names the company whose
+    # jobs are projects; it is still just a company id.
     project_names = [
         "Warehouse Security Upgrade",
         "Office Access Control Installation",
@@ -480,25 +549,8 @@ def seed_data():
         "Hotel Access Modernisation",
         "Airport Perimeter Security",
     ]
-    for company in companies:
-        company_customers = [c for c in customers if c.company_id == company.id]
-        company_sites = [s for s in sites if s.company_id == company.id]
-        for _ in range(5):
-            cust = random.choice(company_customers)
-            site = random.choice(company_sites) if company_sites else None
-            proj = Project(
-                company_id=company.id,
-                customer_id=cust.id,
-                site_id=site.id if site else None,
-                name=project_names.pop(0),
-                status=random.choice(project_statuses),
-                total=round(random.uniform(5000, 150000), 2),
-            )
-            db.add(proj)
-    db.commit()
 
     # ---- 9. Jobs (16) ----
-    job_statuses = ["Pending", "Approved", "In Progress", "Complete", "On Hold"]
     job_names = [
         "Install CCTV",
         "Upgrade Access",
@@ -519,16 +571,59 @@ def seed_data():
     ]
     for company in companies:
         company_sites = [s for s in sites if s.company_id == company.id]
-        for _ in range(8):
-            site = random.choice(company_sites) if company_sites else None
-            job = Job(
-                company_id=company.id,
-                name=job_names.pop(0),
-                status=random.choice(job_statuses),
-                date_issued=date.today() - timedelta(days=random.randint(0, 180)),
-                total=round(random.uniform(500, 50000), 2),
-            )
-            db.add(job)
+        company_customers = [c for c in customers if c.company_id == company.id]
+        company_statuses = (
+            db.query(Status)
+            .filter(Status.company_id == company.id)
+            .order_by(Status.id)
+            .all()
+        )
+        company_contracts = (
+            db.query(CustomerContract)
+            .filter(CustomerContract.company_id == company.id)
+            .order_by(CustomerContract.id)
+            .all()
+        )
+        # 8 service jobs, then 5 projects: a project is a job with
+        # type="Project", not a separate resource.
+        for kind, count, names in (
+            ("Service", 8, job_names),
+            ("Project", 5, project_names),
+        ):
+            for _ in range(count):
+                ex_tax = Decimal(
+                    f"{random.randint(500, 50000)}.{random.randint(0, 99):02d}"
+                )
+                tax = (ex_tax / 10).quantize(Decimal("0.01"))
+                job = Job(
+                    company_id=company.id,
+                    customer_id=random.choice(company_customers).id,
+                    site_id=random.choice(company_sites).id,
+                    status_id=random.choice(company_statuses).id,
+                    customer_contract_id=(
+                        random.choice(company_contracts).id
+                        if company_contracts and random.random() < 0.6
+                        else None
+                    ),
+                    name=names.pop(0),
+                    description=f"{kind} work order",
+                    type=kind,
+                    stage=random.choice(
+                        ["Pending", "Progress", "Complete", "Invoiced"]
+                    ),
+                    notes="",
+                    order_no=f"PO-{random.randint(1000, 9999)}",
+                    request_no=f"RQ-{random.randint(1000, 9999)}",
+                    total_ex_tax=ex_tax,
+                    total_tax=tax,
+                    total_inc_tax=ex_tax + tax,
+                    date_issued=date.today() - timedelta(days=random.randint(0, 180)),
+                    due_date=date.today() + timedelta(days=random.randint(1, 90)),
+                    date_modified=seed_now - timedelta(days=random.randint(0, 30)),
+                    auto_adjust_status=True,
+                    is_variation=False,
+                )
+                db.add(job)
     db.commit()
 
     # ---- 10. Job Notes (32) ----
@@ -628,7 +723,6 @@ def seed_data():
     db.commit()
 
     # ---- 12. Quotes (16) ----
-    quote_statuses = ["Draft", "Sent", "Accepted", "Rejected"]
     quote_names = [
         "CCTV Quote",
         "Access Control Quote",
@@ -649,14 +743,40 @@ def seed_data():
     ]
     for company in companies:
         company_customers = [c for c in customers if c.company_id == company.id]
+        company_sites = [s for s in sites if s.company_id == company.id]
+        company_statuses = (
+            db.query(Status)
+            .filter(Status.company_id == company.id)
+            .order_by(Status.id)
+            .all()
+        )
         for _ in range(8):
-            cust = random.choice(company_customers)
+            ex_tax = Decimal(
+                f"{random.randint(1000, 80000)}.{random.randint(0, 99):02d}"
+            )
+            tax = (ex_tax / 10).quantize(Decimal("0.01"))
             quote = Quote(
                 company_id=company.id,
-                customer_id=cust.id,
+                customer_id=random.choice(company_customers).id,
+                site_id=random.choice(company_sites).id,
+                status_id=random.choice(company_statuses).id,
                 name=quote_names.pop(0),
-                status=random.choice(quote_statuses),
-                total=round(random.uniform(1000, 80000), 2),
+                description="Quotation",
+                type="Service",
+                stage=random.choice(["InProgress", "Complete", "Approved"]),
+                notes="",
+                order_no="",
+                request_no=f"RQ-{random.randint(1000, 9999)}",
+                total_ex_tax=ex_tax,
+                total_tax=tax,
+                total_inc_tax=ex_tax + tax,
+                date_issued=date.today() - timedelta(days=random.randint(0, 120)),
+                due_date=date.today() + timedelta(days=random.randint(1, 60)),
+                date_modified=seed_now - timedelta(days=random.randint(0, 30)),
+                validity_days=30,
+                auto_adjust_status=True,
+                is_variation=False,
+                is_closed=False,
             )
             db.add(quote)
     db.commit()

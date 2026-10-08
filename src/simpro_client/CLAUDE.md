@@ -199,7 +199,13 @@ failures. (Missing route parameters currently raise `ValueError` from
   `docs/phase3/sprints/phase3-sprint4-contract.md`. That sprint report is a
   historical record and is no longer normative; do not rewrite it.)
 - Dates are `datetime.date`; timestamps are `datetime.datetime`. Money is
-  `Decimal`, because the spec constrains money to two decimal places.
+  `Decimal`, because the spec constrains money to two decimal places. Money
+  arrives as a nested `Money` object (`{ExTax, Tax, IncTax}`), not a bare
+  number, and the mock sends JSON numbers, which `Decimal` accepts.
+- A field whose wire name is `Date` cannot be annotated with a bare `date`:
+  in `x: ann = val` Python binds `x` before evaluating `ann`, so the field
+  shadows the type and raises `TypeError` at import. `models/common.py`
+  imports it as `date_type` for exactly this reason.
 - **One model serves both the list and the detail payload**, and Simpro's list
   projection is narrow (often just `ID` and `Name`). So a field may only be
   required if the contract marks it required on *both* legs. Everything else
@@ -256,8 +262,14 @@ failures. (Missing route parameters currently raise `ValueError` from
 - `get()`, `fetch_page()` and `iter_all()` all take an optional
   `columns=` sequence. Simpro's list routes return a narrow default
   projection without it (jobs and quotes return only `ID`, `Description`
-  and `Total`), and it is accepted on detail routes too. The mock still
-  ignores it.
+  and `Total`), and it is accepted on detail routes too. The mock now
+  honours it (ADR-013 S6).
+- **A `columns=` list must keep every field the model marks required**, or
+  `model_validate` raises. `Job` requires `ID`, `Description` and `Total`, so
+  `columns=["Description"]` returns a body the model legitimately rejects.
+  This is not a mock quirk — real Simpro returns the same narrow body — so a
+  caller building a projection owns that constraint.
+  `tests/test_client_mock_drift.py` pins both directions.
 - `get()` takes `item_id: int | str`, because `Attachment.ID` is a string
   upstream. It raises `NotImplementedError` on `CustomersEndpoint`, which has
   no detail route.

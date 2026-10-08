@@ -94,6 +94,27 @@ class NoteAttachmentSchema(BaseModel):
     href: str = Field(alias="_href")
 
 
+class MoneySchema(BaseModel):
+    """A money total split by tax.
+
+    ``float`` on the wire, not a string: the spec types money as ``number``.
+    The database column is ``Numeric(12, 2)`` and the client parses this back
+    into ``Decimal`` (ADR-013).
+    """
+
+    ExTax: float
+    Tax: float
+    IncTax: float
+
+
+class StatusRefSchema(BaseModel):
+    """A job or quote status. ``ID`` is a project status code id."""
+
+    ID: int
+    Name: str
+    Color: str | None = None
+
+
 class SiteBillingAddressSchema(BaseModel):
     """A site's billing address: the one address shape with no Country."""
 
@@ -167,6 +188,24 @@ class SitePrimaryContactSchema(BaseModel):
     Fax: str
     PreferredNotificationMethod: str
     Contact: ContactRefSchema | None = None
+
+
+class ContractRefSchema(BaseModel):
+    """A customer contract. Both dates are nullable upstream."""
+
+    ID: int
+    Name: str
+    ContractNo: str
+    StartDate: str | None = None
+    EndDate: str | None = None
+
+
+class LastTestSchema(BaseModel):
+    """An asset's last test. No required members, so {} is legal."""
+
+    Date: str | None = None
+    Result: str | None = None
+    ServiceLevel: NamedRefSchema | None = None
 
 
 class CustomFieldDefinitionSchema(BaseModel):
@@ -316,26 +355,106 @@ class CompanyCustomerDetailResponse(_CustomerDetailBase):
     Website: str
 
 
-class JobResponse(BaseModel):
+class JobListResponse(BaseModel):
+    """The narrow projection: not even Name is included upstream."""
+
     model_config = ConfigDict(from_attributes=True)
 
     ID: int
-    CompanyID: int
+    Description: str
+    Total: MoneySchema
+
+
+class JobDetailResponse(BaseModel):
+    """``Totals`` is out of ADR-013's fidelity scope."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    ID: int
+    Description: str
+    Total: MoneySchema
     Name: str
-    Status: str
+    Type: str
+    Stage: str
+    Status: StatusRefSchema
+    Customer: CustomerRefSchema
+    Site: NamedRefSchema
+    CustomerContract: ContractRefSchema | None = None
+    CustomerContact: ContactRefSchema | None = None
+    SiteContact: ContactRefSchema | None = None
+    ProjectManager: StaffRefSchema | None = None
+    Salesperson: StaffRefSchema | None = None
+    Technician: StaffRefSchema | None = None
+    Technicians: list[StaffRefSchema]
+    AdditionalContacts: list[ContactRefSchema]
+    Tags: list[NamedRefSchema]
+    Notes: str
+    OrderNo: str
+    RequestNo: str
     DateIssued: str | None = None
-    Total: float
+    DueDate: str | None = None
+    CompletedDate: str | None = None
+    DateModified: str
+    AutoAdjustStatus: bool
+    IsVariation: bool
+    # A plain dict, not a nested model: ``ConvertedFrom``'s members are
+    # optional but **not nullable**, so a model would make FastAPI
+    # materialise `null` for each one. The legal value for a job that was
+    # not converted from anything is `{}`, which only a dict preserves.
+    ConvertedFrom: dict[str, object]
+    ArchiveReason: NamedRefSchema | None = None
+    ResponseTime: NamedRefSchema | None = None
+    CustomFields: list[CustomFieldValueSchema]
 
 
-class QuoteResponse(BaseModel):
+class QuoteListResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     ID: int
-    CompanyID: int
-    CustomerID: int | None = None
+    Description: str
+    Total: MoneySchema
+
+
+class QuoteDetailResponse(BaseModel):
+    """``Totals`` and ``Forecast`` are out of ADR-013's fidelity scope."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    ID: int
+    Description: str
+    Total: MoneySchema
     Name: str
-    Status: str
-    Total: float
+    Type: str
+    Stage: str
+    CustomerStage: str | None = None
+    Status: StatusRefSchema
+    Customer: CustomerRefSchema
+    Site: NamedRefSchema
+    CustomerContract: ContractRefSchema | None = None
+    CustomerContact: ContactRefSchema | None = None
+    SiteContact: ContactRefSchema | None = None
+    ProjectManager: StaffRefSchema | None = None
+    Salesperson: StaffRefSchema | None = None
+    Technician: StaffRefSchema | None = None
+    Technicians: list[StaffRefSchema]
+    AdditionalContacts: list[ContactRefSchema]
+    AdditionalCustomers: list[CustomerRefSchema]
+    Tags: list[NamedRefSchema]
+    Notes: str
+    OrderNo: str
+    RequestNo: str
+    JobNo: str | None = None
+    LinkedJobID: int | None = None
+    DateIssued: str | None = None
+    DateApproved: str | None = None
+    DueDate: str | None = None
+    DateModified: str
+    ValidityDays: int
+    AutoAdjustStatus: bool
+    IsVariation: bool
+    IsClosed: bool
+    ArchiveReason: NamedRefSchema | None = None
+    CustomFields: list[CustomFieldValueSchema]
 
 
 class ContactListResponse(BaseModel):
@@ -405,18 +524,31 @@ class SiteDetailResponse(BaseModel):
     DateModified: str
 
 
-class AssetResponse(BaseModel):
+class AssetListResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     ID: int
-    CompanyID: int
-    SiteID: int
-    AssetNo: str
-    Name: str
-    SerialNo: str | None = None
-    Model: str | None = None
-    Manufacturer: str | None = None
-    InstalledDate: str | None = None  # ISO date string
+    AssetType: NamedRefSchema
+
+
+class AssetDetailResponse(BaseModel):
+    """No AssetNo, Name, SerialNo, Model or Manufacturer upstream.
+
+    The last three live in ``CustomFields``.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    ID: int
+    AssetType: NamedRefSchema
+    StartDate: str
+    DisplayOrder: int
+    Archived: bool
+    ParentID: int | None = None
+    LastTest: LastTestSchema
+    CustomerContract: ContractRefSchema | None = None
+    CustomFields: list[CustomFieldValueSchema]
+    DateModified: str
 
 
 class EmployeeListResponse(BaseModel):
@@ -442,18 +574,6 @@ class EmployeeDetailResponse(BaseModel):
     Archived: bool
     DateCreated: str
     DateModified: str
-
-
-class ProjectResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    ID: int
-    CompanyID: int
-    CustomerID: int
-    SiteID: int | None = None
-    Name: str
-    Status: str
-    Total: float
 
 
 class JobNoteListResponse(BaseModel):

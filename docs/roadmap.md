@@ -18,9 +18,11 @@ Consolidated from `docs/scope/master-project-document.md` (master roadmap) and `
 ## Phase 3 — Remaining Work
 
 1. **Decide the Phase 3 → Phase 4 handoff** — drafted as ADR-009 (`docs/ADR/adr-009-phase3-phase4-handoff.md`, Proposed, open): direct `import simpro_client` (library-first) vs. a thin FastAPI service wrapper. This is a hard gate before Phase 4 scoping.
-2. **Sign off Phase 3** once ADR-009 is accepted. The typed layer has offline tests: `tests/test_models.py`, `test_endpoints.py`, `test_pagination.py`, `test_rate_limiter.py`, `test_retries.py`, `test_route_contract.py`.
+2. **Sign off Phase 3** once ADR-009 is accepted. The typed layer has offline tests: `tests/test_models.py`, `test_endpoints.py`, `test_pagination.py`, `test_rate_limiter.py`, `test_retries.py`, `test_route_contract.py` and `test_spec_conformance.py`, plus two integration modules, `test_simpro_mock_v2.py` and `test_client_mock_drift.py`.
+3. **Open defects** listed in `known-issues.md` should be triaged before sign-off. None blocks it: the mock accepts and ignores `orderby` and `limit`, collection routes paginate without an `ORDER BY`, two mock settings are unread, and the pre-existing lint debt is unresolved.
 
 Done:
+- Contract conformance (ADR-013, implemented 2026-10-08): `simpro_mock` and `simpro_client` are shaped to Simpro's published OpenAPI contract, vendored at `docs/contracts/simpro-openapi-v1-get-subset.json`. `tests/test_spec_conformance.py` validates every client model against payloads generated from it and `tests/spec_conformance_baseline.json` is empty, so "switching to live Simpro is a configuration change" is measured rather than asserted.
 - Typed client layer: `src/simpro_client/models/` (Pydantic, PascalCase-aliased, one module per resource) and `src/simpro_client/endpoints/` (generic `ResourceEndpoint` in `base.py` plus per-resource modules).
 - Pagination: `fetch_page()` and `iter_all()` in `src/simpro_client/endpoints/base.py` (there is no separate `pagination.py`).
 - Rate limiter: `src/simpro_client/rate_limiter.py` (token bucket, default 8 req/sec), per ADR-010.

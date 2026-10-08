@@ -115,27 +115,57 @@ MODEL_CASES = [
         Job,
         {
             "ID": 3,
-            "CompanyID": 1,
+            "Description": "Camera replacement",
+            # Total is an object upstream, not a number, and money is Decimal.
+            "Total": {"ExTax": "100.00", "Tax": "10.00", "IncTax": "110.00"},
             "Name": "Service",
-            "Status": "Open",
+            "Type": "Service",
+            "Stage": "Progress",
+            # Status.ID is a project status code id (ADR-013 §7).
+            "Status": {"ID": 12, "Name": "Open", "Color": "#1f6feb"},
+            "Customer": {
+                "ID": 2,
+                "Type": "Individual",
+                "CompanyName": "",
+                "GivenName": "Ada",
+                "FamilyName": "Lovelace",
+            },
+            "Site": {"ID": 6, "Name": "Plant"},
             "DateIssued": "2026-09-07",
-            "Total": 120.5,
+            "ConvertedFrom": {},
         },
-        "Status",
-        ["DateIssued"],
+        "Total",
+        [
+            "Name",
+            "Type",
+            "Stage",
+            "Status",
+            "Customer",
+            "Site",
+            "DateIssued",
+            "ConvertedFrom",
+        ],
     ),
     (
         Quote,
         {
             "ID": 4,
-            "CompanyID": 1,
-            "CustomerID": 2,
+            "Description": "Alarm upgrade quote",
+            "Total": {"ExTax": "90.00", "Tax": "9.00", "IncTax": "99.00"},
             "Name": "Quote",
-            "Status": "Draft",
-            "Total": 99.0,
+            "Stage": "InProgress",
+            "Status": {"ID": 13, "Name": "Draft", "Color": None},
+            "Customer": {
+                "ID": 2,
+                "Type": "Individual",
+                "CompanyName": "",
+                "GivenName": "Ada",
+                "FamilyName": "Lovelace",
+            },
+            "ValidityDays": 30,
         },
-        "Name",
-        ["CustomerID"],
+        "Description",
+        ["Name", "Stage", "Status", "Customer", "ValidityDays"],
     ),
     (
         Contact,
@@ -221,17 +251,38 @@ MODEL_CASES = [
         Asset,
         {
             "ID": 7,
-            "CompanyID": 1,
-            "SiteID": 6,
-            "AssetNo": "A-7",
-            "Name": "Pump",
-            "SerialNo": "SN-7",
-            "Model": "M1",
-            "Manufacturer": "Maker",
-            "InstalledDate": "2026-01-02",
+            "AssetType": {"ID": 4, "Name": "Hikvision Dome Camera"},
+            "StartDate": "2026-01-02",
+            "DisplayOrder": 1,
+            "Archived": False,
+            "ParentID": None,
+            "LastTest": {},
+            # Serial number, model and manufacturer live here upstream, not in
+            # fields of their own.
+            "CustomFields": [
+                {
+                    "CustomField": {
+                        "ID": 9,
+                        "Name": "Serial No",
+                        "Type": "Text",
+                        "IsMandatory": False,
+                        "ListItems": None,
+                    },
+                    "Value": "SN-7",
+                }
+            ],
+            "DateModified": "2026-09-07T10:30:00+10:00",
         },
-        "AssetNo",
-        ["SerialNo", "Model", "Manufacturer", "InstalledDate"],
+        "AssetType",
+        [
+            "StartDate",
+            "DisplayOrder",
+            "Archived",
+            "ParentID",
+            "LastTest",
+            "CustomFields",
+            "DateModified",
+        ],
     ),
     (
         Employee,
@@ -381,7 +432,7 @@ def test_models_accept_aliases_and_ignore_unknown_fields(
 def test_temporal_fields_use_python_types():
     """Date and timestamp aliases parse into Python types, not strings."""
     assert isinstance(Job.model_validate(PAYLOADS[Job]).date_issued, date)
-    assert isinstance(Asset.model_validate(PAYLOADS[Asset]).installed_date, date)
+    assert isinstance(Asset.model_validate(PAYLOADS[Asset]).start_date, date)
     assert isinstance(JobNote.model_validate(PAYLOADS[JobNote]).date_created, datetime)
     assert isinstance(
         JobNote.model_validate(PAYLOADS[JobNote]).follow_up_date, date
@@ -389,3 +440,25 @@ def test_temporal_fields_use_python_types():
     assert isinstance(
         Attachment.model_validate(PAYLOADS[Attachment]).date_added, datetime
     )
+
+
+def test_money_fields_are_decimal_not_float():
+    """Money parses to ``Decimal``, from a JSON number as well as a string.
+
+    Every money field in the contract is constrained to two decimal places,
+    which binary floating point cannot represent exactly (ADR-013). The mock
+    serves these as JSON *numbers*, so both forms have to work.
+    """
+    from decimal import Decimal
+
+    from_string = Job.model_validate(PAYLOADS[Job]).total
+    assert isinstance(from_string.ex_tax, Decimal)
+    assert from_string.inc_tax == Decimal("110.00")
+
+    as_numbers = {
+        **PAYLOADS[Job],
+        "Total": {"ExTax": 1234.55, "Tax": 123.45, "IncTax": 1358.00},
+    }
+    from_number = Job.model_validate(as_numbers).total
+    assert isinstance(from_number.ex_tax, Decimal)
+    assert from_number.ex_tax == Decimal("1234.55")

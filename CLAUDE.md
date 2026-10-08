@@ -24,6 +24,9 @@ the approver for every sprint and architectural decision.
 - Phase 3 (active): Simpro integration. **There is no live Simpro API access.**
   - `src/simpro_client/` — reusable, typed, synchronous Python client library.
   - `services/simpro_mock/` — FastAPI + PostgreSQL mock of the Simpro REST API.
+  - Both are shaped to Simpro's **published** OpenAPI contract, vendored at
+    `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013), and
+    `tests/test_spec_conformance.py` proves it without API access.
 - Phase 4+ (not started): document generation, agents, etc. Blocked on ADR-009.
 
 The client talks to the mock **only over HTTP**. Switching to real Simpro must
@@ -78,7 +81,7 @@ it. When documents and code disagree, say so explicitly. Do not quietly
 | 010 | Resilience: token bucket, 401/429 budgets, error hierarchy | Approved; implemented with deviations (see `src/simpro_client/CLAUDE.md`). §2.5 superseded by ADR-011 |
 | 011 | Exception hierarchy and `SimproAuthError` context (supersedes ADR-010 §2.5) | Accepted 2026-10-06, implemented |
 | 012 | Retry delay ceiling (`SIMPRO_MAX_RETRY_DELAY`) and token-refresh concurrency | Accepted 2026-10-06 (supersedes ADR-010 §2.3, extends §2.1) |
-| 013 | Re-shape mock and client to Simpro's published OpenAPI spec | Accepted 2026-10-07. Implementation in progress: S1–S4 of 7 landed (contract vendored; conformance + drift tests; routes corrected; Wave A — `ProjectStatusCode`, `Attachment`, `JobNote`, `Company`, `Employee`; Wave B — the `Customer` split into a list summary plus individual and company subtypes, `Contact`, `Site`). Field names, types and optionality are governed by `docs/contracts/simpro-openapi-v1-get-subset.json` |
+| 013 | Re-shape mock and client to Simpro's published OpenAPI spec | Accepted 2026-10-07, **implemented 2026-10-08** (all 7 sprints). **All 50 conformance checks pass and `tests/spec_conformance_baseline.json` is empty**, so every client model validates payloads generated from Simpro's published contract. Field names, types and optionality are governed by `docs/contracts/simpro-openapi-v1-get-subset.json`. The mock honours `columns` on all 25 routes and returns a 400 on an unknown filter, but still accepts and ignores `orderby` and `limit` (see `known-issues.md`) |
 
 Re-verify this table before relying on it; it is a snapshot.
 

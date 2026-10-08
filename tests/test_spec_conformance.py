@@ -23,6 +23,10 @@ The baseline is data, and the test enforces it in both directions: a
 combination outside the file must conform, and a combination inside it that
 starts conforming fails until its entry is deleted. So the file can only
 shrink, and progress is a deletion visible in ``git log -p``.
+
+**The baseline is now empty** (ADR-013 Wave C). It started at 40 of 44
+combinations failing. Every combination must conform, so adding an entry here
+is a regression, not a way to land a change.
 """
 
 from __future__ import annotations
@@ -60,9 +64,15 @@ CONTRACT_PATH = (
 )
 BASELINE_PATH = Path(__file__).resolve().parent / "spec_conformance_baseline.json"
 
-#: The baseline may never grow. Lower this literal as entries are deleted;
-#: raising it means the re-shape went backwards.
-MAX_BASELINE_ENTRIES = 12
+#: The baseline is **empty**: every client model now validates payloads
+#: generated from Simpro's published contract, on both the list and the detail
+#: leg, in both the full and the minimal shape. That is the whole point of
+#: ADR-013 — "switching to live Simpro is a configuration change" is now a
+#: measured property rather than an assumption.
+#:
+#: Keep this at 0. Raising it means a model stopped matching the contract and
+#: the gap was recorded instead of fixed.
+MAX_BASELINE_ENTRIES = 0
 
 #: ``(name, model, list path, detail path)`` for every resource the client
 #: reads. ``Project`` is absent on purpose: Simpro has no Projects resource,
