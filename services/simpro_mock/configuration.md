@@ -13,22 +13,12 @@ The application leverages Pydantic Settings to automatically resolve configurati
 * **Default Value**: none (required). `Settings()` raises a validation error at import if it is unset.
 * **Description**: The connection string pointing the FastAPI service to its backing PostgreSQL database. Under Docker Compose it is built from the root `.env` keys `SIMPRO_MOCK_DB_USER`, `SIMPRO_MOCK_DB_PASSWORD` and `SIMPRO_MOCK_DB_NAME`, with the internal DNS hostname `simpro-mock-db`.
 
-### 2. `SIMPRO_MOCK_MOCK_CLIENT_ID`
-* **Type**: `string`
-* **Default Value**: `"mock-client-id"`
-* **Description**: **Unused.** Defined in `config.py` but never read: the `/oauth2/token` route (`issue_token` in `routers.py`) accepts any client ID. See `docs/known-issues.md`.
-
-### 3. `SIMPRO_MOCK_MOCK_CLIENT_SECRET`
-* **Type**: `string`
-* **Default Value**: `"mock-client-secret"`
-* **Description**: **Unused.** Defined in `config.py` but never read: the `/oauth2/token` route (`issue_token` in `routers.py`) accepts any client secret. See `docs/known-issues.md`.
-
-### 4. `SIMPRO_MOCK_MOCK_ACCESS_TOKEN`
+### 2. `SIMPRO_MOCK_MOCK_ACCESS_TOKEN`
 * **Type**: `string`
 * **Default Value**: `"mock-access-token-simpro"`
-* **Description**: The static, persistent token issued by the `/oauth2/token` route. The custom system middleware (`BearerAuthMiddleware`) intercepts requests on secure resource paths and verifies them against this exact value.
+* **Description**: The static, persistent token issued by the `/oauth2/token` route. The custom system middleware (`BearerAuthMiddleware`) intercepts requests on secure resource paths and verifies them against this exact value. The route **accepts any `client_id` and `client_secret`** and always issues this token; there is no setting for mock credentials, because validating them is a documented limitation of `adr-mock-simpro-api.md` rather than an unimplemented feature.
 
-### 5. `SIMPRO_MOCK_TOKEN_EXPIRES_IN`
+### 3. `SIMPRO_MOCK_TOKEN_EXPIRES_IN`
 * **Type**: `integer`
 * **Default Value**: `3600` (1 Hour)
 * **Description**: Specifies the simulated validation lifetime of the generated token payload (expressed in seconds) returned within JSON authorization responses.
