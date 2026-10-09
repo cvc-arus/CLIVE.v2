@@ -7,9 +7,25 @@ Found by reading the actual codebase and running the test suite, per the project
 
 The root `pyproject.toml` defines dev dependencies under `[dependency-groups]` (PEP 735 style) rather than `[project.optional-dependencies]`. `pip install -e ".[dev]"` prints `WARNING: simpro-client 0.1.0 does not provide the extra 'dev'` and installs only the base package — `pytest`, `respx`, `ruff`, and `pytest-cov` are not installed by that command. `uv sync` (or explicit `pip install pytest respx ruff pytest-cov`) is required instead.
 
-## Unused mock settings `SIMPRO_MOCK_MOCK_CLIENT_ID` and `SIMPRO_MOCK_MOCK_CLIENT_SECRET`
+## RESOLVED 2026-10-08 — unused mock settings `SIMPRO_MOCK_MOCK_CLIENT_ID` and `SIMPRO_MOCK_MOCK_CLIENT_SECRET`
 
-Observed 2026-10-02. `services/simpro_mock/simpro_mock/config.py` defines `mock_client_id` and `mock_client_secret`, but nothing reads them: `issue_token` in `services/simpro_mock/simpro_mock/routers.py` ignores the submitted credentials and always returns the static token. Removing the two settings is a later code task.
+Observed 2026-10-02. `services/simpro_mock/simpro_mock/config.py` defined `mock_client_id` and `mock_client_secret`, but nothing read them: `issue_token` in `services/simpro_mock/simpro_mock/routers.py` ignores the submitted credentials and always returns the static token.
+
+**Resolved 2026-10-08.** Both fields are removed from `Settings`, and
+`services/simpro_mock/configuration.md` no longer documents the two variables
+(its entries are renumbered 1–3). Two checks made removal safe: the
+`simpro-mock` service in `docker-compose.yml` passes only
+`SIMPRO_MOCK_DATABASE_URL`, so the variables were never supplied to the
+container; and `Settings` tolerates unrecognised prefixed environment
+variables, verified by instantiating the trimmed model with both set, so a
+leftover value in anyone's environment cannot stop the service booting.
+
+The route still accepts any `client_id` and `client_secret`. That is a
+documented limitation of `adr-mock-simpro-api.md`, not an unimplemented
+feature, so validating them would need that ADR changed first; the settings
+were removed rather than wired up for exactly that reason. `issue_token` keeps
+both as **form fields**, which are request inputs and were never related to
+the settings.
 
 ## RESOLVED 2026-10-08 — the mock accepted `orderby` and `limit` and silently ignored them
 
