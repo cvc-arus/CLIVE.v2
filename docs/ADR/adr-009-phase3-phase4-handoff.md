@@ -1,47 +1,72 @@
-# ADR-009: Phase 3 → Phase 4 Handoff Mechanism
+# ADR-009: Phase 3 → Phase 4 handoff mechanism
 
-## Status
-**Proposed — open decision.** This is the ADR flagged as a gap in `docs/scope/scope-rev2.md` (formerly `RevisedScope.txt`) and `docs/PDDs/PDD-phase3.md`. It has not been decided yet; this document lays out the options so a decision can be made and recorded before Phase 4 scoping begins, rather than defaulting to one silently.
-
-**Revised 2026-10-05:** wording updated to reflect that the typed endpoint and model modules now exist (`src/simpro_client/endpoints/`, `src/simpro_client/models/`). Status, options and recommendation are unchanged.
+- **Status:** Proposed
+- **Date:** 2026-10-09
+- **Deciders:** Alex
+- **Related:** ADR-010 (resilience policy / rate limiter), ADR-011 (Simpro data access control model, proposed)
 
 ## Context
-Phase 4 (Document Generation) needs to read Simpro data (Customers, Sites, Contacts, Jobs, Quotes, Projects, Assets, Employees) from `simpro_client`. ADR-006 already established a general library-first principle for `simpro_client`, but that decision was made before Phase 4's actual requirements were known. This ADR asks the same question specifically for the Phase 3 → Phase 4 boundary.
 
-## Option A: Direct Python Import
+Phase 3 delivers `simpro_client`, a typed Python library for the Simpro REST API.
+This ADR decides how downstream consumers access Simpro data.
 
-Phase 4 code does `from simpro_client import SimproClient` directly, in-process, and uses the typed endpoints it exposes (for example `client.customers`, defined in `simpro_client.endpoints`) and the typed models (`simpro_client.models`).
+A new requirement (October 2026) changes the consumer landscape: any authorised
+CVC user must be able to ask questions about Simpro data in Open WebUI, with
+access restricted by role. Consumers are now:
 
-**Pros:**
-- Zero network hop, zero extra container, zero extra auth boundary
-- Shares process-level observability (correlation IDs, structured logs) automatically
-- Consistent with ADR-006's existing library-first principle and the original Phase 3 PDD's stated architecture
-- Simplest to build and test right now
+1. Open WebUI tools (run inside the `open-webui` container; no `simpro_client` install)
+2. Phase 4 document generation (user-triggered and batch)
+3. Future agents (Phases 6–9)
 
-**Cons:**
-- Couples Phase 4 tightly to `simpro_client`'s Python API and versioning; any future non-Python consumer (e.g. a separate microservice, or an n8n/low-code workflow in a later phase) would need its own integration path
-- If Phase 4 and Phase 3's code live in different deployable units later, direct import stops being an option without a refactor
+Constraints:
+- Simpro's rate limit (10 req/sec) is shared across the whole build.
+- The ADR-010 token bucket (8 req/sec) is enforced per process.
+- Simpro data must be filtered by user role before reaching any LLM.
 
-## Option B: Thin FastAPI Service Wrapper
+## Options considered
 
-Wrap `simpro_client` in a small internal FastAPI service; Phase 4 calls it over HTTP, the same way it will eventually call the mock or real Simpro today.
+### Option A — Direct Python import
+Each consumer imports `simpro_client` and calls Simpro itself.
+- Pro: simplest; typed objects end to end; no extra service.
+- Con: unusable by Open WebUI tools without installing the library into a
+  third-party container.
+- Con: each process has its own rate limiter, so combined traffic can exceed
+  the shared Simpro limit.
+- Con: permissions and audit must be re-implemented per consumer, or are bypassed.
 
-**Pros:**
-- Decouples Phase 4 from `simpro_client`'s internal Python API
-- Opens the door to non-Python consumers later (e.g. Phase 6 AI Sales Agent, Phase 9 multi-agent orchestration, if those end up as separate services)
-- Consistent internal API surface regardless of what's behind it (mock, real Simpro, or a future replacement)
-
-**Cons:**
-- Adds a container, a port, and an internal auth boundary for a need that doesn't exist yet — the exact "unnecessary complexity" ADR-006 originally argued against
-- Correlation ID propagation and structured logging would need to be threaded across an additional HTTP hop
-- No current consumer actually requires this — Phase 4 is Python, in the same codebase
-
-## Recommendation (non-binding — for CVC's decision)
-
-Given that every currently planned Phase 4 consumer is Python, and no cross-language or cross-service requirement has been identified yet, **Option A (direct import)** is consistent with the project's existing library-first decision (ADR-006) and its "no unnecessary complexity" principle. Option B can be introduced later, behind the same public interface, if a genuine non-Python or cross-service need materializes (for example, if a future phase is deployed as a separate service rather than sharing Phase 4's process).
+### Option B — Gateway service as the single Simpro access point
+A FastAPI service (`clive-gateway`) imports `simpro_client` and exposes
+permission-checked, audited query endpoints. All other consumers use its HTTP API.
+- Pro: one rate limiter, one permission model, one audit trail.
+- Pro: language/container agnostic; serves Open WebUI, Phase 4 and agents alike.
+- Con: additional service and single point of failure for Simpro access.
+- Con: requires a versioned API contract; consumers receive JSON, not Pydantic objects.
 
 ## Decision
-_Pending — to be filled in once confirmed._
+
+**Option B.** `simpro_client` is imported directly by exactly one runtime
+service, `clive-gateway`. All other CLIVE components access Simpro data only
+through the gateway's HTTP API.
+
+Exceptions: unit/integration tests and developer tooling against the mock.
+Any other direct import requires an amendment to this ADR.
 
 ## Consequences
-_To be recorded once the decision above is made._
+
+- The gateway runs as a **single uvicorn worker** so the ADR-010 rate limiter
+  remains authoritative. Scaling beyond one worker requires a shared limiter
+  (new ADR).
+- The gateway supports **service accounts** (e.g. a `docgen` role for Phase 4
+  batch jobs) alongside human users; both are subject to the same policy and audit.
+- The gateway's OpenAPI schema is the contract for consumers; breaking changes
+  require a versioned path (`/v1/`, `/v2/`).
+- `simpro_client` remains a pure Simpro library with no knowledge of CLIVE
+  users or permissions.
+- Phase 4 is unblocked by this decision; its entry criteria now include the
+  gateway's query catalogue covering Customers, Sites, Contacts, Jobs, Quotes,
+  Projects, Assets and Employees.
+
+## Revisit if
+- The gateway becomes a measurable bottleneck.
+- A consumer needs bulk data access that per-query endpoints can't serve
+  efficiently (e.g. analytics for Customer Intelligence, Phase 8).
