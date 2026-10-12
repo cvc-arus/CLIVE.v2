@@ -191,9 +191,11 @@ def test_page_preserves_headers_filters_and_company_selection(mock_settings):
 
 
 def test_missing_nested_scope_fails_before_request(mock_settings):
-    with SimproClient(settings=mock_settings) as client:
-        with pytest.raises(ValueError, match="site_id"):
-            client.assets.get(7, company_id=1)
+    with (
+        SimproClient(settings=mock_settings) as client,
+        pytest.raises(ValueError, match="site_id"),
+    ):
+        client.assets.get(7, company_id=1)
 
 
 @respx.mock

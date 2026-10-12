@@ -22,9 +22,7 @@ class Company(SimproBaseModel):
 
     # --- Detail route only, from here down ---
     address: CompanyAddress | None = Field(default=None, alias="Address")
-    billing_address: CompanyAddress | None = Field(
-        default=None, alias="BillingAddress"
-    )
+    billing_address: CompanyAddress | None = Field(default=None, alias="BillingAddress")
     phone: str | None = Field(default=None, alias="Phone")
     fax: str | None = Field(default=None, alias="Fax")
     email: str | None = Field(default=None, alias="Email")

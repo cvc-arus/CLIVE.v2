@@ -434,9 +434,7 @@ def test_temporal_fields_use_python_types():
     assert isinstance(Job.model_validate(PAYLOADS[Job]).date_issued, date)
     assert isinstance(Asset.model_validate(PAYLOADS[Asset]).start_date, date)
     assert isinstance(JobNote.model_validate(PAYLOADS[JobNote]).date_created, datetime)
-    assert isinstance(
-        JobNote.model_validate(PAYLOADS[JobNote]).follow_up_date, date
-    )
+    assert isinstance(JobNote.model_validate(PAYLOADS[JobNote]).follow_up_date, date)
     assert isinstance(
         Attachment.model_validate(PAYLOADS[Attachment]).date_added, datetime
     )

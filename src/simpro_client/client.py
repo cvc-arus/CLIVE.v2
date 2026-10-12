@@ -267,20 +267,31 @@ class SimproClient:
                 continue
             if response.status_code == 404:
                 raise SimproNotFoundError(
-                    f"Not found: {method} {path}", response_body=response.text,
-                    method=method, url=path, correlation_id=correlation_id,
+                    f"Not found: {method} {path}",
+                    response_body=response.text,
+                    method=method,
+                    url=path,
+                    correlation_id=correlation_id,
                 )
             if 400 <= response.status_code < 500:
                 raise SimproClientError(
                     f"Client error: {response.status_code} on {method} {path}",
-                    response.status_code, response.text, method=method, url=path,
-                    correlation_id=correlation_id, retry_count=rate_retry_count,
+                    response.status_code,
+                    response.text,
+                    method=method,
+                    url=path,
+                    correlation_id=correlation_id,
+                    retry_count=rate_retry_count,
                 )
             if response.status_code >= 500:
                 raise SimproServerError(
                     f"Server error: {response.status_code} on {method} {path}",
-                    response.status_code, response.text, method=method, url=path,
-                    correlation_id=correlation_id, retry_count=rate_retry_count,
+                    response.status_code,
+                    response.text,
+                    method=method,
+                    url=path,
+                    correlation_id=correlation_id,
+                    retry_count=rate_retry_count,
                 )
             return response
 
@@ -334,9 +345,13 @@ class SimproClient:
     ) -> None:
         """Emit one structured log record for a completed attempt."""
         record = logging.LogRecord(
-            "simpro_client", logging.INFO, "", 0,
+            "simpro_client",
+            logging.INFO,
+            "",
+            0,
             f"{method} {url} -> {status_code} ({duration_ms:.1f}ms)",
-            None, None,
+            None,
+            None,
         )
         record.method = method
         record.url = url
