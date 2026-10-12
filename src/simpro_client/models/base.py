@@ -8,7 +8,6 @@ class SimproBaseModel(BaseModel):
 
     model_config = ConfigDict(
         extra="ignore",  # Accepts payloads containing fields the model does not declare
-        validate_by_alias = True,  # Accepts committed PascalCase API keys.
+        validate_by_alias=True,  # Accepts committed PascalCase API keys.
         validate_by_name=True,  # Accepts Pythonic snake_case keys.
-
     )

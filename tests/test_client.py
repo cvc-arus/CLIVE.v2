@@ -52,9 +52,11 @@ def test_404_raises_not_found(mock_settings):
     respx.get(f"{mock_settings.base_url}/companies/1/jobs/999").mock(
         return_value=Response(404, text="Not Found")
     )
-    with SimproClient(settings=mock_settings) as client:
-        with pytest.raises(SimproNotFoundError):
-            client.get("/companies/1/jobs/999")
+    with (
+        SimproClient(settings=mock_settings) as client,
+        pytest.raises(SimproNotFoundError),
+    ):
+        client.get("/companies/1/jobs/999")
 
 
 @respx.mock
@@ -66,9 +68,11 @@ def test_429_raises_rate_limit_error(mock_settings):
     respx.get(f"{mock_settings.base_url}/companies/1/jobs/").mock(
         return_value=Response(429, headers={"Retry-After": "5"})
     )
-    with SimproClient(settings=mock_settings) as client:
-        with pytest.raises(SimproRateLimitError) as exc_info:
-            client.get("/companies/1/jobs/")
+    with (
+        SimproClient(settings=mock_settings) as client,
+        pytest.raises(SimproRateLimitError) as exc_info,
+    ):
+        client.get("/companies/1/jobs/")
     assert exc_info.value.retry_after == 5.0
 
 

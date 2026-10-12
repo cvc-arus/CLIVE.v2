@@ -44,13 +44,23 @@ def test_retry_after_forms_and_fallback(mock_settings):
     token(mock_settings)
     route = respx.get(f"{mock_settings.base_url}/jobs")
     delays = []
-    route.mock(side_effect=[Response(429, headers={"Retry-After": "2"}), Response(200, json=[])])
+    route.mock(
+        side_effect=[
+            Response(429, headers={"Retry-After": "2"}),
+            Response(200, json=[]),
+        ]
+    )
     with SimproClient(mock_settings) as client:
         client._sleep = delays.append
         client.get("/jobs")
     assert delays == [2.0]
 
-    route.mock(side_effect=[Response(429, headers={"Retry-After": "Thu, 01 Jan 2026 00:00:05 GMT"}), Response(200, json=[])])
+    route.mock(
+        side_effect=[
+            Response(429, headers={"Retry-After": "Thu, 01 Jan 2026 00:00:05 GMT"}),
+            Response(200, json=[]),
+        ]
+    )
     delays.clear()
     with SimproClient(mock_settings) as client:
         client._sleep = delays.append
@@ -58,7 +68,12 @@ def test_retry_after_forms_and_fallback(mock_settings):
         client.get("/jobs")
     assert delays == [5.0]
 
-    route.mock(side_effect=[Response(429, headers={"Retry-After": "1.5"}), Response(200, json=[])])
+    route.mock(
+        side_effect=[
+            Response(429, headers={"Retry-After": "1.5"}),
+            Response(200, json=[]),
+        ]
+    )
     delays.clear()
     with SimproClient(mock_settings) as client:
         client._sleep = delays.append
@@ -71,7 +86,11 @@ def test_retry_after_forms_and_fallback(mock_settings):
 def test_401_then_429_keeps_independent_budgets(mock_settings):
     token_route = token(mock_settings)
     route = respx.get(f"{mock_settings.base_url}/jobs").mock(
-        side_effect=[Response(401), Response(429, headers={"Retry-After": "1"}), Response(200, json=[])]
+        side_effect=[
+            Response(401),
+            Response(429, headers={"Retry-After": "1"}),
+            Response(200, json=[]),
+        ]
     )
     set_correlation_id("stable-retry-id")
     delays = []
@@ -83,7 +102,9 @@ def test_401_then_429_keeps_independent_budgets(mock_settings):
     assert token_route.call_count == 2
     assert limiter.call_count == 3
     assert delays == [1.0]
-    assert [call.request.headers["X-Correlation-ID"] for call in route.calls] == ["stable-retry-id"] * 3
+    assert [call.request.headers["X-Correlation-ID"] for call in route.calls] == [
+        "stable-retry-id"
+    ] * 3
 
 
 def test_client_shares_one_limiter_with_auth(mock_settings):

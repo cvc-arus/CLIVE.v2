@@ -161,9 +161,7 @@ def seed_data():
                 family_name="" if is_company else last,
                 title="" if is_company else random.choice(["Mr", "Ms", "Dr"]),
                 cell_phone="" if is_company else phone,
-                company_name=(
-                    company_customer_names.pop(0) if is_company else ""
-                ),
+                company_name=(company_customer_names.pop(0) if is_company else ""),
                 company_number=f"ACN {random.randint(100, 999)} 000 000"
                 if is_company
                 else "",
@@ -663,9 +661,7 @@ def seed_data():
                 reference_text=f"Job #{job.id}",
                 reference_number=str(job.id),
                 reference_type="Job",
-                submitted_by_id=(
-                    random.choice(employees).id if employees else None
-                ),
+                submitted_by_id=(random.choice(employees).id if employees else None),
                 assign_to_id=(
                     random.choice(employees).id
                     if employees and random.random() < 0.5
@@ -692,7 +688,7 @@ def seed_data():
     ]
     mime_types = {
         "pdf": "application/pdf",
-        "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # noqa: E501
         "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "jpg": "image/jpeg",
         "dwg": "application/acad",

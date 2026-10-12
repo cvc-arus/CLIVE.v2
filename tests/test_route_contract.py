@@ -139,9 +139,7 @@ def test_contract_covers_every_registered_endpoint() -> None:
     )
 
 
-@pytest.mark.parametrize(
-    "endpoint_type", WITHOUT_DETAIL, ids=lambda cls: cls.__name__
-)
+@pytest.mark.parametrize("endpoint_type", WITHOUT_DETAIL, ids=lambda cls: cls.__name__)
 def test_endpoints_without_a_detail_route_refuse_get(
     endpoint_type: type[ResourceEndpoint],
 ) -> None:
@@ -151,6 +149,5 @@ def test_endpoints_without_a_detail_route_refuse_get(
     obscure ``TypeError`` instead of saying which endpoint to use instead.
     """
     assert "get" in vars(endpoint_type), (
-        f"{endpoint_type.__name__}.detail_path is None but it does not "
-        f"override get()"
+        f"{endpoint_type.__name__}.detail_path is None but it does not override get()"
     )

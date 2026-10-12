@@ -13,6 +13,7 @@ class FakeTime:
         self.sleeps.append(seconds)
         self.now += seconds
 
+
 def test_burst_refill_and_wait():
     fake = FakeTime()
     bucket = TokenBucket(2.0, 2, clock=fake.clock, sleeper=fake.sleep)
@@ -21,6 +22,8 @@ def test_burst_refill_and_wait():
     assert fake.sleeps == []
     bucket.acquire()
     assert fake.sleeps == [0.5]
+
+
 def test_lock_is_released_before_sleep():
     fake = FakeTime()
     bucket = TokenBucket(1.0, 1, clock=fake.clock, sleeper=fake.sleep)

@@ -2,7 +2,7 @@
 
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
@@ -14,7 +14,6 @@ if TYPE_CHECKING:
 
     from simpro_client.client import SimproClient
 
-ModelT = TypeVar("ModelT", bound=BaseModel)
 FilterValue = str | int | float | bool
 
 #: Simpro's documented ceiling on ``pageSize`` (spec: ``minimum 1, maximum 250``).
@@ -25,7 +24,7 @@ DEFAULT_PAGE_SIZE = 30
 
 
 @dataclass(frozen=True)
-class Page(Generic[ModelT]):
+class Page[ModelT: BaseModel]:
     items: list[ModelT]
     page: int
     page_size: int
@@ -34,7 +33,7 @@ class Page(Generic[ModelT]):
     pages: int
 
 
-class ResourceEndpoint(Generic[ModelT]):
+class ResourceEndpoint[ModelT: BaseModel]:
     model: type[ModelT]
     collection_path: str
     #: ``None`` for a collection Simpro publishes with no detail route, such
@@ -233,8 +232,12 @@ class ResourceEndpoint(Generic[ModelT]):
         try:
             return int(value)
         except ValueError as exc:
-            raise cls._protocol_error(f"Invalid pagination header: {name}", path) from exc
+            raise cls._protocol_error(
+                f"Invalid pagination header: {name}", path
+            ) from exc
 
     @staticmethod
     def _protocol_error(message: str, path: str) -> SimproProtocolError:
-        return SimproProtocolError(message, method="GET", url=path, correlation_id=get_correlation_id())
+        return SimproProtocolError(
+            message, method="GET", url=path, correlation_id=get_correlation_id()
+        )

@@ -1,4 +1,3 @@
-
 import pytest
 from httpx import Response
 from pydantic import BaseModel
@@ -12,6 +11,7 @@ from simpro_client.exceptions import SimproProtocolError
 class MockModel(BaseModel):
     id: int
     name: str
+
 
 # 2. Correctly declare MockEndpoint class-level fields to match ResourceEndpoint
 class MockEndpoint(ResourceEndpoint[MockModel]):
@@ -39,24 +39,24 @@ def mock_oauth_token(respx_mock, client):
             json={
                 "access_token": "mock-access-token",
                 "token_type": "Bearer",
-                "expires_in": 3600
-            }
+                "expires_in": 3600,
+            },
         )
     )
 
 
 def test_pagination_lazy_evaluation(respx_mock, client: SimproClient):
     """
-    Verifies that iter_all() is truly lazy. 
+    Verifies that iter_all() is truly lazy.
     No HTTP requests should be dispatched when creating the generator.
     """
     base_url = client._settings.base_url
     route = respx_mock.get(f"{base_url}/companies/123/mock-resources/")
-    route.mock(return_value=Response(
-        200,
-        json=[{"id": 1, "name": "Item 1"}],
-        headers={"Result-Pages": "1"}
-    ))
+    route.mock(
+        return_value=Response(
+            200, json=[{"id": 1, "name": "Item 1"}], headers={"Result-Pages": "1"}
+        )
+    )
 
     # Instantiate MockEndpoint with only the client
     endpoint = MockEndpoint(client)
@@ -83,15 +83,11 @@ def test_pagination_multi_page_success(respx_mock, client: SimproClient):
     p1_route = respx_mock.get(f"{base_url}/companies/123/mock-resources/").mock(
         side_effect=[
             Response(
-                200,
-                json=[{"id": 1, "name": "Item A"}],
-                headers={"Result-Pages": "2"}
+                200, json=[{"id": 1, "name": "Item A"}], headers={"Result-Pages": "2"}
             ),
             Response(
-                200,
-                json=[{"id": 2, "name": "Item B"}],
-                headers={"Result-Pages": "2"}
-            )
+                200, json=[{"id": 2, "name": "Item B"}], headers={"Result-Pages": "2"}
+            ),
         ]
     )
 
@@ -114,14 +110,18 @@ def test_pagination_multi_page_success(respx_mock, client: SimproClient):
         ({"Result-Pages": "0"}, "Invalid edge-case page count (0)"),
     ],
 )
-def test_pagination_protocol_error_on_bad_metadata(respx_mock, client: SimproClient, bad_headers: dict, description: str):
+def test_pagination_protocol_error_on_bad_metadata(
+    respx_mock, client: SimproClient, bad_headers: dict, description: str
+):
     """
-    Verifies that the client raises a SimproProtocolError when the server returns 
+    Verifies that the client raises a SimproProtocolError when the server returns
     missing or malformed pagination headers.
     """
     base_url = client._settings.base_url
     respx_mock.get(f"{base_url}/companies/123/mock-resources/").mock(
-        return_value=Response(200, json=[{"id": 1, "name": "Test"}], headers=bad_headers)
+        return_value=Response(
+            200, json=[{"id": 1, "name": "Test"}], headers=bad_headers
+        )
     )
 
     endpoint = MockEndpoint(client)
@@ -130,4 +130,7 @@ def test_pagination_protocol_error_on_bad_metadata(respx_mock, client: SimproCli
     with pytest.raises(SimproProtocolError) as exc_info:
         next(iterator)
 
-    assert "Result-Pages" in str(exc_info.value) or "pagination" in str(exc_info.value).lower()
+    assert (
+        "Result-Pages" in str(exc_info.value)
+        or "pagination" in str(exc_info.value).lower()
+    )
