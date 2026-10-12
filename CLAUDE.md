@@ -21,13 +21,22 @@ the approver for every sprint and architectural decision.
 
 - Phases 1–2 (complete, rarely touched): Ollama + Open WebUI; RAG via
   PostgreSQL/PGVector + Apache Tika.
-- Phase 3 (active): Simpro integration. **There is no live Simpro API access.**
+- Phase 3 (**closed 2026-10-09**, Alex): Simpro integration. **There is still no
+  live Simpro API access.**
   - `src/simpro_client/` — reusable, typed, synchronous Python client library.
   - `services/simpro_mock/` — FastAPI + PostgreSQL mock of the Simpro REST API.
   - Both are shaped to Simpro's **published** OpenAPI contract, vendored at
     `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013), and
     `tests/test_spec_conformance.py` proves it without API access.
-- Phase 4+ (not started): document generation, agents, etc. Blocked on ADR-009.
+  - Closed does not mean frozen: `docs/known-issues.md` still lists the
+    `pip install -e ".[dev]"` pitfall and the pre-existing lint debt, and four
+    mock behaviours remain unverifiable without live credentials.
+- Phase 4 (not started, **no longer blocked**): document generation. ADR-009's
+  decision is recorded, so scoping can begin. Its entry criteria now include
+  `clive-gateway`'s query catalogue covering Customers, Sites, Contacts, Jobs,
+  Quotes, Projects, Assets and Employees.
+- Phases 5–10 (not started): security/reverse proxy, agents, customer
+  intelligence, monitoring. See `docs/roadmap.md`.
 
 The client talks to the mock **only over HTTP**. Switching to real Simpro must
 be a configuration change (`SIMPRO_BASE_URL`, `SIMPRO_TOKEN_URL`, credentials),
@@ -52,9 +61,14 @@ it. When documents and code disagree, say so explicitly. Do not quietly
 - **Package independence.** `simpro_client` must never import `simpro_mock`,
   and `simpro_mock` must never import `simpro_client`. They are separate
   projects with separate `pyproject.toml` / `uv.lock` files.
-- **Library-first (ADR-006).** No service wrapper around `simpro_client`.
-  Whether Phase 4 imports it directly or via a wrapper is ADR-009, which is
-  **open**. Do not build toward either option.
+- **Library-first, behind one gateway (ADR-006, amended by ADR-009).**
+  `simpro_client` stays an importable package with no CLIVE specifics in it.
+  ADR-009's decision (recorded 2026-10-09) is that exactly **one** runtime
+  service, `clive-gateway`, imports it; every other consumer reaches Simpro
+  through that service's HTTP API. Tests and developer tooling against the mock
+  are the only exceptions. **`clive-gateway` does not exist yet** — do not
+  create it, stub it, or import `simpro_client` from new code until it is
+  scoped and approved (§5, no speculative implementation).
 - **Read-only scope.** All typed endpoints and all mock resource routes are
   GET-only (the mock's only POST is `/oauth2/token`). Do not add write
   operations without an approved scope change.
@@ -74,10 +88,10 @@ it. When documents and code disagree, say so explicitly. Do not quietly
 | mock | `adr-mock-simpro-api.md` | Accepted, but its "Capabilities & Coverage" list is **superseded by ADR-013**: the route count predates the 12-resource mock, and the payload-fidelity claim is contradicted by Simpro's published spec |
 | 004 | httpx | Accepted, implemented |
 | 005 | Client Credentials + API key fallback; Authorization Code deferred | Accepted, implemented |
-| 006 | Library-first `simpro_client` | Accepted, implemented |
+| 006 | Library-first `simpro_client` | Accepted, implemented. **"No service wrapper" partially superseded by ADR-009**; the library-first part stands |
 | 007 | pydantic-settings, `SIMPRO_` / `SIMPRO_MOCK_` prefixes | Accepted, implemented |
 | 008 | Rate limiting | Withdrawn 2026-09-29 as a duplicate of ADR-010; kept for history |
-| 009 | Phase 3 → 4 handoff | **Open. Do not decide or assume.** |
+| 009 | Phase 3 → 4 handoff | **Decision recorded 2026-10-09 (Alex): Option B**, a single `clive-gateway` service imports `simpro_client` and serves every other consumer over HTTP. Its Status line still reads Proposed and its `Related:` line miscites ADR-011, both pending Alex. `clive-gateway` **does not exist yet** — do not build it unasked |
 | 010 | Resilience: token bucket, 401/429 budgets, error hierarchy | Approved; implemented with deviations (see `src/simpro_client/CLAUDE.md`). §2.5 superseded by ADR-011 |
 | 011 | Exception hierarchy and `SimproAuthError` context (supersedes ADR-010 §2.5) | Accepted 2026-10-06, implemented |
 | 012 | Retry delay ceiling (`SIMPRO_MAX_RETRY_DELAY`) and token-refresh concurrency | Accepted 2026-10-06 (supersedes ADR-010 §2.3, extends §2.1) |
