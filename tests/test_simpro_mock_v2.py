@@ -87,8 +87,7 @@ def test_customer_subtype_routes_are_type_scoped(token: str):
             headers=headers,
         )
         assert crossed.status_code == 404, (
-            f"a {kind} id must not resolve under /{other}/, "
-            f"got {crossed.status_code}"
+            f"a {kind} id must not resolve under /{other}/, got {crossed.status_code}"
         )
 
 

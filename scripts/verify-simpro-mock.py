@@ -82,7 +82,8 @@ def test_list_endpoint(
         for field in expected_fields:
             if field not in first:
                 print(
-                    f"❌ {resource_name} missing field '{field}'. Keys: {list(first.keys())}"
+                    f"❌ {resource_name} missing field '{field}'. "
+                    f"Keys: {list(first.keys())}"
                 )
                 sys.exit(1)
     for header in ("Result-Total", "Result-Count", "Result-Pages"):
@@ -233,8 +234,18 @@ def main():
     test_single_endpoint(
         headers,
         f"{BASE_URL}/api/v1.0/companies/{company_id}",
-        ["ID", "Name", "Address", "BillingAddress", "Phone", "Timezone",
-         "Currency", "DefaultLanguage", "ScheduleFormat", "DateModified"],
+        [
+            "ID",
+            "Name",
+            "Address",
+            "BillingAddress",
+            "Phone",
+            "Timezone",
+            "Currency",
+            "DefaultLanguage",
+            "ScheduleFormat",
+            "DateModified",
+        ],
         "Company",
     )
     # Simpro publishes no /customers/{id}: the full record lives on a subtype

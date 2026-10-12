@@ -140,6 +140,7 @@ pytest tests/test_simpro_mock_v2.py -v     # skip-gated pytest smoke test
 
 ```python
 from simpro_client.logging import set_correlation_id
+
 set_correlation_id("invoice-sync-01")
 ```
 
