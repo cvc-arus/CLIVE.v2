@@ -1,7 +1,7 @@
 # ADR-006: Library-First Architecture for `simpro_client`
 
 ## Status
-Accepted (implemented, Phase 3)
+Accepted (implemented, Phase 3). **Partially superseded by ADR-009 (decision recorded 2026-10-09):** the "no service wrapper" part of the Decision below no longer holds. ADR-009 introduces `clive-gateway`, a single service that imports `simpro_client` and serves every other consumer over HTTP, because a consumer arrived that cannot import the library at all (Open WebUI tools, running in a third-party container). The library-first part stands: `simpro_client` is still an importable package with no CLIVE specifics in it, and the gateway is a consumer of it, not a replacement.
 
 ## Context
 Future phases (starting with Phase 4, Document Generation) need to read Simpro data. The integration could be built as a Python library that consuming phases import directly, or as a standalone service (e.g. a FastAPI wrapper) that other phases call over HTTP.

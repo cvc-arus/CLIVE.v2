@@ -8,10 +8,10 @@
 | — | Mocking the Simpro REST API (`adr-mock-simpro-api.md`, pre-existing) | 3 | Accepted, implemented; "Capabilities & Coverage" superseded by ADR-013 |
 | 004 | HTTP Client — httpx | 3 | Accepted, implemented |
 | 005 | Auth Strategy — Client Credentials + API Key fallback | 3 | Accepted, implemented |
-| 006 | Library-First Architecture for `simpro_client` | 3 | Accepted, implemented |
+| 006 | Library-First Architecture for `simpro_client` | 3 | Accepted, implemented; **"no service wrapper" partially superseded by ADR-009** |
 | 007 | Configuration Management — pydantic-settings | 3 | Accepted, implemented |
 | 008 | Rate Limiting — token bucket at 8 req/sec | 3 | Withdrawn (duplicate of ADR-010) |
-| 009 | Phase 3 → Phase 4 Handoff Mechanism | 3→4 | **Proposed, open decision — needs CVC sign-off** |
+| 009 | Phase 3 → Phase 4 Handoff Mechanism | 3→4 | **Decision recorded 2026-10-09 (Alex): Option B, a single `clive-gateway` service.** Status line still reads Proposed; `clive-gateway` not built yet |
 | 010 | Client-Side Resilience, Rate Limiting, and Error Handling | 3→4 | Accepted, implemented with deviations (see `src/simpro_client/CLAUDE.md`); §2.5 superseded by ADR-011 |
 | 011 | Exception Hierarchy and Authentication Error Context (supersedes ADR-010 §2.5) | 3 | Accepted 2026-10-06, implemented |
 | 012 | Retry Delay Ceiling and Token-Refresh Concurrency (supersedes ADR-010 §2.3, extends §2.1) | 3 | Accepted 2026-10-06 |

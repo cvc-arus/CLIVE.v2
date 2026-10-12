@@ -21,8 +21,10 @@ code changes when `SIMPRO_BASE_URL` / `SIMPRO_TOKEN_URL` switch to production.
   report this rather than changing it without a task. Ruff is not in this
   extra; lint from the repo root (§9).
 - Do not add sibling services under `services/` without a stated
-  justification and an ADR (root §3). ADR-006 rules out a `simpro_client`
-  wrapper service for now, and ADR-009 is open.
+  justification and an ADR (root §3). ADR-009 (decided 2026-10-09) adds one
+  planned service, `clive-gateway`, which is the only component permitted to
+  import `simpro_client`; it does not exist yet and is not part of this
+  service. Nothing here may import `simpro_client` either way (root §3).
 
 ## 2. Layout (as implemented)
 

@@ -66,7 +66,9 @@ phase or ADR complete without evidence.
 - Do not edit the Decision of an Accepted/Approved ADR. Write a new ADR that
   supersedes it, and update the old one's Status line only.
 - Claude drafts ADRs as **Proposed** with options and a non-binding
-  recommendation. Only Alex accepts them. Do not fill in ADR-009's Decision.
+  recommendation. Only Alex accepts them. **ADR-009's Decision was written by
+  Alex on 2026-10-09** (Option B, a single `clive-gateway` service); do not
+  reword or reinterpret it. Its Status line still reads Proposed.
 - ADR-008 is **Withdrawn** (duplicate of ADR-010). Do not implement from it,
   cite it, or renumber it; ADR-010 is the authoritative record.
 - `structure.txt` is generated. Regenerate it with the command in
