@@ -2,18 +2,20 @@
 
 Consolidated from `docs/scope/master-project-document.md` (master roadmap) and `docs/scope/scope-rev2.md` (Phase 3 revision, formerly `RevisedScope.txt`), cross-checked against the codebase.
 
+> **Status lives in [`STATUS.md`](STATUS.md)** (sole owner since 2026-10-13). This file owns the phase list and scope only.
+
 | Phase | Name | Status | Notes |
 |---|---|---|---|
-| 1 | Local AI Platform | ✅ Complete | Ollama + Open WebUI on Docker |
-| 2 | Production RAG | ✅ Complete | PGVector + Tika + Hybrid Search |
-| 3 | Simpro API Integration | ✅ Closed 2026-10-09 | Client foundation, mock service and typed client layer implemented (`src/simpro_client/models/`, `endpoints/`, `rate_limiter.py`), with deviations from ADR-010 listed in `src/simpro_client/CLAUDE.md`. Shaped to Simpro's published contract and proved by `tests/test_spec_conformance.py` (ADR-013). Closed by Alex once ADR-009 was decided. There is still no live Simpro API access |
-| 4 | Document Generation | ⏳ Not started | **No longer blocked**: ADR-009's decision is recorded, so scoping can begin. Entry criteria now include `clive-gateway`'s query catalogue (Customers, Sites, Contacts, Jobs, Quotes, Projects, Assets, Employees) |
-| 5 | Security & Reverse Proxy | ⏳ Not started | Nginx, HTTPS, firewall, auth |
-| 6 | AI Sales Agent | ⏳ Not started | Prospect discovery, lead scoring |
-| 7 | Public Tender Agent | ⏳ Not started | Tender monitoring & bid analysis |
-| 8 | Customer Intelligence | ⏳ Not started | ICP generation, customer analytics |
-| 9 | Multi-Agent Architecture | ⏳ Not started | Orchestrated AI workflows |
-| 10 | Monitoring & Disaster Recovery | ⏳ Not started | Backups (Phase 2 partially covers this), health monitoring |
+| 1 | Local AI Platform | [See `STATUS.md`](STATUS.md) | Ollama + Open WebUI on Docker |
+| 2 | Production RAG | [See `STATUS.md`](STATUS.md) | PGVector + Tika + Hybrid Search |
+| 3 | Simpro API Integration | [See `STATUS.md`](STATUS.md) | Client foundation, mock service and typed client layer implemented (`src/simpro_client/models/`, `endpoints/`, `rate_limiter.py`), with deviations from ADR-010 listed in `src/simpro_client/CLAUDE.md`. Shaped to Simpro's published contract and proved by `tests/test_spec_conformance.py` (ADR-013). Closed by Alex once ADR-009 was decided. There is still no live Simpro API access |
+| 4 | Document Generation | [See `STATUS.md`](STATUS.md) | Entry criteria include `clive-gateway`'s query catalogue (Customers, Sites, Contacts, Jobs, Quotes, Projects, Assets, Employees) |
+| 5 | Security & Reverse Proxy | [See `STATUS.md`](STATUS.md) | Nginx, HTTPS, firewall, auth |
+| 6 | AI Sales Agent | [See `STATUS.md`](STATUS.md) | Prospect discovery, lead scoring |
+| 7 | Public Tender Agent | [See `STATUS.md`](STATUS.md) | Tender monitoring & bid analysis |
+| 8 | Customer Intelligence | [See `STATUS.md`](STATUS.md) | ICP generation, customer analytics |
+| 9 | Multi-Agent Architecture | [See `STATUS.md`](STATUS.md) | Orchestrated AI workflows |
+| 10 | Monitoring & Disaster Recovery | [See `STATUS.md`](STATUS.md) | Backups (Phase 2 partially covers this), health monitoring |
 
 ## Phase 3 — Closed 2026-10-09
 

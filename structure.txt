@@ -3,7 +3,12 @@
 ├── .claude
 │   ├── commands
 │   │   └── doc-check.md
-│   └── settings.json
+│   ├── settings.json
+│   └── skills
+│       ├── sprint-task
+│       │   └── SKILL.md
+│       └── status-update
+│           └── SKILL.md
 ├── CLAUDE.md
 ├── configs
 │   └── postgres
@@ -24,6 +29,8 @@
 │   │   ├── adr-011-exception-hierarchy-and-auth-errors.md
 │   │   ├── adr-012-retry-delay-ceiling-and-auth-concurrency.md
 │   │   ├── adr-013-reshape-to-published-simpro-spec.md
+│   │   ├── adr-014-simpro-access-control-model.md
+│   │   ├── adr-015-conversational-access-approach.md
 │   │   ├── ADR-index.md
 │   │   └── adr-mock-simpro-api.md
 │   ├── architecture.md
@@ -31,13 +38,16 @@
 │   ├── CLAUDE.md
 │   ├── contracts
 │   │   └── simpro-openapi-v1-get-subset.json
+│   ├── course-correction-plan.md
 │   ├── development-standards.md
 │   ├── doc-audit.md
+│   ├── documentation-change-list.md
 │   ├── installation.md
 │   ├── known-issues.md
 │   ├── PDDs
 │   │   ├── PDD-phase1.md
 │   │   ├── PDD-phase2.md
+│   │   ├── PDD-phase3b-simpro-conversational-access.md
 │   │   ├── PDD-phase3.md
 │   │   └── PDD-phase4.md
 │   ├── phase1
@@ -46,6 +56,7 @@
 │   │   └── summary.md
 │   ├── phase3
 │   │   ├── logging.md
+│   │   ├── phase3-signoff.md
 │   │   ├── phase3-summary.md
 │   │   └── sprints
 │   │       ├── phase3-sprint4-2-typed-python-sdk-endpoint-layer.md
@@ -59,8 +70,27 @@
 │   ├── scope
 │   │   ├── clive-scope.md
 │   │   ├── master-project-document.md
-│   │   └── scope-rev2.md
+│   │   ├── scope-rev2.md
+│   │   └── scope-rev3.md
+│   ├── simpro
+│   │   └── simpro-api-findings.md
 │   ├── simpro-mock-api-reference.md
+│   ├── sprints
+│   │   └── course-correction
+│   │       ├── merge-inputs
+│   │       │   ├── ADR-index-additions.md
+│   │       │   └── CLAUDE-root-additions.md
+│   │       ├── README.md
+│   │       ├── W1-simpro-access.md
+│   │       ├── W2-docgen-value-check.md
+│   │       ├── W3-kb-audit.md
+│   │       ├── W4-evaluation.md
+│   │       ├── W5-backups.md
+│   │       └── W6-docs-consolidation.md
+│   ├── STATUS.md
+│   ├── templates
+│   │   ├── sprint-full.md
+│   │   └── sprint-short.md
 │   └── testing.md
 ├── .env.example
 ├── .gitignore
@@ -163,4 +193,4 @@
 │   └── test_spec_conformance.py
 └── uv.lock
 
-25 directories, 138 files
+33 directories, 160 files

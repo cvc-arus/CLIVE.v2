@@ -10,8 +10,9 @@ finding answers in company documents, drafting quotes, RAMS, contracts and
 tender responses from real project data, and later helping with sales and
 tender discovery through AI agents.
 
-> **Status:** CLIVE is built in phases. The current status of every phase is
-> kept in one place: [`docs/roadmap.md`](docs/roadmap.md).
+> **Status:** CLIVE is built in phases. The current status of every phase and
+> of the current sprint is kept in one place: [`docs/STATUS.md`](docs/STATUS.md).
+> The phase list and scope are in [`docs/roadmap.md`](docs/roadmap.md).
 
 ---
 
@@ -46,8 +47,8 @@ the company's job-management system. CLIVE is designed to:
 | Multi-agent architecture | Orchestrates the agents above into combined workflows | 9 |
 | Monitoring & disaster recovery | Health monitoring, backups and recovery | 10 |
 
-See [`docs/roadmap.md`](docs/roadmap.md) for which phases are complete, in
-progress or planned.
+See [`docs/STATUS.md`](docs/STATUS.md) for which phases are complete, in
+progress or planned, and [`docs/roadmap.md`](docs/roadmap.md) for their scope.
 
 ---
 
@@ -161,7 +162,8 @@ lists every document, what it covers and whether it is kept up to date.
 
 | Document | Covers |
 |---|---|
-| [`docs/roadmap.md`](docs/roadmap.md) | Phases and their status |
+| [`docs/STATUS.md`](docs/STATUS.md) | Current status of phases, sprint, risks and pending decisions |
+| [`docs/roadmap.md`](docs/roadmap.md) | Phases and their scope |
 | [`docs/architecture.md`](docs/architecture.md) | How the platform is built |
 | [`docs/installation.md`](docs/installation.md) | Setting up and running the stack |
 | [`docs/development-standards.md`](docs/development-standards.md) | Coding, tooling, Git and the sprint template |
