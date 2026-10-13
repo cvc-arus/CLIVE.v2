@@ -1,9 +1,10 @@
-# ADR-015: Simpro data access control model
+# ADR-014: Simpro data access control model
 
 - **Status:** Proposed
 - **Date:** 2026-10-09
 - **Deciders:** Alex
-- **Related:** ADR-014 (Simpro access mechanism), ADR-016 (conversational access approach)
+- **Related:** ADR-009 (Phase 3 → Phase 4 handoff: `clive-gateway` as the single Simpro access point), ADR-015 (conversational access approach).
+  ADR-009's `Related:` line cites this draft as "ADR-011 (Simpro data access control model, proposed)"; correcting it is pending Alex.
 
 ## Context
 
@@ -57,6 +58,13 @@ Storage: a dedicated `clive_gateway` database and least-privilege DB user on
 the existing Phase 2 Postgres instance, rather than a new container. This keeps
 hardware use down while isolating access by credentials. Schema: see the
 Phase 3B PDD, section 7.2.
+
+> **Conflict for Alex to resolve (recorded 2026-10-13).** Placing `clive_gateway`
+> on the Phase 2 Postgres instance (`postgres`, port 5432) conflicts with root
+> `CLAUDE.md` §3, which keeps two isolated Postgres instances and says the
+> Phase 2 instance must never be used by Phase 3 code or tests. Either this
+> storage choice or that rule must change before the ADR is accepted. The
+> decision text above is unchanged.
 
 ## Consequences
 

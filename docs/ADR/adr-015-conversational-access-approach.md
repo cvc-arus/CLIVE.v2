@@ -1,15 +1,15 @@
-# ADR-016: Conversational access approach for Simpro data
+# ADR-015: Conversational access approach for Simpro data
 
 - **Status:** Proposed
 - **Date:** 2026-10-09
 - **Deciders:** Alex
-- **Related:** ADR-014, ADR-015
+- **Related:** ADR-009 (`clive-gateway` as the single Simpro access point), ADR-014 (access control model)
 
 ## Context
 
 Users will ask natural-language questions about Simpro data in Open WebUI.
 The local LLM (Ollama, RTX 3080 10 GB) needs a way to obtain the data required
-to answer accurately, while respecting ADR-015 access control.
+to answer accurately, while respecting ADR-014 access control.
 
 ## Options considered
 
@@ -32,7 +32,7 @@ The model writes SQL against a replicated Simpro dataset.
 ### Option C — Embed Simpro records in the PGVector knowledge base
 - Pro: easiest to wire up.
 - Con: stale immediately; RAG cannot count, total or filter reliably.
-- Con: no per-user filtering in the knowledge base, so it bypasses ADR-015 entirely.
+- Con: no per-user filtering in the knowledge base, so it bypasses ADR-014 entirely.
 
 ## Decision
 

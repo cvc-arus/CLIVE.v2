@@ -15,7 +15,7 @@ different physical disk from the data, proven by a restore drill.
 ## 2. Business value
 
 The machine has two non-RAID SSDs. A single disk failure today could lose the
-knowledge base, Open WebUI users and chats, and all Phase 3 databases. A tested
+knowledge base, Open WebUI users and chats, and the Phase 3 mock database. A tested
 backup turns that from a project-ending event into a few hours of restore work.
 
 ## 3. Tasks
@@ -29,9 +29,16 @@ Current layout reported by Alex:
 | `/dev/sdb1` | `/data` | 229G | 14G |
 
 Alex's initial idea was to back up to `sda2` (`/`). **That only protects against
-disk failure if CLIVE's data lives on `sdb1`.** Docker's default data directory
-(`/var/lib/docker`) is on `/`, so if volumes are there, backups must go to `/data`
-instead.
+disk failure if CLIVE's data lives on `sdb1`.**
+
+Read-only check on 2026-10-13 (intake): Docker's root directory is **not** the
+default `/var/lib/docker`; `docker info` reports `/data/docker`, on `/dev/sdb1`.
+`docker-compose.yml` bind-mounts `/data/ollama`, `/data/openwebui_data` and
+`/data/pgvector_data`, and the one named volume, `clive-i_simpro-mock-db-data`,
+is at `/data/docker/volumes/clive-i_simpro-mock-db-data/_data`. So all CLIVE
+data appears to be on `sdb1`, and `/` (`sda2`) is the other disk. The existing
+`scripts/backup.sh` already writes to `./backups` in the repo, which is on `sda2`.
+T1 confirms this and records it.
 
 Steps (all read-only):
 1. Docker root directory and the device it sits on.
@@ -46,18 +53,23 @@ Steps (all read-only):
 ### T2 — Backup inventory
 | Item | Method | Notes |
 |---|---|---|
-| Postgres databases (Phase 2 instance: Open WebUI, pgvector; `simpro-mock-db`) | `pg_dump -Fc` per database + `pg_dumpall --globals-only` | Logical dumps are consistent while running |
-| Open WebUI data volume (uploads, config) | `tar` of the volume, read-only mount | |
+| Phase 2 Postgres (`postgres` service, `clive-postgres` container): the pgvector database (`POSTGRES_DB`) | `pg_dump -Fc` + `pg_dumpall --globals-only` | Logical dumps are consistent while running. Open WebUI's own data is **not** in Postgres |
+| Open WebUI data (`/data/openwebui_data`): SQLite `webui.db` (users, chats, settings), uploads, cache | SQLite online backup of `webui.db` (or a brief container stop), then `tar` of the directory | No `DATABASE_URL` is set, so Open WebUI uses SQLite; a plain `tar` of a live WAL database may be inconsistent |
+| `simpro-mock-db` | **Not backed up** | `docs/installation.md` §9: disposable test data, rebuilt from the seed script |
 | Source documents (if stored outside Open WebUI) | `rsync` | Confirm location in T1 |
 | `.env` files | Encrypted archive (`gpg --symmetric`) | Passphrase stored outside the machine |
 | Git repository | Already in remote? If not, include a `git bundle` | Confirm with Alex |
-| Ollama models | **Not backed up**; record `ollama list` output | Re-pullable |
+| Ollama models (`/data/ollama`) | **Not backed up**; record `ollama list` output | Re-pullable |
 | Docker Compose files, configs | Covered by git | |
 
 Confirm the list against T1 findings. **Stop point:** final inventory.
 
 ### T3 — Backup script
-Update `scripts/backup.sh` (or create it) to:
+`scripts/backup.sh` exists (Phase 2): it sources `.env`, dumps only the pgvector
+database with `pg_dump | gzip` into `BACKUP_DIR` (default `./backups`), checks
+the file, restore-verifies it into a temporary database, and deletes dumps older
+than `BACKUP_RETENTION_DAYS` (default 7). Extend it, keeping its restore
+verification, to:
 1. Write to `<target>/clive-backups/<YYYY-MM-DD_HHMM>/`.
 2. Dump each database, archive volumes, encrypt `.env`, write the model list.
 3. Write a `MANIFEST.txt` with file sizes and SHA-256 checksums.
@@ -119,8 +131,8 @@ findmnt /data
 
 Database dump pattern (T3), secrets taken from the container's own environment:
 ```bash
-docker compose exec -T <pg-service> sh -c 'pg_dump -U "$POSTGRES_USER" -Fc "$POSTGRES_DB"' > "$DEST/<db>.dump"
-docker compose exec -T <pg-service> sh -c 'pg_dumpall -U "$POSTGRES_USER" --globals-only' > "$DEST/<instance>-globals.sql"
+docker compose exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -Fc "$POSTGRES_DB"' > "$DEST/pgvector.dump"
+docker compose exec -T postgres sh -c 'pg_dumpall -U "$POSTGRES_USER" --globals-only' > "$DEST/postgres-globals.sql"
 ```
 
 Volume archive pattern:
@@ -137,8 +149,10 @@ sudo smartctl -H /dev/sdb
 
 ## 6. Configuration
 
-New `.env` variables (names only): `BACKUP_TARGET_DIR`, `BACKUP_RETENTION_DAILY`,
-`BACKUP_RETENTION_WEEKLY`. Encryption passphrase is **not** stored on the machine.
+Existing variables used by `scripts/backup.sh`: `BACKUP_DIR`, `BACKUP_RETENTION_DAYS`.
+Reuse `BACKUP_DIR` for the target; add `BACKUP_RETENTION_DAILY` and
+`BACKUP_RETENTION_WEEKLY` only if `BACKUP_RETENTION_DAYS` is deliberately retired
+(say so in the task report). Encryption passphrase is **not** stored on the machine.
 
 ## 7. Folder structure
 
@@ -154,8 +168,10 @@ deploy/systemd/           # unit files kept in git, installed to /etc/systemd/sy
 
 ## 8. Files created / modified
 
-`scripts/backup.sh`, `scripts/restore.sh` (optional), `deploy/systemd/*`,
-`.env.example`, recovery plan, backup strategy doc, `STATUS.md`, `CHANGELOG.md`.
+`scripts/backup.sh`, `scripts/restore.sh` (optional, created by this task),
+`deploy/systemd/*` (created by this task), `.env.example`, recovery plan
+(created by this task), backup strategy (`docs/installation.md` §9 and
+`docs/PDDs/PDD-phase2.md` §8), `docs/STATUS.md`, `docs/CHANGELOG.md`.
 
 ## 9. Verification
 
@@ -184,8 +200,9 @@ deploy/systemd/           # unit files kept in git, installed to /etc/systemd/sy
 
 ## 12. Documentation updates
 
-Backup strategy, recovery plan (including drill report), installation guide
-(timer setup), `.env.example`, `STATUS.md`, `CHANGELOG.md`.
+Backup strategy (`docs/installation.md` §9), recovery plan (including drill
+report), installation guide (timer setup), `.env.example`, `docs/STATUS.md`,
+`docs/CHANGELOG.md`.
 
 ## 13. Git commit
 

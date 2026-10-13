@@ -1,21 +1,24 @@
 # CLIVE — Status
 
 > Single source of truth for current status. Update after every completed task
-> (`/status-update`). Keep this file short: history belongs in `CHANGELOG.md`,
+> (`/status-update`). Keep this file short: history belongs in `docs/CHANGELOG.md`,
 > decisions in `docs/ADR/`.
 
-**Last updated:** 2026-10-12
+**Last updated:** 2026-10-13
 
 ## Phases
+
+> Until W6 transfers ownership (see `W6-docs-consolidation.md`), `docs/roadmap.md`
+> still owns phase status (`docs/README.md` §3). This table must match it.
 
 | Phase | Name | Status |
 |---|---|---|
 | 1 | Local AI Platform | ✅ Complete |
-| 2 | Production RAG | ✅ Complete (audit in progress — W3) |
-| 3 | Simpro API Integration | ✅ Complete — sign-off details to be recorded in W6 task 1 |
+| 2 | Production RAG | ✅ Complete (knowledge base audit planned — W3) |
+| 3 | Simpro API Integration | ✅ Closed 2026-10-09 (Alex); see `docs/roadmap.md`. Test evidence recorded in W6 T1 |
 | — | Course correction sprint | 🔶 In progress |
 | 3B | Simpro Conversational Access | 📝 Planned — PDD drafted; order set at decision point |
-| 4 | Document Generation (4A / 4B split pending W2) | ⏳ Not started |
+| 4 | Document Generation (4A / 4B split pending W2) | ⏳ Not started; no longer blocked (ADR-009 decided) |
 | 5 | Security & Reverse Proxy (minimum slice moves into 3B) | ⏳ Not started |
 | 6–9 | Sales Agent, Tender Agent, Customer Intelligence, Multi-Agent | ⏳ Not started |
 | 10 | Monitoring & Disaster Recovery (backups moved to W5) | ⏳ Not started |
@@ -50,14 +53,13 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 |---|---|
 | No off-machine backup | Open — target not yet agreed |
 | Knowledge base may not meet metadata/versioning/access requirements | Under audit (W3) |
-| Simpro rate limits and token lifetime undocumented | Open — conservative defaults (ADR-010) |
+| Simpro rate limits and token lifetime undocumented | Open — conservative defaults (ADR-010, ADR-012) |
+| Backups cover only the Phase 2 pgvector database (`scripts/backup.sh`); Open WebUI's SQLite database (`webui.db`) and uploads are not backed up | Open — W5 |
 
 ## ADRs awaiting a decision
 
-ADR-009 (Phase 3 → Phase 4 handoff) is decided in the repo (PR #44); see `docs/ADR/ADR-index.md`.
-
 | ADR | Title | Status |
 |---|---|---|
-| ADR-014 | Simpro access mechanism (gateway as single access point) | Proposed |
-| ADR-015 | Simpro data access control model | Proposed |
-| ADR-016 | Conversational access approach | Proposed |
+| ADR-009 | Phase 3 → Phase 4 handoff (`clive-gateway` as the single Simpro access point) | Decision recorded 2026-10-09 (PR #44). Status line still reads Proposed and its `Related:` line miscites ADR-011; both pending Alex |
+| ADR-014 | Simpro data access control model | Proposed. **Conflict for Alex to resolve:** stores `clive_gateway` on the Phase 2 Postgres, against root `CLAUDE.md` §3 |
+| ADR-015 | Conversational access approach | Proposed |

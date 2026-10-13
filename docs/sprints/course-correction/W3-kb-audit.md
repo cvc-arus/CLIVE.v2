@@ -5,7 +5,7 @@
 | **Template** | Short (read-only review; any fixes become a separate sprint) |
 | **Status** | Approved |
 | **Depends on** | W5 complete (backups exist before inspecting live data) |
-| **Related** | Phase 2 docs, ADR-001 (pgvector), ADR-002 (Tika) — confirm numbers in ADR index |
+| **Related** | Phase 2 docs (`docs/PDDs/PDD-phase2.md`), ADR-002 (pgvector), ADR-003 (Tika) |
 
 ## Goal
 
@@ -18,15 +18,18 @@ sensitive documents. Re-ingesting everything later is far more expensive.
 ## Tasks
 
 ### T1 — Current state (read-only)
-1. Open WebUI version and RAG settings (embedding model, chunk size/overlap,
+1. Open WebUI version (the image tag in `docker-compose.yml` is `main`, unpinned,
+   so read the version from the running container) and RAG settings (embedding model, chunk size/overlap,
    hybrid search, top-k, reranking) from configuration and environment
    variable **names** (no secret values).
 2. Counts: knowledge collections, files, chunks/vectors in pgvector.
-3. How Open WebUI stores files, chunks and metadata: inspect the database
+3. How Open WebUI stores files, chunks and metadata. Its own database is SQLite
+   (`webui.db` in `/data/openwebui_data`; no `DATABASE_URL` is set), and vectors
+   are in the Phase 2 Postgres (`postgres`). Inspect the database
    tables and columns related to files, knowledge and vectors (schema and row
    counts only; do not dump document content).
 4. Which metadata is currently stored per document and per chunk.
-**Stop point:** findings written to `docs/reviews/kb-audit-2026-10.md` section 1.
+**Stop point:** findings written to `docs/reviews/kb-audit-2026-10.md` (created by this task) section 1.
 
 ### T2 — Requirement tests
 Test in a **scratch collection** (create and later delete with Alex's approval):

@@ -16,7 +16,7 @@ choice will use it.
 ## Tasks
 
 ### T1 — Evaluation set format and runner design
-1. Define `evaluation/eval-set.yaml`, one entry per question:
+1. Define `evaluation/eval-set.yaml` (`evaluation/` is created by this task), one entry per question:
    `id`, `category` (lookup / multi-document / not-found / simpro),
    `question`, `expected_answer` (key facts), `expected_sources`, `notes`.
 2. Design a runner that sends each question through Open WebUI as a user
@@ -34,7 +34,7 @@ filled in Phase 3B Sprint 1. Claude Code may suggest candidate questions from
 documents Alex points to; Alex approves every question and expected answer.
 
 ### T3 — Runner implementation
-`scripts/eval/run_eval.py` (typed, logged, configurable via `.env`), writing
+`scripts/eval/run_eval.py` (created by this task; typed, logged, configurable via `.env`), writing
 results to `evaluation/results/<date>_<model>.json` plus a Markdown summary.
 Scoring starts as manual marking (correct / partly / wrong / hallucinated)
 recorded in the summary; automate later only if useful.
@@ -56,6 +56,6 @@ commit the summary as the baseline.
 
 ## Acceptance criteria
 - [ ] 20–30 approved questions with expected answers and sources
-- [ ] Runner in repo, documented in `evaluation/README.md`
+- [ ] Runner in repo, documented in `evaluation/README.md` (created by this task)
 - [ ] Baseline results committed with model and settings recorded
 - [ ] `STATUS.md` updated

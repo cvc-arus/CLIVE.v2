@@ -1,79 +1,77 @@
 # Documentation change list — Phase 3B (Simpro Conversational Access)
 
-**Date:** 2026-10-09
-**Basis:** project documents available in this review (`Clive_Scope.txt`,
-`CLIVE Enterprise AI Platform` master document, `RevisedScope.txt`,
-`Phase3-Sprint1.txt`). The `docs/` folder in the repository was not reviewed
-directly, so file names below should be matched to the actual repo files, and
-every item should be checked against the codebase (code is the source of truth).
+**Date:** 2026-10-09 · **Reconciled with the repository:** 2026-10-13 (commit `064b596`)
+**Basis:** drafted from the project documents available in a planning session
+without repository access (`Clive_Scope.txt`, the master project document,
+`RevisedScope.txt`, `Phase3-Sprint1.txt`). On 2026-10-13 every item was checked
+against the repository: file names now use real repo paths, items already done
+are marked, and documents that do not exist are marked "to create".
 
 ## 1. New documents
 
 | File | Status | Notes |
 |---|---|---|
-| `docs/PDD-phase3b-simpro-conversational-access.md` | Drafted | Plan, architecture, schema, sprints, schedule, risks |
-| `docs/scope/scope-revision-3.md` (or replace `RevisedScope`) | Drafted | Supersedes Revision 2 |
-| `docs/ADR/adr-009-phase3-phase4-handoff.md` | Already decided in repo (PR #44) | Repo version is authoritative; add a dated amendment pointing to ADR-014 |
-| `docs/ADR/adr-014-simpro-access-mechanism.md` | Drafted (Proposed) | Gateway as the single Simpro access point for all consumers |
+| `docs/PDDs/PDD-phase3b-simpro-conversational-access.md` | Drafted | Plan, architecture, schema, sprints, schedule, risks |
+| `docs/scope/scope-rev3.md` | Drafted (historical) | Supersedes Revision 2 (`docs/scope/scope-rev2.md`) |
+| `docs/ADR/adr-009-phase3-phase4-handoff.md` | Exists; decision recorded 2026-10-09 (PR #44) | Repo version is authoritative and already makes `clive-gateway` the single Simpro access point for every consumer. No new ADR needed for that. Its Status line (still Proposed) and its `Related:` line (cites ADR-011 for access control) are pending Alex |
 | `docs/ADR/adr-014-simpro-access-control-model.md` | Drafted (Proposed) | |
 | `docs/ADR/adr-015-conversational-access-approach.md` | Drafted (Proposed) | |
-| `docs/user-guide-simpro-qa.md` | Phase 3B Sprint 6 | How to ask questions; what's supported |
-| `docs/admin-guide-access-control.md` | Phase 3B Sprint 6 | Adding users, roles, joiner/mover/leaver process |
+| `docs/user-guide-simpro-qa.md` | Phase 3B Sprint 6 (to create) | How to ask questions; what's supported |
+| `docs/admin-guide-access-control.md` | Phase 3B Sprint 6 (to create) | Adding users, roles, joiner/mover/leaver process |
 
 ## 2. Existing documents to update
 
 | Document | Change required | Priority |
 |---|---|---|
-| Master project document (`CLIVE Enterprise AI Platform`) | §2 Current Status is stale (still describes Phase 1 only). §4/§5: add "Conversational access to Simpro data with role-based restrictions" under Simpro Integration. §15 roadmap: add Phase 3B, note Phase 5 slice pulled forward. | High |
-| `Clive_Scope.txt` | Mark as superseded by Scope Revision 3 (keep as historical record). | Low |
-| `RevisedScope.txt` (Revision 2) | Mark as superseded; move to historical docs per the living/historical split. | Medium |
-| `PDD-phase3.md` | §3 "library-first, service-later" and ADR-003: record that the service is now required (ADR-014). §11/§12 sprint roadmap and milestones: Sprint 6 folded into Phase 3B exit. Already planned for revision. | High |
-| Phase 4 PDD | Entry criteria and data source change: consumes `clive-gateway`, not `simpro_client` directly. Add `docgen` service account. | High |
-| Phase 5 PDD | Nginx, HTTPS, LAN firewall and Open WebUI hardening delivered in 3B Sprint 2; remaining scope only. | Medium |
-| `docs/architecture.md` | Add `clive-gateway`, Simpro tool, Nginx, `clive_gateway` DB; component and data-flow diagrams from the 3B PDD. | High |
-| `docs/roadmap.md` | Add Phase 3B and schedule; update Phase 4 start. | High |
-| Docker documentation | New `clive-gateway` service (single worker, restart policy, health check, internal network only); new Nginx service. | Medium (with Sprint 2/3) |
-| Network documentation | Gateway port internal only; Nginx the only exposed entry point; Open WebUI port no longer published. | Medium (with Sprint 2) |
-| Security documentation | Admin-only tool creation; gateway secret handling; chat sharing disabled; access control model; audit log. | High |
-| Knowledge base documentation | Rule: Simpro data is never written to PGVector (ADR-016). | Low |
-| Backup strategy / `scripts/backup.sh` | Include `clive_gateway` database (roles and audit log). Agree audit retention. | Medium (with Sprint 3) |
-| Disaster recovery plan | Gateway is now the single Simpro access point; add restore steps for `clive_gateway`. | Medium |
-| Installation guide | New services, `.env` variables (gateway secret, DB credentials), migration step. | Medium (with Sprint 3/5) |
-| Development standards | ADR-014 import rule; single-worker constraint; deny-by-default; field classification test. | Medium |
-| `.env.example` | Gateway secret, gateway DB URL, gateway URL for the tool. | With Sprint 3 |
-| `CHANGELOG.md` | Entry for scope change and new ADRs. | High |
-| `structure.txt` | Regenerate after the gateway service is scaffolded. | With Sprint 3 |
-| Directory `CLAUDE.md` files | Add the ADR-014 import rule and 3B context so Claude Code sessions follow it. | Medium |
+| `docs/scope/master-project-document.md` | **Historical** (`docs/README.md` §6), so not rewritten. Its stale §2 "Current Status" is superseded by `docs/roadmap.md` / `docs/STATUS.md`. Conversational access and Phase 3B go into the living documents (`docs/roadmap.md`, `docs/architecture.md`) instead | — |
+| `docs/scope/clive-scope.md` (was `Clive_Scope.txt`) | Already historical (`docs/README.md` §6). **Done** | — |
+| `docs/scope/scope-rev2.md` (was `RevisedScope.txt`) | Already historical, "superseded by `roadmap.md`" (`docs/README.md` §6). **Done** | — |
+| `docs/PDDs/PDD-phase3.md` | As-built at 2026-09-04 (§1–§8). §4/§5/§7/§8 still say the handoff ADR is "not yet written"; record ADR-009's decision (gateway). Revision already marked "To do: revise now" in `docs/README.md` §5 | High |
+| `docs/PDDs/PDD-phase4.md` | Entry criteria and data source change: consumes `clive-gateway` (ADR-009), not `simpro_client` directly; §2/§4 still describe the handoff as open. Add `docgen` service account | High |
+| Phase 5 PDD | Does not exist (only `PDD-phase1`–`4`). To create when Phase 5 is scoped, listing only the scope left after 3B Sprint 2 | Medium |
+| `docs/architecture.md` | Add `clive-gateway`, Simpro tool, Nginx, `clive_gateway` DB **as Planned**; component and data-flow diagrams from the 3B PDD | High |
+| `docs/roadmap.md` | Add Phase 3B and schedule; update Phase 4 start. Status column becomes a link to `docs/STATUS.md` when W6 transfers ownership | High |
+| Docker documentation | No separate document; ports, volumes and containers live in `docs/architecture.md`. New `clive-gateway` and Nginx services go there | Medium (with Sprint 2/3) |
+| Network documentation | No separate document; use `docs/architecture.md`. Gateway port internal only; Nginx the only exposed entry point | Medium (with Sprint 2) |
+| Security documentation | Does not exist; to create (admin-only tool creation, gateway secret handling, chat sharing disabled, access control model, audit log) | High |
+| Knowledge base documentation | No separate document (nearest: `docs/PDDs/PDD-phase2.md`). Rule: Simpro data is never written to PGVector (ADR-015) | Low |
+| Backup strategy / `scripts/backup.sh` | Strategy is described in `docs/installation.md` §9 and `docs/PDDs/PDD-phase2.md` §8. `scripts/backup.sh` dumps only the Phase 2 pgvector database. Include `clive_gateway`; agree audit retention | Medium (with Sprint 3; W5 first) |
+| Disaster recovery plan | Does not exist; created by W5 | Medium |
+| `docs/installation.md` | New services, `.env` variables (gateway secret, DB credentials), migration step | Medium (with Sprint 3/5) |
+| `docs/development-standards.md` | ADR-009 import rule; single-worker constraint; deny-by-default; field classification test | Medium |
+| `.env.example` | Gateway secret, gateway DB URL, gateway URL for the tool | With Sprint 3 |
+| `docs/CHANGELOG.md` | Entry for scope change and new ADRs | High |
+| `structure.txt` | Generated; regenerate with the command in `docs/README.md` after files are added | With each sprint |
+| Directory `CLAUDE.md` files | ADR-009 import rule: **done** in root `CLAUDE.md` §3 (PR #45). Add 3B context when Phase 3B starts | Medium |
 
-## 3. Inconsistencies found (to resolve against the codebase)
+## 3. Inconsistencies found (resolved against the codebase, 2026-10-13)
 
-1. **Phase 3 status.** `RevisedScope.txt` shows Sprint 4 (typed client layer)
-   in progress with test coverage, regression run and docs outstanding. Later
-   project notes indicate the rate limiter and resilience policy (ADR-010) have
-   since landed. Confirm the actual state from the code and test run, then set
-   the Phase 3 status in Scope Revision 3.
-2. **ADR numbering for the rate limiter.** `RevisedScope.txt` §4.2 cites
-   "8 req/sec per ADR-005" (from the original PDD's proposed ADR list), while
-   the implemented ADRs are ADR-008 (withdrawn as a duplicate) and ADR-010
-   (authoritative). Update references to ADR-010.
-3. **Original PDD ADR list vs actual ADRs.** `PDD-phase3.md` proposed ADR-001 to
-   ADR-005 with different subjects from the ADRs actually written (001–013).
-   Align the PDD's ADR table with the real ADR index.
-4. **Phase 4 data source.** The master document and Revision 2 state Phase 4
-   "consumes `simpro_client` directly as a Python library". This now conflicts
-   with ADR-014 and must be changed everywhere it appears.
-5. **pydantic-settings versions.** `simpro_client` pins 2.14.2 and `simpro_mock`
-   2.15.0. Not a defect, but worth aligning when the gateway adds a third consumer.
-6. **Obsolete planning prompt.** `Phase3-Sprint1.txt` contains a Sprint 2
-   kick-off prompt for a mock API on the shared PGVector container, which was
-   not what was built (`simpro-mock-db` is a separate container on port 5433).
-   Keep as a historical transcript only.
+1. **Phase 3 status.** Resolved: Phase 3 closed 2026-10-09 (`docs/roadmap.md`,
+   `docs/CHANGELOG.md` entry of 2026-10-12). `uv run pytest -q` at `064b596`:
+   240 passed, 1 skipped (mock running).
+2. **ADR numbering for the rate limiter.** No living document cites ADR-005 for
+   the rate limiter (`roadmap.md` fixed 2026-10-02, see `docs/doc-audit.md`).
+   Remaining mentions are in historical documents only
+   (`docs/scope/scope-rev2.md`, `docs/phase3/sprints/phase3-sprint4-contract.md`);
+   those get a dated correction note only if Alex asks.
+3. **Original PDD ADR list vs actual ADRs.** Not found: the current
+   `PDD-phase3.md` is an as-built rewrite with no ADR table. The real issue is
+   its stale handoff text (see §2).
+4. **Phase 4 data source.** Living documents already say Phase 4 consumes the
+   gateway (`docs/roadmap.md`, root `CLAUDE.md`). Still stale:
+   `docs/PDDs/PDD-phase4.md`. The master document and Revision 2 are historical.
+5. **pydantic-settings versions.** Confirmed: `simpro_client` pins 2.14.2 and
+   `simpro_mock` 2.15.0. Not a defect, but worth aligning when the gateway adds
+   a third consumer.
+6. **Obsolete planning prompt.** `Phase3-Sprint1.txt` is not in the repository
+   or on the host; unverifiable. What was built is confirmed: `simpro-mock-db`
+   is a separate container on port 5433.
 
 ## 4. Suggested order of updates
 
-1. Resolve inconsistency 1 (Phase 3 status) — it affects every status table.
-2. Check ADR-009 (decided in PR #44), then commit ADR-014, ADR-015, ADR-016 and Scope Revision 3.
-3. Update the master document, `PDD-phase3.md`, Phase 4 PDD, roadmap and CHANGELOG.
+1. Phase 3 status: resolved (inconsistency 1).
+2. Alex updates ADR-009's Status and `Related:` lines; commit ADR-014, ADR-015 and Scope Revision 3.
+3. Update `PDD-phase3.md`, `PDD-phase4.md`, roadmap and CHANGELOG.
 4. Update architecture, security and development standards.
 5. Leave Docker, network, installation, backup and `.env.example` updates to the
    sprints that introduce those changes, as usual.

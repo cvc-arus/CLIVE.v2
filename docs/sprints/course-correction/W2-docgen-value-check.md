@@ -29,7 +29,7 @@ method statements and technical documents. For each document type ask:
 6. Who reviews or signs it off?
 
 ### T2 — Record results
-Add `docs/reviews/doc-generation-value-check.md` with one row per document type:
+Add `docs/reviews/doc-generation-value-check.md` (created by this task; `docs/reviews/` is new) with one row per document type:
 
 | Document type | Per month | Hours each | Hours if drafted | Est. hours saved/month | Needs Simpro data? | Notes |
 |---|---|---|---|---|---|---|

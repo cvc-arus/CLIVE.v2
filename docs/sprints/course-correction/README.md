@@ -38,13 +38,13 @@ Tasks marked **[HUMAN]** are yours. Claude Code will stop and list them.
 | `W5-backups.md` | Backups and restore drill | Full |
 | `W6-docs-consolidation.md` | Documentation consolidation, Phase 3 sign-off | Short |
 
-## Rules for every task (also in root `CLAUDE.md`)
+## Rules for every task (added to root `CLAUDE.md` by W6 T6)
 
 - One task per session. Stop after verification; never continue to the next task.
 - Never print or commit secrets; reference `.env` variable names only.
 - Ask before any destructive action: removing volumes or containers with data,
   dropping databases, deleting or overwriting backups, `git push --force`,
-  rewriting history, or editing files in `docs/history/`.
+  rewriting history, or editing historical documents (`docs/README.md` §6).
 - Host-level changes (packages, systemd, cron, firewall) need explicit approval.
 - If the task file and the codebase disagree, stop and report; the code is the
   source of truth.

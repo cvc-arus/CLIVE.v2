@@ -37,15 +37,17 @@ CVC's own data or configuration).
 - Mock stays: fast, offline, deterministic tests and local development.
 - Sandbox adds: contract tests proving `simpro_client` models match the real API.
 - Mock scope is frozen; differences found against the sandbox are fixed in the mock.
+- Running anything against the sandbox needs Alex's approval of an exception to
+  root `CLAUDE.md` §3, which says code and tests must never contact `*.simprosuite.com`.
 
 ### 2.2 Security groups are the outer permission boundary
 
 Create a dedicated Simpro security group for CLIVE's API application with
-read-only access to only the resources CLIVE needs. CLIVE's own roles (ADR-015)
+read-only access to only the resources CLIVE needs. CLIVE's own roles (ADR-014)
 then restrict further inside that boundary. Even a CLIVE bug cannot expose data
 the security group excludes.
 
-This also makes ADR-015 Option 2 (per-user Simpro login) more realistic, since
+This also makes ADR-014 Option 2 (per-user Simpro login) more realistic, since
 Simpro applies security groups per user. Keep Option 1 for now; revisit once
 the sandbox lets the behaviour be verified.
 
@@ -57,12 +59,13 @@ from System > Setup > Company and set in configuration. Nothing may assume 1 and
 ### 2.4 Custom fields need classification
 
 CVC's custom fields are readable via the API. They must be added to the Phase 3B
-field classification list (ADR-015) before go-live, as they may hold sensitive data.
+field classification list (ADR-014) before go-live, as they may hold sensitive data.
 
 ### 2.5 Rate limits and token lifetime remain unknown
 
 Keep ADR-010's conservative defaults (8 req/sec, backoff with jitter on 429,
-proactive token refresh and refresh on 401). Measure on the sandbox where possible.
+proactive token refresh and refresh on 401), with every retry delay, including a
+server-supplied `Retry-After`, capped by `SIMPRO_MAX_RETRY_DELAY` (ADR-012). Measure on the sandbox where possible.
 
 ### 2.6 Webhooks: future option, not current scope
 
@@ -75,7 +78,7 @@ LAN-only design. Any use needs its own ADR and Phase 5 security work.
 | # | Request | Why | Priority |
 |---|---|---|---|
 | 1 | Access to the shared API sandbox | Contract-test `simpro_client` against the real API | High — raise first |
-| 2 | Build-specific OpenAPI/Swagger export for CVC's build | Validate models against CVC's configuration, including custom fields | High |
+| 2 | Build-specific OpenAPI/Swagger export for CVC's build | Validate models against CVC's configuration, including custom fields. The generic published spec is already vendored (`docs/contracts/simpro-openapi-v1-get-subset.json`, ADR-013) | High |
 | 3 | Can one OAuth2 Client Credentials application call both companies, and how is company context selected? | Gateway design for two companies | Medium |
 | 4 | Can an API application be restricted to read-only, per resource, at application level? | Least-privilege setup (2.2) | Medium |
 | 5 | Rate limits per build, `Retry-After` behaviour, access token lifetime | Tune ADR-010 settings | Low |
@@ -99,6 +102,6 @@ Record case numbers and answers in this file under section 4.
 - [ ] Create the API application (OAuth2, Client Credentials) under that group
 - [ ] Store client ID and secret in `.env` only
 - [ ] Record Company IDs for CVC Service and CVC Projects in configuration
-- [ ] List custom fields and classify them (ADR-015)
-- [ ] Run sandbox contract tests against <ENVIRONMENT_TYPE> with read-only queries
-- [ ] Switch `SIMPRO_BASE_URL`
+- [ ] List custom fields and classify them (ADR-014)
+- [ ] Run a read-only smoke check against <ENVIRONMENT_TYPE>, only with Alex's explicit approval (see root `CLAUDE.md` §3)
+- [ ] Switch `SIMPRO_BASE_URL` and `SIMPRO_TOKEN_URL`

@@ -8,7 +8,7 @@
 | **Date** | 2026-10-09 |
 | **Owner** | Alex (Lead Engineer) |
 | **Status** | Draft — awaiting approval |
-| **Related ADRs** | ADR-009 (Phase 3 → Phase 4 handoff), ADR-014 (Simpro access mechanism), ADR-010 (resilience policy), ADR-015 (access control model), ADR-016 (conversational access approach) |
+| **Related ADRs** | ADR-009 (Phase 3 → Phase 4 handoff: `clive-gateway` as the single Simpro access point), ADR-010 (resilience policy), ADR-014 (access control model), ADR-015 (conversational access approach) |
 
 ---
 
@@ -17,8 +17,8 @@
 Allow any authorised CVC user to ask questions about Simpro data in Open WebUI
 and receive accurate answers, with access restricted by role.
 
-This requirement was not in the original scope (`Clive_Scope.txt`) or in Scope
-Revision 2. It was added in October 2026 after informal user research confirmed
+This requirement was not in the original scope (`docs/scope/clive-scope.md`) or
+in Scope Revision 2 (`docs/scope/scope-rev2.md`). It was added in October 2026 after informal user research confirmed
 it would help day-to-day work.
 
 ### Why "3B" and not a new phase number
@@ -70,9 +70,9 @@ work after Phase 3 and before Phase 4, which is where its dependencies put it.
 | Excluded | Reason / where it goes |
 |---|---|
 | Write operations (create/update in Simpro) | Read-only by design; revisit with a dedicated ADR |
-| Per-user Simpro login (Authorization Code Grant) | Deferred (ADR-015 Option 2); revisit once live API behaviour can be verified |
-| Free-form text-to-SQL | Rejected in ADR-016 |
-| Embedding Simpro records in the vector store | Rejected in ADR-016; bypasses all access control |
+| Per-user Simpro login (Authorization Code Grant) | Deferred (ADR-014 Option 2); revisit once live API behaviour can be verified |
+| Free-form text-to-SQL | Rejected in ADR-015 |
+| Embedding Simpro records in the vector store | Rejected in ADR-015; bypasses all access control |
 | Response caching | Decided in Sprint 6 if the pilot shows a need (new ADR) |
 | Access from outside the CVC network | Phase 5 (full security) |
 | Document generation | Phase 4 |
@@ -80,15 +80,18 @@ work after Phase 3 and before Phase 4, which is where its dependencies put it.
 ## 5. Entry and exit criteria
 
 **Entry criteria**
-1. Phase 3 signed off: `simpro_client` typed layer complete, tests passing, docs current.
-2. ADR-009 decided (PR #44); ADR-014 accepted.
+1. Phase 3 signed off. **Met:** Phase 3 closed 2026-10-09 (see `docs/roadmap.md`).
+2. ADR-009's decision recorded (PR #44, 2026-10-09). **Met**, although its
+   Status line still reads Proposed; updating it is pending Alex.
 
 **Exit criteria**
 1. All Phase 3B sprint acceptance criteria met.
 2. Pilot completed with at least two users per role, feedback logged.
-3. ADR-014, ADR-015 and ADR-016 accepted; caching ADR written if required.
-4. Gateway query catalogue covers the resources Phase 4 needs: Customers, Sites,
-   Contacts, Jobs, Quotes, Assets, Employees.
+3. ADR-014 and ADR-015 accepted; caching ADR written if required.
+4. Gateway query catalogue covers the resources Phase 4 needs, as listed in
+   ADR-009's Consequences: Customers, Sites, Contacts, Jobs, Quotes, Projects,
+   Assets, Employees. Simpro has no Projects resource: a project is a Job with
+   `Type="Project"` (ADR-013), so Projects is a filtered Jobs query.
 5. Phase 4 handover checklist signed off. This replaces the "Phase 4 readiness
    review" previously planned as Phase 3 Sprint 6.
 
@@ -100,12 +103,17 @@ work after Phase 3 and before Phase 4, which is where its dependencies put it.
 |---|---|---|
 | `open-webui` | Existing | Configuration changes only (groups, tool permissions, sharing off) |
 | Simpro tool | New | Python tool inside Open WebUI; calls the gateway over HTTP |
-| `clive-gateway` | New | FastAPI; the only runtime importer of `simpro_client` (ADR-014) |
-| `clive_gateway` database | New | Dedicated database and DB user on the existing Phase 2 Postgres instance (ADR-015) |
+| `clive-gateway` | New | FastAPI; the only runtime importer of `simpro_client` (ADR-009) |
+| `clive_gateway` database | New | Dedicated database and DB user on the existing Phase 2 Postgres instance (ADR-014) |
 | `simpro_client` | Existing | Unchanged; remains a pure Simpro library |
 | `simpro-mock` / `simpro-mock-db` | Existing | Data source until live Simpro access is enabled |
 | `ollama` | Existing | Model may change following the Sprint 1 evaluation |
 | `nginx` | New | Reverse proxy with HTTPS in front of Open WebUI |
+
+> **Conflict for Alex to resolve.** Putting the `clive_gateway` database on the
+> Phase 2 Postgres instance (ADR-014) conflicts with root `CLAUDE.md` §3, which
+> keeps the Phase 2 instance (`postgres`, port 5432) and the Phase 3 instance
+> (`simpro-mock-db`, port 5433) isolated. To be resolved before ADR-014 is accepted.
 
 ### 6.2 Component diagram
 
@@ -154,7 +162,7 @@ work after Phase 3 and before Phase 4, which is where its dependencies put it.
 8. The tool returns the summary to the LLM, which writes the answer. On denial,
    the LLM tells the user they lack access; it never receives the data.
 
-## 7. Access control model (detail in ADR-015)
+## 7. Access control model (detail in ADR-014)
 
 ### 7.1 Principles
 
@@ -232,7 +240,7 @@ parameterised, and returns a compact summary rather than raw records.
 - Denied: `403` with `error: "forbidden"` and a user-safe `reason`.
 - `GET /healthz` for health checks.
 - The OpenAPI schema generated by FastAPI is the published contract; breaking
-  changes need a new version path (ADR-014).
+  changes need a new version path (ADR-009).
 - The gateway port is reachable only on the internal Docker network.
 
 ## 10. Security requirements
@@ -256,14 +264,14 @@ parameterised, and returns a compact summary rather than raw records.
 | Latency | Gateway p95 under 2 s per query against the mock (excluding LLM time) |
 | Logging | JSON logs with correlation IDs, propagated from the tool to Simpro calls |
 | Availability | Restart policy `unless-stopped`; health check on `/healthz` |
-| Backups | `clive_gateway` database included in the existing backup script |
+| Backups | `clive_gateway` database included in the backup script (`scripts/backup.sh` currently dumps only the Phase 2 `POSTGRES_DB`, so this needs a change; see W5) |
 
 ## 12. Sprint plan
 
 Each sprint ends with passing tests, documentation updates and a git commit.
 
 ### Sprint 1 — Decisions and design (week 1)
-- ADR-009 already decided (PR #44); accept ADR-014, ADR-015 and ADR-016.
+- ADR-009 already decided (PR #44); accept ADR-014 and ADR-015.
 - Complete the permission matrix with CVC stakeholders.
 - Finalise query catalogue v1 from the user research.
 - Model spike: evaluate 2–3 tool-calling models that fit in 10 GB VRAM against
