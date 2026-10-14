@@ -6,7 +6,7 @@ First generated from the codebase in `git@github.com:cvc-arus/CLIVE-I.git` (bran
 
 ## 1. Overview
 
-CLIVE is a self-hosted Enterprise AI Platform for CVC (CCTV and Security), deployed via Docker Compose on a single Ubuntu 24.04 development host. Phase list and phase status: `docs/roadmap.md`.
+CLIVE is a self-hosted Enterprise AI Platform for CVC (CCTV and Security), deployed via Docker Compose on a single Ubuntu 24.04 development host. Phase status: `docs/STATUS.md`; phase list and scope: `docs/roadmap.md`.
 
 ## 2. Container Topology
 

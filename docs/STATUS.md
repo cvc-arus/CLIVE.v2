@@ -8,14 +8,13 @@
 
 ## Phases
 
-> Until W6 transfers ownership (see `W6-docs-consolidation.md`), `docs/roadmap.md`
-> still owns phase status (`docs/README.md` §3). This table must match it.
+Phase list and scope: `docs/roadmap.md`.
 
 | Phase | Name | Status |
 |---|---|---|
 | 1 | Local AI Platform | ✅ Complete |
 | 2 | Production RAG | ✅ Complete (knowledge base audit planned — W3) |
-| 3 | Simpro API Integration | ✅ Closed 2026-10-09 (Alex); see `docs/roadmap.md`. Test evidence recorded in W6 T1 |
+| 3 | Simpro API Integration | ✅ Closed 2026-10-09 (Alex). Evidence: `docs/phase3/phase3-signoff.md` |
 | — | Course correction sprint | 🔶 In progress |
 | 3B | Simpro Conversational Access | 📝 Planned — PDD drafted; order set at decision point |
 | 4 | Document Generation (4A / 4B split pending W2) | ⏳ Not started; no longer blocked (ADR-009 decided) |
@@ -34,9 +33,9 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 | W3 Knowledge base audit | ⏳ Not started | Bulk ingestion paused until complete |
 | W4 Evaluation set | ⏳ Not started | |
 | W5 Backups and restore drill | ⏳ Not started | |
-| W6 Docs consolidation | ⏳ Not started | |
+| W6 Docs consolidation | 🔶 In progress | T1: Phase 3 evidence recorded; `STATUS.md` owns status |
 
-**Next task:** W6 task 1, then W1 human tasks.
+**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases), then W5 T1.
 **Next decision:** phase order, at end of sprint.
 
 ## Simpro access
