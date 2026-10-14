@@ -14,6 +14,8 @@
 │   └── postgres
 │       └── init-pgvector.sql
 ├── deploy
+│   ├── restore-drill
+│   │   └── compose.yml
 │   ├── smartd
 │   │   └── smartd.conf
 │   └── systemd
@@ -200,4 +202,4 @@
 │   └── test_spec_conformance.py
 └── uv.lock
 
-36 directories, 164 files
+37 directories, 165 files
