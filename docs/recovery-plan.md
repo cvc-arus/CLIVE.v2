@@ -306,7 +306,87 @@ Retention was tested separately against 80 empty dummy folders (two a day for
 
 ## 9. Disk health baseline
 
-Not yet done (W5 T5).
+W5 T5 (2026-10-14). `smartmontools` 7.4 is installed on the host (a justified
+exception to Docker-first: it needs direct hardware access), and `smartd`
+monitors both disks with `deploy/smartd/smartd.conf`, installed as
+`/etc/smartd.conf` (Ubuntu's original kept as `/etc/smartd.conf.orig`; steps in
+`docs/installation.md` §9).
+
+- Checks: health, attributes, error and self-test logs; a short self-test
+  daily at 03:00 and a long self-test on Saturdays at 04:00; temperature logged
+  at 55 °C, critical at 65 °C.
+- Alerts go to the journal only. There is no mail setup on the host, and email
+  would need an external SMTP relay; alerting is deferred to monitoring
+  (roadmap Phase 10). Nobody is warned unless someone looks, so check:
+
+```bash
+systemctl status smartmontools --no-pager      # smartd; "Monitoring 2 ATA/SATA" devices
+journalctl -u smartmontools --since "-7 days" --no-pager
+sudo smartctl -A /dev/sda | grep -E "^(  5|173|197|198|202) "
+sudo smartctl -A /dev/sdb | grep -E "^(  5|173|197|198|202) "
+sudo smartctl -l selftest /dev/sda; sudo smartctl -l selftest /dev/sdb
+```
+
+### Baseline
+
+Run on 2026-10-14 against commit `45021e8`: Alex ran
+`smartctl -x` on both disks after a short self-test, into a file outside the
+repository; values copied from that output.
+
+| | `sda` (serial `…902A`: `/`, repository, backups) | `sdb` (serial `…902C`: `/data`, live data) |
+|---|---|---|
+| Model, firmware | Crucial MX500 250 GB (`CT250MX500SSD1`), M3CR023 | Same |
+| `smartctl -H` | PASSED | PASSED |
+| Short self-test | Completed without error (the first in the log) | Completed without error (the first in the log) |
+| Error log | No Errors Logged | No Errors Logged |
+| Power-on hours (9) | 10,898 | 4,457 |
+| **Percentage Used Endurance Indicator** (device statistics; also 202 raw) | **129** | **116** |
+| Average block-erase count (173) | 1,938 | 1,744 |
+| Total LBAs written (246) | 23,582,729,578 (about 12.1 TB) | 20,006,031,404 (about 10.2 TB) |
+| Reallocated NAND blocks (5) / pending (197) / uncorrectable (198) | 0 / 0 / 0 | 0 / 0 / 0 |
+| CRC errors (199) | 0 | 0 |
+| Unexpected power losses (174) | 13 | 12 |
+| Temperature (194), min/max | 31 °C (0/56) | 31 °C (0/51) |
+
+```text
+===== /dev/sda
+SMART overall-health self-assessment test result: PASSED
+202 Percent_Lifetime_Remain ----CK   227   227   001    -    129
+0x07  0x008  1             129  ---  Percentage Used Endurance Indicator
+ # 1  Short offline       Completed without error       00%     10898         -
+===== /dev/sdb
+SMART overall-health self-assessment test result: PASSED
+202 Percent_Lifetime_Remain ----CK   240   240   001    -    116
+0x07  0x008  1             116  ---  Percentage Used Endurance Indicator
+ # 1  Short offline       Completed without error       00%      4457         -
+```
+
+### Finding: both disks are past their rated endurance
+
+- Both disks have used more than their rated write endurance: 129 % (`sda`)
+  and 116 % (`sdb`), from the drives' own endurance indicator, consistent with
+  the average erase counts against roughly 1,500 rated cycles.
+- `smartctl -H` still reports PASSED because attribute 202's normalised value
+  wraps below zero (100 − 129 is shown as 227) and stays above its threshold.
+  PASSED is therefore not evidence of remaining life on these disks.
+- Host writes are modest (about 12 TB and 10 TB), but the drive-internal
+  writes are about 32 times higher (attributes 247 and 248), which wears the
+  flash much faster than the host workload alone would.
+- No reallocated, pending or uncorrectable blocks yet: the disks work today,
+  but there is no rated margin left.
+- The serial numbers are consecutive (same batch, bought together) and the
+  wear is similar, so both could fail close together. The cross-disk backup
+  does not cover that case.
+
+Alex's decisions (2026-10-14), all agreed and kept in view, not yet acted on:
+
+1. Off-machine copy (§11, W5 T7): agreed; to be done later.
+2. Replace both disks, `sdb` (live data) first.
+3. Back up the leftover `/data/open-webui` (about 844 MB, most of each backup)
+   once, keep that copy, then exclude it from the daily run to cut writes to
+   `sda`. `scripts/backup.sh` is unchanged for now.
+4. Look into a firmware update for the M3CR023 firmware (vendor tool and a
+   reboot; host change).
 
 ## 10. Restore procedure and drill report
 

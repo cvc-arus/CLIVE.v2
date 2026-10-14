@@ -135,6 +135,21 @@ journalctl -u clive-backup -n 30 --no-pager
 
 The service runs `scripts/backup.sh` from the repository working tree, so the script on the checked-out branch is the one that runs. Remove the schedule with `sudo systemctl disable --now clive-backup.timer`, then delete the two files from `/etc/systemd/system/` and run `sudo systemctl daemon-reload`; existing backups are not touched.
 
+### Disk health
+
+`smartmontools` monitors both disks (`docs/recovery-plan.md` §9). Install it and the repository's `smartd` configuration (needs sudo):
+
+```bash
+sudo apt install smartmontools
+sudo smartd -q onecheck -c deploy/smartd/smartd.conf
+sudo cp /etc/smartd.conf /etc/smartd.conf.orig
+sudo install -m 0644 deploy/smartd/smartd.conf /etc/smartd.conf
+sudo systemctl restart smartmontools
+systemctl status smartmontools --no-pager
+```
+
+`deploy/smartd/smartd.conf` names the disks by serial number (`/dev/disk/by-id/`); edit it when a disk is replaced. Warnings go to the journal only (`journalctl -u smartmontools`). Rollback: `sudo mv /etc/smartd.conf.orig /etc/smartd.conf` and `sudo apt remove smartmontools`.
+
 The mock's database (`simpro-mock-db`) is disposable dev/test data and is not part of the backup strategy — it can always be rebuilt from the seed script.
 
 ## 10. Rollback
