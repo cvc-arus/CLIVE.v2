@@ -32,10 +32,10 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 | W2 Doc generation value check | ⏳ Not started | |
 | W3 Knowledge base audit | ⏳ Not started | Bulk ingestion paused until complete |
 | W4 Evaluation set | ⏳ Not started | |
-| W5 Backups and restore drill | 🔶 In progress | T1: all data on sdb1; target `<home>/clive-backups/` (sda2). T2: inventory agreed. T3: `scripts/backup.sh` backs up the full inventory except `.env` (GPG key deferred). See `docs/recovery-plan.md` |
+| W5 Backups and restore drill | 🔶 In progress | T1: all data on sdb1; target `<home>/clive-backups/` (sda2). T2: inventory agreed. T3: `scripts/backup.sh` backs up the full inventory except `.env` (GPG key deferred). T4: daily systemd timer at 02:30 installed. See `docs/recovery-plan.md` |
 | W6 Docs consolidation | 🔶 In progress | T1: Phase 3 evidence recorded; `STATUS.md` owns status |
 
-**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases); W5 T4 (schedule the backup).
+**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases); W5 T5 (disk health monitoring).
 **Next decision:** phase order, at end of sprint.
 
 ## Simpro access
@@ -53,7 +53,7 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 | No off-machine backup | Open — target not yet agreed |
 | Knowledge base may not meet metadata/versioning/access requirements | Under audit (W3) |
 | Simpro rate limits and token lifetime undocumented | Open — conservative defaults (ADR-010, ADR-012) |
-| Backups are not scheduled, and `.env` is not backed up until the GPG key pair exists | Open — W5 T4 (schedule); GPG key deferred (Alex, 2026-10-14) |
+| `.env` is not backed up until the GPG key pair exists | Open — GPG key deferred (Alex, 2026-10-14) |
 
 ## ADRs awaiting a decision
 

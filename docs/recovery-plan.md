@@ -147,8 +147,8 @@ and the off-machine copy (§11) is to be encrypted.
 
 ## 8. Backup procedure and schedule
 
-`scripts/backup.sh` (W5 T3, 2026-10-14). Run it from anywhere; it is not
-scheduled yet (W5 T4).
+`scripts/backup.sh` (W5 T3, 2026-10-14). It runs daily at 02:30 from a systemd
+timer (W5 T4, below) and can also be run by hand from anywhere.
 
 ```bash
 ./scripts/backup.sh
@@ -197,6 +197,53 @@ come from the containers' own environment. Whitespace around keys and values
   gpg --export-secret-keys --armor <FPR> > <off-machine media>/clive-backup-private.asc
   gpg --delete-secret-keys <FPR>
   ```
+
+### Schedule
+
+W5 T4 (2026-10-14). `deploy/systemd/clive-backup.timer` starts
+`deploy/systemd/clive-backup.service` daily at 02:30; both are installed to
+`/etc/systemd/system/` (steps in `docs/installation.md` §9).
+
+- The service runs `scripts/backup.sh` from the repository working tree as
+  `clive` (a member of the `docker` group), at low CPU and I/O priority. The
+  script on the checked-out branch is the one that runs.
+- 02:30 avoids the host's other nightly jobs and both UK clock changes
+  (01:00–02:00). `Persistent=true` runs a missed backup at the next boot; if
+  the containers are not up yet, that run fails and the next night's runs as
+  normal.
+- A failed backup leaves the unit failed. Failures are only in the journal:
+  there is no alerting yet (monitoring, roadmap Phase 10).
+
+```bash
+systemctl list-timers clive-backup.timer
+systemctl status clive-backup.service
+journalctl -u clive-backup -n 30 --no-pager
+```
+
+Run on 2026-10-14 against commit `3441d0b` plus the uncommitted unit files,
+after Alex installed them:
+
+```text
+$ systemctl list-timers clive-backup.timer --no-pager
+NEXT                        LEFT LAST PASSED UNIT               ACTIVATES
+Thu 2026-10-15 02:30:00 BST  13h -         - clive-backup.timer clive-backup.service
+
+$ journalctl -u clive-backup -n 25 --no-pager
+... backup.sh[1690448]: [2026-10-14 12:52:54] === CLIVE backup 2026-10-14_1252 ===
+... backup.sh[1690448]: [2026-10-14 12:52:54] Writing to <home>/clive-backups/2026-10-14_1252.partial
+... backup.sh[1690448]: [2026-10-14 12:52:55]       public.document_chunk: 365 rows (matches live)
+...
+... backup.sh[1690448]: [2026-10-14 12:53:52] Backup complete: <home>/clive-backups/2026-10-14_1252 (830M)
+... backup.sh[1690448]: [2026-10-14 12:53:52] Retention: kept 1, deleted 1 (7 daily, 4 weekly)
+... systemd[1]: Finished clive-backup.service - CLIVE cross-disk backup (scripts/backup.sh).
+
+$ sha256sum --strict --quiet -c MANIFEST.txt && echo "all OK"
+all OK
+```
+
+That run was started by hand (`sudo systemctl start clive-backup.service`).
+The first run started by the timer is due on 2026-10-15 at 02:30 and is not
+yet recorded.
 
 ### First run
 
