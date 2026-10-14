@@ -66,6 +66,7 @@
 │   │       ├── phase3-sprint4.md
 │   │       └── phase3-sprint4-preflight-audit.md
 │   ├── README.md
+│   ├── recovery-plan.md
 │   ├── roadmap.md
 │   ├── scope
 │   │   ├── clive-scope.md
@@ -193,4 +194,4 @@
 │   └── test_spec_conformance.py
 └── uv.lock
 
-33 directories, 160 files
+33 directories, 161 files
