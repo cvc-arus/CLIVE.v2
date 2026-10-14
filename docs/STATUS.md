@@ -32,10 +32,10 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 | W2 Doc generation value check | ⏳ Not started | |
 | W3 Knowledge base audit | ⏳ Not started | Bulk ingestion paused until complete |
 | W4 Evaluation set | ⏳ Not started | |
-| W5 Backups and restore drill | 🔶 In progress | T1: all data on sdb1; target `<home>/clive-backups/` (sda2); see `docs/recovery-plan.md` |
+| W5 Backups and restore drill | 🔶 In progress | T1: all data on sdb1; target `<home>/clive-backups/` (sda2). T2: inventory agreed. See `docs/recovery-plan.md` |
 | W6 Docs consolidation | 🔶 In progress | T1: Phase 3 evidence recorded; `STATUS.md` owns status |
 
-**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases); W5 T2 (backup inventory).
+**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases); W5 T3 (backup script).
 **Next decision:** phase order, at end of sprint.
 
 ## Simpro access
