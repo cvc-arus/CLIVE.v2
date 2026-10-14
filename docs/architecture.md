@@ -188,6 +188,6 @@ Write operations (POST/PATCH/DELETE) are out of scope for both the mock and `sim
 
 `simpro_client`'s `SimproSettings.company_id_service` / `company_id_projects` (defaulting to 1/2) mirror this, but are **reserved**: no client code reads them, and endpoint calls take an explicit `company_id` argument. `company_id_projects` names the company whose *jobs* are projects; it is a company id, not a resource selector.
 
-## 6. Planned but Not Yet Decided
+## 6. Decided but Not Yet Built
 
-The Phase 3 → Phase 4 handoff mechanism — whether Phase 4 imports `simpro_client` directly as a Python library, or talks to it through a thin FastAPI service wrapper — is recorded as ADR-009 (`docs/ADR/adr-009-phase3-phase4-handoff.md`, Proposed, open). The library-first architecture decision from the original PDD favors direct import, but this needs to be formally confirmed before Phase 4 scoping begins.
+The Phase 3 → Phase 4 handoff is decided in ADR-009 (`docs/ADR/adr-009-phase3-phase4-handoff.md`, decision recorded 2026-10-09 by Alex): Option B, a single `clive-gateway` service is the only runtime service that imports `simpro_client`, and every other consumer, Phase 4 included, reaches Simpro through its HTTP API. Tests and developer tooling against the mock are the only exceptions. `simpro_client` stays a library-first package (ADR-006's library-first part stands). `clive-gateway` does not exist yet; it is planned in Phase 3B (`docs/PDDs/PDD-phase3b-simpro-conversational-access.md`).

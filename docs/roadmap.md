@@ -9,8 +9,9 @@ Consolidated from `docs/scope/master-project-document.md` (master roadmap) and `
 | 1 | Local AI Platform | [See `STATUS.md`](STATUS.md) | Ollama + Open WebUI on Docker |
 | 2 | Production RAG | [See `STATUS.md`](STATUS.md) | PGVector + Tika + Hybrid Search |
 | 3 | Simpro API Integration | [See `STATUS.md`](STATUS.md) | Client foundation, mock service and typed client layer implemented (`src/simpro_client/models/`, `endpoints/`, `rate_limiter.py`), with deviations from ADR-010 listed in `src/simpro_client/CLAUDE.md`. Shaped to Simpro's published contract and proved by `tests/test_spec_conformance.py` (ADR-013). Closed by Alex once ADR-009 was decided. There is still no live Simpro API access |
+| 3B | Simpro Conversational Access | [See `STATUS.md`](STATUS.md) | Role-restricted Simpro Q&A in Open WebUI through `clive-gateway` (ADR-009, ADR-014, ADR-015). Added October 2026; see "Phase 3B Planned Scope" below. Order relative to Phase 4: see `STATUS.md` |
 | 4 | Document Generation | [See `STATUS.md`](STATUS.md) | Entry criteria include `clive-gateway`'s query catalogue (Customers, Sites, Contacts, Jobs, Quotes, Projects, Assets, Employees) |
-| 5 | Security & Reverse Proxy | [See `STATUS.md`](STATUS.md) | Nginx, HTTPS, firewall, auth |
+| 5 | Security & Reverse Proxy | [See `STATUS.md`](STATUS.md) | Nginx, HTTPS, firewall, auth. A minimum slice (Nginx + HTTPS, LAN-only firewall, Open WebUI hardening) is planned in Phase 3B Sprint 2 |
 | 6 | AI Sales Agent | [See `STATUS.md`](STATUS.md) | Prospect discovery, lead scoring |
 | 7 | Public Tender Agent | [See `STATUS.md`](STATUS.md) | Tender monitoring & bid analysis |
 | 8 | Customer Intelligence | [See `STATUS.md`](STATUS.md) | ICP generation, customer analytics |
@@ -48,6 +49,18 @@ Delivered:
 - Pagination: `fetch_page()` and `iter_all()` in `src/simpro_client/endpoints/base.py` (there is no separate `pagination.py`).
 - Rate limiter: `src/simpro_client/rate_limiter.py` (token bucket, default 8 req/sec), per ADR-010.
 - Legacy `tests/test_simpro_mock.py` removed; `structure.txt` regenerated from tracked files.
+
+## Phase 3B Planned Scope (`docs/PDDs/PDD-phase3b-simpro-conversational-access.md`)
+
+Simpro conversational access was not in the original scope or Revision 2; it
+was added in October 2026. "3B" places it after Phase 3 and before Phase 4
+without renumbering later phases. None of it exists yet.
+
+- `clive-gateway`: the single runtime importer of `simpro_client` (ADR-009), with a deny-by-default, role-based access control model and audit log (ADR-014, Proposed)
+- An Open WebUI tool that answers questions through a fixed catalogue of read-only queries (ADR-015, Proposed); no free-form text-to-SQL, and Simpro data is never written to the PGVector knowledge base
+- The minimum security slice from Phase 5 (Nginx + HTTPS, LAN-only firewall, Open WebUI hardening)
+- Planned schedule: six sprints over about nine weeks of full-time effort (PDD §12–§13). Entry criteria include completing the course correction sprint (PDD §5)
+- Order relative to Phase 4: decided at the end of the course correction sprint; see `STATUS.md`
 
 ## Phase 4 Entry Criteria (unchanged from `docs/scope/scope-rev2.md`)
 

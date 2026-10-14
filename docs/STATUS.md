@@ -33,9 +33,9 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 | W3 Knowledge base audit | ⏳ Not started | Bulk ingestion paused until complete |
 | W4 Evaluation set | ⏳ Not started | |
 | W5 Backups and restore drill | 🔶 In progress | T1: all data on sdb1; target `<home>/clive-backups/` (sda2). T2: inventory agreed. T3: `scripts/backup.sh` backs up the full inventory except `.env` (GPG key deferred). T4: daily systemd timer at 02:30 installed. T5: `smartd` monitoring both disks; both are past their rated write endurance (recovery plan §9). T6: restore drill passed, about 68 s of commands from checksums to a working Open WebUI (recovery plan §10). T7 (off-machine copy) to be done later. See `docs/recovery-plan.md` |
-| W6 Docs consolidation | 🔶 In progress | T1: Phase 3 evidence recorded; `STATUS.md` owns status. T2: Scope Revision 3 recorded as historical. T3: ADR index conventions merged; ADR-014 and ADR-015 indexed as Proposed. T4: Simpro findings applied to the Phase 3B PDD and ADR-014 |
+| W6 Docs consolidation | 🔶 In progress | T1: Phase 3 evidence recorded; `STATUS.md` owns status. T2: Scope Revision 3 recorded as historical. T3: ADR index conventions merged; ADR-014 and ADR-015 indexed as Proposed. T4: Simpro findings applied to the Phase 3B PDD and ADR-014. T5: Phase 3B and the gateway added to the roadmap; Phase 4 PDD and `architecture.md` §6 follow ADR-009 |
 
-**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases); W6 T5 (Phase 3B and the gateway in living documents); W5 T7 [HUMAN] (off-machine copy) later.
+**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases); W6 T6 (templates and Claude Code configuration); W5 T7 [HUMAN] (off-machine copy) later.
 **Next decision:** phase order, at end of sprint.
 
 ## Simpro access
