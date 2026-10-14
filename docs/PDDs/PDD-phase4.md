@@ -18,6 +18,7 @@ Whether each criterion is met is recorded in `docs/STATUS.md`. **Phase 4 should 
 
 **In scope:**
 - Consume Simpro data through `clive-gateway`'s HTTP API (ADR-009); Phase 4 does not import `simpro_client`
+- Authenticate to the gateway as the `docgen` service account (Phase 3B PDD §7.4), with access to both companies and the resources and field classifications Phase 4 needs, under the same deny-by-default access control model as human users (ADR-014, Proposed)
 - Feeder data: Customers, Sites, Contacts, Jobs, Quotes, Projects, Assets, Employees
 - Generate: Quotes, RAMS (Risk Assessment Method Statements), Contracts, Equipment specifications, Tender responses, Technical documentation, Compliance documentation
 - Use Phase 2's PGVector knowledge base as a RAG source for boilerplate clauses, templates, and case studies
