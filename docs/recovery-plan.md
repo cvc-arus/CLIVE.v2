@@ -184,14 +184,11 @@ line naming the step:
 Settings: `BACKUP_DIR`, `BACKUP_RETENTION_DAILY`, `BACKUP_RETENTION_WEEKLY` and
 `BACKUP_GPG_RECIPIENT`, from the environment or from `BACKUP_*` lines in `.env`
 (names in `.env.example`). No other `.env` value is read; database credentials
-come from the containers' own environment.
+come from the containers' own environment. Whitespace around keys and values
+(including a trailing CR) is stripped, and the first occurrence of a key wins.
 
 **Outstanding (Alex):**
 
-- `.env` still has the Phase 2 values `BACKUP_DIR=./backups` and
-  `BACKUP_RETENTION_DAYS`. Set `BACKUP_DIR=<home>/clive-backups` and remove
-  `BACKUP_RETENTION_DAYS`. Until then the target has to be passed on the command
-  line: `BACKUP_DIR=<home>/clive-backups ./scripts/backup.sh`.
 - Create the GPG key pair and set `BACKUP_GPG_RECIPIENT` (deferred, 2026-10-14):
 
   ```bash
@@ -236,6 +233,24 @@ $ cat SIZES.txt
 
 $ sha256sum --strict --quiet -c MANIFEST.txt && echo "all OK"
 all OK
+```
+
+That folder no longer exists: retention keeps the newest backup of each day,
+so the run below replaced it.
+
+### Run with the `.env` settings
+
+2026-10-14, commit `c929c1c` plus the uncommitted whitespace fix, run as plain
+`./scripts/backup.sh` after Alex updated `.env`:
+
+```text
+[2026-10-14 12:35:22] === CLIVE backup 2026-10-14_1235 ===
+[2026-10-14 12:35:22] Writing to <home>/clive-backups/2026-10-14_1235.partial
+...
+[2026-10-14 12:35:23]       public.document_chunk: 365 rows (matches live)
+...
+[2026-10-14 12:36:20] Backup complete: <home>/clive-backups/2026-10-14_1235 (830M)
+[2026-10-14 12:36:20] Retention: kept 1, deleted 1 (7 daily, 4 weekly)
 ```
 
 Retention was tested separately against 80 empty dummy folders (two a day for
