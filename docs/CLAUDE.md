@@ -83,6 +83,10 @@ including `roadmap.md`, link to it instead of restating status.
 | Content | Location |
 |---|---|
 | Current status | `docs/STATUS.md` (the only place status is stated) |
+| Course correction and later sprint task files | `docs/sprints/<sprint>/` |
+| Sprint plan templates | `docs/templates/sprint-full.md`, `sprint-short.md` |
+| Facts about Simpro's API and service | `docs/simpro/` |
+| Reviews of the project or its documents | `docs/reviews/` (none yet; create when the first review is filed) |
 | Architecture decisions | `docs/ADR/` |
 | Phase design | `docs/PDDs/PDD-phaseN.md` |
 | Sprint plans, contracts, reports | `docs/phaseN/` |
@@ -95,6 +99,11 @@ including `roadmap.md`, link to it instead of restating status.
   names without spaces. Phase documents are prefixed with the phase, as in
   `docs/phase3/sprints/phase3-sprint4-contract.md`.
 
+- Historical documents (listed in `docs/README.md` §6) are read-only. Ask
+  Alex before editing one.
+- New sprints use `docs/templates/sprint-full.md` when they change
+  infrastructure, security or data, and `docs/templates/sprint-short.md`
+  otherwise (root `CLAUDE.md` §5).
 - Sprint reports are historical records. Do not rewrite them to match later
   code. If one contains a factual error, add a dated correction note at the
   end of the file, and only when asked.

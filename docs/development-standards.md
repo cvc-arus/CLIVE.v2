@@ -78,7 +78,7 @@ uv run pytest -m integration -v              # skip-gated integration tests
 
 ## 8. Sprint / Task Template
 
-Every sprint plan and every task within it follows this structure, per the project's founding scope document:
+Sprints that change infrastructure, security or data follow the full structure below (template: `docs/templates/sprint-full.md`), per the project's founding scope document. Other sprints (application code, tests, documentation, reviews, research) may use the short template, `docs/templates/sprint-short.md`: Goal, Tasks, Verification, Rollback, Git commit, Acceptance criteria. If in doubt, use the full structure.
 
 1. Goal
 2. Business value
