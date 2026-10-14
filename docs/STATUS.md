@@ -4,7 +4,7 @@
 > (`/status-update`). Keep this file short: history belongs in `docs/CHANGELOG.md`,
 > decisions in `docs/ADR/`.
 
-**Last updated:** 2026-10-13
+**Last updated:** 2026-10-14
 
 ## Phases
 
@@ -32,10 +32,10 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 | W2 Doc generation value check | ⏳ Not started | |
 | W3 Knowledge base audit | ⏳ Not started | Bulk ingestion paused until complete |
 | W4 Evaluation set | ⏳ Not started | |
-| W5 Backups and restore drill | ⏳ Not started | |
+| W5 Backups and restore drill | 🔶 In progress | T1: all data on sdb1; target `<home>/clive-backups/` (sda2); see `docs/recovery-plan.md` |
 | W6 Docs consolidation | 🔶 In progress | T1: Phase 3 evidence recorded; `STATUS.md` owns status |
 
-**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases), then W5 T1.
+**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases); W5 T2 (backup inventory).
 **Next decision:** phase order, at end of sprint.
 
 ## Simpro access
@@ -53,7 +53,7 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 | No off-machine backup | Open — target not yet agreed |
 | Knowledge base may not meet metadata/versioning/access requirements | Under audit (W3) |
 | Simpro rate limits and token lifetime undocumented | Open — conservative defaults (ADR-010, ADR-012) |
-| Backups cover only the Phase 2 pgvector database (`scripts/backup.sh`); Open WebUI's SQLite database (`webui.db`) and uploads are not backed up | Open — W5 |
+| Backups cover only the Phase 2 pgvector database (`scripts/backup.sh`); Open WebUI's SQLite database (`webui.db`) and uploads are not backed up | Open — W5; target `<home>/clive-backups/` agreed |
 
 ## ADRs awaiting a decision
 
