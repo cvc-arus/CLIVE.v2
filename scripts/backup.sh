@@ -26,8 +26,13 @@ REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ENV_FILE="${REPO_DIR}/.env"
 
 # Load only BACKUP_* settings from .env; values already in the environment win.
+# Whitespace (including a CR from Windows line endings) around keys and values
+# is stripped, so a stray space cannot change the target or break a number.
 if [[ -f "${ENV_FILE}" ]]; then
     while IFS='=' read -r key value; do
+        key="${key//[[:space:]]/}"
+        value="${value#"${value%%[![:space:]]*}"}"
+        value="${value%"${value##*[![:space:]]}"}"
         case "${key}" in
             BACKUP_DIR | BACKUP_RETENTION_DAILY | BACKUP_RETENTION_WEEKLY | BACKUP_GPG_RECIPIENT | BACKUP_RETENTION_DAYS)
                 if [[ -z "${!key+x}" ]]; then
@@ -37,7 +42,7 @@ if [[ -f "${ENV_FILE}" ]]; then
                 fi
                 ;;
         esac
-    done < <(grep -E '^BACKUP_[A-Z_]+=' "${ENV_FILE}" || true)
+    done < <(grep -E '^[[:space:]]*BACKUP_[A-Z_]+[[:space:]]*=' "${ENV_FILE}" || true)
 fi
 
 BACKUP_DIR="${BACKUP_DIR:-${HOME}/clive-backups}"
