@@ -32,10 +32,10 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 | W2 Doc generation value check | ⏳ Not started | |
 | W3 Knowledge base audit | ⏳ Not started | Bulk ingestion paused until complete |
 | W4 Evaluation set | ⏳ Not started | |
-| W5 Backups and restore drill | 🔶 In progress | T1: all data on sdb1; target `<home>/clive-backups/` (sda2). T2: inventory agreed. T3: `scripts/backup.sh` backs up the full inventory except `.env` (GPG key deferred). T4: daily systemd timer at 02:30 installed. T5: `smartd` monitoring both disks; both are past their rated write endurance (recovery plan §9). See `docs/recovery-plan.md` |
+| W5 Backups and restore drill | 🔶 In progress | T1: all data on sdb1; target `<home>/clive-backups/` (sda2). T2: inventory agreed. T3: `scripts/backup.sh` backs up the full inventory except `.env` (GPG key deferred). T4: daily systemd timer at 02:30 installed. T5: `smartd` monitoring both disks; both are past their rated write endurance (recovery plan §9). T6: restore drill passed, about 68 s of commands from checksums to a working Open WebUI (recovery plan §10). T7 (off-machine copy) to be done later. See `docs/recovery-plan.md` |
 | W6 Docs consolidation | 🔶 In progress | T1: Phase 3 evidence recorded; `STATUS.md` owns status |
 
-**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases); W5 T6 (restore drill).
+**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases); W6 T2 (record superseded scope documents as historical); W5 T7 [HUMAN] (off-machine copy) later.
 **Next decision:** phase order, at end of sprint.
 
 ## Simpro access
@@ -55,6 +55,7 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 | Knowledge base may not meet metadata/versioning/access requirements | Under audit (W3) |
 | Simpro rate limits and token lifetime undocumented | Open — conservative defaults (ADR-010, ADR-012) |
 | `.env` is not backed up until the GPG key pair exists | Open — GPG key deferred (Alex, 2026-10-14) |
+| Open WebUI's signing key (`WEBUI_SECRET_KEY`) is generated inside the container, not backed up: a restore or container rebuild logs everyone out | Open — fix needs `WEBUI_SECRET_KEY` in `.env` and Compose (live change, not decided). See `docs/recovery-plan.md` §10 |
 
 ## ADRs awaiting a decision
 

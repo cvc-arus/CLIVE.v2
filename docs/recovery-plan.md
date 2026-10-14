@@ -390,7 +390,186 @@ Alex's decisions (2026-10-14), all agreed and kept in view, not yet acted on:
 
 ## 10. Restore procedure and drill report
 
-Not yet done (W5 T6).
+W5 T6 (2026-10-14). Two procedures: a **drill** that restores a backup next
+to the live stack (drilled, below), and a **full rebuild** after losing `sdb`
+(written from the drill, not drilled as a whole).
+
+### Restore drill (side by side with the live stack)
+
+`deploy/restore-drill/compose.yml` defines a separate Compose project,
+`clive-drill`, with its own volumes (`clive-drill_pgvector`,
+`clive-drill_webui-data`) and ports (Open WebUI `127.0.0.1:3100`, Postgres
+`127.0.0.1:5442`). It never touches the live containers, volumes or `/data`.
+`drill-webui` joins the live network to use the live Ollama and Tika: models
+are not in the backup, and a second Ollama would compete for GPU memory. The
+drill therefore tests the restore of **data**, not of models.
+
+Run from the repository root. `B` is the backup folder; the Open WebUI image is
+pinned to the one in the backup's `images.txt` and never pulled.
+
+```bash
+B=<home>/clive-backups/<YYYY-MM-DD_HHMM>
+export DRILL_WEBUI_IMAGE=$(awk '$1=="clive-webui"{print $3}' "$B/images.txt")
+DC="docker compose -p clive-drill --env-file .env -f deploy/restore-drill/compose.yml"
+
+# 1. Checksums
+(cd "$B" && sha256sum --strict --quiet -c MANIFEST.txt && echo "all OK")
+
+# 2. Volumes and an empty Postgres
+$DC create
+$DC up -d --wait drill-postgres
+
+# 3. Phase 2 database. postgres-globals.sql is not needed: it creates only the
+#    clive role, which the container creates from POSTGRES_USER.
+docker exec -i clive-drill-postgres sh -c \
+  'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --exit-on-error' < "$B/pgvector.dump"
+
+# 4. Open WebUI files, then the backed-up webui.db over them
+docker run --rm --pull=never --network none \
+  -v clive-drill_webui-data:/dst -v "$B":/b:ro postgres:16-alpine \
+  sh -c 'tar xzf /b/openwebui_data.tar.gz -C /dst && cp /b/webui.db /dst/webui.db'
+
+# 5. Open WebUI
+$DC up -d --wait --wait-timeout 300 drill-webui
+```
+
+6. Compare row counts. Phase 2 database, every table (run against
+   `clive-postgres` and `clive-drill-postgres`):
+
+   ```bash
+   docker exec -i clive-drill-postgres sh -c \
+     'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -F "|" -v ON_ERROR_STOP=1' <<'EOF'
+   SELECT format('SELECT %L, count(*) FROM %I.%I;', schemaname||'.'||tablename, schemaname, tablename)
+   FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema') ORDER BY 1
+   \gexec
+   EOF
+   ```
+
+   `webui.db`, every table, in the backup file and in the drill's copy:
+
+   ```bash
+   cat > /tmp/webui-counts.py <<'EOF'
+   import sqlite3, sys
+   db = sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True)
+   for (t,) in db.execute("select name from sqlite_master where type='table' "
+                          "and name not like 'sqlite_%' order by name"):
+       print(t, db.execute('select count(*) from "%s"' % t).fetchone()[0])
+   EOF
+   docker run --rm --pull=never --network none --entrypoint python \
+     -v "$B":/b:ro -v /tmp/webui-counts.py:/c.py:ro "$DRILL_WEBUI_IMAGE" /c.py /b/webui.db
+   docker exec -i clive-drill-webui python - /app/backend/data/webui.db < /tmp/webui-counts.py
+   ```
+
+7. In a **private browser window** (so no live session is reused), open
+   `http://localhost:3100`, check the address bar still shows 3100, log in,
+   check chats and knowledge bases, and ask a question with a knowledge base
+   attached. Confirm in `docker logs clive-ollama` that `/api/embed` calls come
+   from the drill container's address
+   (`docker inspect clive-drill-webui -f '{{(index .NetworkSettings.Networks "clive-i_default").IPAddress}}'`).
+8. Tear down: `$DC down` removes the containers; `$DC down -v` also removes the
+   drill volumes. Neither touches the live stack or the backups.
+
+### Full rebuild after losing `sdb` (not drilled)
+
+Everything on `/data` is lost, including Docker's root directory
+(`/data/docker`), so all images and the mock volume go with it.
+
+1. Fit the new disk, create one ext4 partition, mount it at `/data`, and update
+   `/etc/fstab` with its UUID. Update `deploy/smartd/smartd.conf` with the new
+   serial and re-install it (`docs/installation.md` §9).
+2. `sudo mkdir -p /data/docker && sudo systemctl restart docker`
+   (`docker info --format '{{.DockerRootDir}}'` must print `/data/docker`).
+3. Pull the images at the versions in `images.txt`, and pull the models in
+   `ollama-models.txt` (`nomic-embed-text`, `qwen2.5-coder:7b`, `llama3.2`)
+   once Ollama is up.
+4. `.env`: **not in the backup yet** (§7, GPG key deferred). Without a copy,
+   recreate it from `.env.example`. New database passwords are fine for a fresh
+   restore, because the databases are re-initialised from `.env`.
+5. Restore Open WebUI's files into `/data/openwebui_data` (step 4 above, with
+   `-v /data/openwebui_data:/dst`), start `postgres` with an empty
+   `/data/pgvector_data`, restore the dump into it (step 3 above, into
+   `clive-postgres`), then `docker compose up -d`.
+6. The Simpro mock database is rebuilt from its seed (`services/simpro_mock/`).
+   The six unmounted `/data` directories are restored only if needed, from
+   their `data-<dir>.tar.gz` archives.
+7. Check as in steps 6 and 7 of the drill, against the live stack.
+
+### Drill report (2026-10-14)
+
+Run on 2026-10-14 from branch `feat/restore-drill` (based on `2cc7a6c`), by
+Claude with Alex doing the browser checks. Backup restored:
+`<home>/clive-backups/2026-10-14_1252` (made by `clive-backup.service`).
+
+| Step | Started (BST) | Took | Result |
+|---|---|---|---|
+| 1. Checksums | 14:01:50 | 1 s | all OK |
+| 2. Volumes and `drill-postgres` healthy | 14:01:51 | 8 s | healthy |
+| 3. `pg_restore --exit-on-error` | 14:01:59 | under 1 s | exit 0 |
+| 4. Open WebUI files and `webui.db` | 14:02:05 | under 1 s | copy's SHA-256 identical to the backup's |
+| 5. `drill-webui` healthy | 14:02:27 | 31 s | `{"status":true}`, no migrations run |
+| **Commands, checksums to a working Open WebUI** | | **about 68 s** | |
+| 7. Browser checks (Alex) | 14:23 | about 3 min | logged in; chats and knowledge base visible; questions answered |
+
+Row counts, Phase 2 database (live, drill, and the backup's own log at 12:52):
+
+```text
+public.document_chunk        live 365    drill 365    match
+[2026-10-14 12:52:55]       public.document_chunk: 365 rows (matches live)
+```
+
+`vector` extension restored at 0.8.6. `webui.db`, backup file against the
+drill's copy after Open WebUI had started: all 43 tables match; the non-empty
+ones are:
+
+```text
+alembic_version      backup 1     drill 1     match
+auth                 backup 1     drill 1     match
+chat                 backup 11    drill 11    match
+chat_file            backup 8     drill 8     match
+chat_message         backup 48    drill 48    match
+config               backup 341   drill 341   match
+feedback             backup 1     drill 1     match
+file                 backup 5     drill 5     match
+knowledge            backup 1     drill 1     match
+knowledge_file       backup 5     drill 5     match
+tag                  backup 18    drill 18    match
+user                 backup 1     drill 1     match
+31 other tables: 0 rows in both
+```
+
+These counts were taken before the browser checks. Afterwards the drill had
+12 chats: Alex's test question created one in the drill's copy.
+
+Torn down after Alex confirmed (`down -v`): the drill containers, both drill
+volumes and the drill network were removed; the six live containers kept
+running.
+
+Browser session on the drill (from `docker logs clive-drill-webui`, 13:23–13:26
+UTC): `POST /api/v1/auths/signin` 400 then 200, the knowledge base and its
+files opened, 3 `POST /api/chat/completions`. Ollama received 13 `/api/embed`
+and 11 `/api/chat` calls from the drill's address (`<drill-container-ip>`), so the
+questions were embedded and searched against the restored knowledge base.
+
+**Findings:**
+
+1. **Open WebUI's signing key is not backed up.** The live compose file does
+   not set `WEBUI_SECRET_KEY`, so Open WebUI keeps a generated key in
+   `/app/backend/.webui_secret_key` inside the container, not on `/data`. The
+   drill logged `Generating new WEBUI_SECRET_KEY`. Logging in with the
+   password still worked; existing sessions are invalidated, and the same
+   happens whenever the live container is recreated. Fixing it means setting
+   `WEBUI_SECRET_KEY` in `.env` and `docker-compose.yml` (a live change; not
+   done).
+2. **The first check was done on the wrong instance.** The first browser
+   session after the drill started went to the live Open WebUI (port 3000),
+   shown by the logs of both instances and Ollama's caller addresses. Step 7
+   now says to use a private window and to confirm in the logs.
+3. **Answer quality is not a restore question.** Alex found the answers "not
+   exactly on the point" on the live instance as well; it belongs to the
+   knowledge base audit (W3) and evaluation set (W4).
+4. Two of Claude's ad hoc count commands failed (a Python f-string error and
+   `$$` expanded by the shell) and were re-run; the commands above are the
+   corrected ones. Neither touched the restore.
 
 ## 11. Off-machine copy
 
