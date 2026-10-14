@@ -78,7 +78,7 @@ to date. If a document is not listed here, either add it here or delete it.
 | `ADR/adr-013-reshape-to-published-simpro-spec.md` | Accepted 2026-10-07, implemented 2026-10-08 (all 7 sprints). Governs field names, types and optionality via `contracts/simpro-openapi-v1-get-subset.json`; supersedes `adr-mock-simpro-api.md` "Capabilities & Coverage" |
 | `ADR/adr-mock-simpro-api.md` | Decision stands; its "Capabilities & Coverage" list is superseded by ADR-013 |
 | `ADR/adr-008-rate-limiting-strategy.md` | Withdrawn 2026-09-29 (duplicate of ADR-010). Kept for history |
-| `PDDs/PDD-phase1.md`, `PDD-phase2.md` | Phases complete |
+| `PDDs/PDD-phase1.md`, `PDD-phase2.md` | Phases complete. 2026-10-14: `PDD-phase2.md` §8 has a dated note that the Phase 2 backup script was replaced in course correction W5 |
 | `PDDs/PDD-phase3.md` | "As-built" at 2026-09-04; predates Sprint 4. **To do: revise now** (decided 2026-09-29) |
 | `PDDs/PDD-phase4.md` | Draft. Handoff link fixed 2026-10-02 (now ADR-009) |
 
