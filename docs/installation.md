@@ -105,7 +105,17 @@ Test layers and markers are described in `docs/testing.md`.
 ./scripts/backup.sh
 ```
 
-Dumps, compresses, and verifies the PGVector database (Phase 2). The mock's database (`simpro-mock-db`) is disposable dev/test data and is not part of the backup strategy — it can always be rebuilt from the seed script.
+Backs up everything in the inventory in `docs/recovery-plan.md` §7 to `BACKUP_DIR` (default `~/clive-backups`), which must be on a different disk from `/data`: the Phase 2 database (restore-verified into a temporary database), Open WebUI's `webui.db` (online backup) and files, the unmounted `/data` directories, the Ollama model list and image digests, with a SHA-256 `MANIFEST.txt`. Each run writes `<BACKUP_DIR>/<YYYY-MM-DD_HHMM>/` and keeps 7 daily and 4 weekly (Sunday) backups. Settings are the `BACKUP_*` variables in `.env.example`; `BACKUP_RETENTION_DAYS` is no longer used.
+
+`.env` is backed up only when `BACKUP_GPG_RECIPIENT` names a GPG public key; until then the script logs a warning and skips it.
+
+Check a backup:
+
+```bash
+cd ~/clive-backups/<YYYY-MM-DD_HHMM> && sha256sum -c MANIFEST.txt
+```
+
+The mock's database (`simpro-mock-db`) is disposable dev/test data and is not part of the backup strategy — it can always be rebuilt from the seed script.
 
 ## 10. Rollback
 
