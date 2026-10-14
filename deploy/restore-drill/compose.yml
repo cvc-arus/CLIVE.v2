@@ -1,0 +1,71 @@
+# Restore drill stack (W5 T6; procedure in docs/recovery-plan.md section 10).
+#
+# A separate Compose project with its own volumes and ports, so a backup can be
+# restored and checked without touching the live stack or /data:
+#
+#   docker compose -p clive-drill --env-file .env -f deploy/restore-drill/compose.yml ...
+#
+# drill-webui also joins the live network (clive-i_default) to use the live
+# Ollama and Tika: models are not in the backup, and a second Ollama would
+# compete for GPU memory. Service names differ from the live ones, so nothing
+# on the live network resolves to a drill container.
+#
+# DRILL_WEBUI_IMAGE pins Open WebUI to the image recorded in the backup's
+# images.txt; it is never pulled.
+
+name: clive-drill
+
+services:
+  drill-postgres:
+    image: pgvector/pgvector:0.8.6-pg16
+    container_name: clive-drill-postgres
+    pull_policy: never
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - pgvector:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5442:5432"
+    networks:
+      - drill
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  drill-webui:
+    image: ${DRILL_WEBUI_IMAGE:?set DRILL_WEBUI_IMAGE from the backup's images.txt}
+    container_name: clive-drill-webui
+    pull_policy: never
+    ports:
+      - "127.0.0.1:3100:8080"
+    volumes:
+      - webui-data:/app/backend/data
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - VECTOR_DB=pgvector
+      - PGVECTOR_DB_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@drill-postgres:5432/${POSTGRES_DB}
+      - CONTENT_EXTRACTION_ENGINE=tika
+      - TIKA_SERVER_URL=http://tika:9998
+      - RAG_EMBEDDING_ENGINE=ollama
+      - RAG_EMBEDDING_MODEL=nomic-embed-text
+      - ENABLE_RAG_HYBRID_SEARCH=true
+    networks:
+      - drill
+      - live
+    depends_on:
+      drill-postgres:
+        condition: service_healthy
+
+volumes:
+  pgvector:
+  webui-data:
+
+networks:
+  drill:
+  live:
+    name: clive-i_default
+    external: true

@@ -135,6 +135,8 @@ journalctl -u clive-backup -n 30 --no-pager
 
 The service runs `scripts/backup.sh` from the repository working tree, so the script on the checked-out branch is the one that runs. Remove the schedule with `sudo systemctl disable --now clive-backup.timer`, then delete the two files from `/etc/systemd/system/` and run `sudo systemctl daemon-reload`; existing backups are not touched.
 
+To restore a backup, or to check one with a restore drill next to the live stack (`deploy/restore-drill/compose.yml`), follow `docs/recovery-plan.md` §10.
+
 ### Disk health
 
 `smartmontools` monitors both disks (`docs/recovery-plan.md` §9). Install it and the repository's `smartd` configuration (needs sudo):
