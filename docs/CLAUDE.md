@@ -39,6 +39,10 @@ Every status statement must be one of these, and must be checkable:
 Never describe planned features in the present tense. Never mark a sprint,
 phase or ADR complete without evidence.
 
+Status statements (phase, sprint and workstream status, open risks, ADRs
+awaiting a decision) are written only in `docs/STATUS.md`. Other documents,
+including `roadmap.md`, link to it instead of restating status.
+
 ## 3. Verification evidence
 
 - Only include command output you actually ran, copied as-is (trimmed with
@@ -78,6 +82,7 @@ phase or ADR complete without evidence.
 
 | Content | Location |
 |---|---|
+| Current status | `docs/STATUS.md` (the only place status is stated) |
 | Architecture decisions | `docs/ADR/` |
 | Phase design | `docs/PDDs/PDD-phaseN.md` |
 | Sprint plans, contracts, reports | `docs/phaseN/` |
