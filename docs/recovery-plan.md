@@ -79,7 +79,7 @@ appear to be left over from an earlier setup.
 | Directory | Size | Notes |
 |---|---|---|
 | `/data/open-webui` | 894M | An earlier Open WebUI data directory: `webui.db` last written 2026-08-05, plus `uploads/`, `cache/` and `vector_db/`. May hold earlier users and chats. The live stack uses `/data/openwebui_data` |
-| `/data/postgres` | Unknown | Not readable without root |
+| `/data/postgres` | 46M | Not readable by `clive`; size measured on 2026-10-14 with `du -sh` through a `postgres:16-alpine` container (read-only mount) |
 | `/data/qdrant` | 20K | Empty-looking Qdrant store (`aliases/`, `collections/`, `raft_state.json`) |
 | `/data/redis` | ≥ 12K | `dump.rdb` and `appendonlydir/` (the latter not readable without root) |
 | `/data/backups` | Empty | |
@@ -98,7 +98,7 @@ appear to be left over from an earlier setup.
 - **Owned by `clive`:** a scheduled job running as `clive` can write there
   without root.
 - **Space:** 160G free, against about 160 MB of live data (Ollama models
-  excluded) and about 900 MB in the unmounted directories.
+  excluded) and about 940 MB in the unmounted directories.
 
 The directory does not exist yet; it is created when the backup script first
 runs (W5 T3).
@@ -109,12 +109,9 @@ Planned, not yet done:
 
 - **Root-owned directories.** `/data/pgvector_data`, `/data/openwebui_data`,
   `/data/open-webui`, `/data/postgres` and `/data/redis` cannot be read by
-  `clive`. The backup has to archive them through a container
-  (`docker run --rm -v /data/<dir>:/src:ro alpine tar …`, the pattern in the W5
-  task file) or with sudo. To be settled in T3.
-- **Inventory (T2).** "Source documents" drops out, because `/data/documents`
-  is empty and no documents were found stored outside Open WebUI. The six
-  unmounted directories are added.
+  `clive`. Decision (2026-10-14, Alex): archive them through a throwaway
+  container using the `postgres:16-alpine` image, which is already on the host
+  and includes `tar`, so no new image is pulled and the timer needs no sudo.
 - **`scripts/backup.sh`** defaults to `./backups` inside the repository. That
   directory does not exist, so the script has probably not been run with its
   defaults (a `BACKUP_DIR` override in `.env` was not checked). T3 points it at
@@ -125,7 +122,29 @@ Planned, not yet done:
 
 ## 7. Backup inventory
 
-Not yet done (W5 T2).
+Agreed 2026-10-14 (W5 T2). Facts checked on 2026-10-14 against commit
+`0087257`. Nothing below is backed up yet; the script is W5 T3.
+
+| # | Item | Size | Method | Notes |
+|---|---|---|---|---|
+| 1 | Phase 2 Postgres: database `clive` (one table, `document_chunk`) and roles | 18 MB | `pg_dump -Fc` and `pg_dumpall --globals-only`, run inside `clive-postgres` (`pg_dump` 16.14) | Also holds the **knowledge base embeddings**: Open WebUI's `PGVECTOR_DB_URL` points at this database (`docker-compose.yml`). Keep the restore check that `scripts/backup.sh` already does |
+| 2 | Open WebUI `webui.db` (users, chats, settings) | about 5.5 MB with its WAL | SQLite online backup through `docker exec clive-webui python3` (its `sqlite3` module is 3.40.1) | No `sqlite3` command exists on the host or in the container. A plain `tar` of a live WAL database can be inconsistent |
+| 3 | Open WebUI uploads and cache (`/data/openwebui_data`) | 16 MB and 20K | `tar` through `postgres:16-alpine` | Contains real customer documents |
+| 4 | The six unmounted directories (§4) | about 940 MB | `tar` of each through `postgres:16-alpine`, read-only mount | `/data/open-webui` also holds an old Chroma store (`vector_db/chroma.sqlite3`) and no uploads |
+| 5 | `.env` | small | Encrypted with a GPG **key pair**: the public key on the host, the private key and its passphrase kept off the machine (decision 2026-10-14, Alex) | A scheduled job cannot type a passphrase, so symmetric encryption with an off-machine passphrase is not possible. The host has no GPG key yet |
+| 6 | Ollama model list | — | `ollama list` output saved to a text file | Models (`nomic-embed-text`, `qwen2.5-coder:7b`, `llama3.2`) are re-pulled, not backed up |
+| 7 | Image versions | — | Each running image's digest saved to a text file | `open-webui:main` and `ollama/ollama` are unpinned tags, so a restore could pull a newer Open WebUI that migrates `webui.db`. Running: Open WebUI 0.11.0 |
+
+Not backed up:
+
+- **`simpro-mock-db`:** disposable test data, rebuilt from the seed script
+  (`docs/installation.md` §9).
+- **Source documents:** none outside Open WebUI (`/data/documents` is empty).
+- **Git repository:** on GitHub; no bundle.
+
+**Sensitivity:** backups contain customer documents (item 3) and chats
+(item 2). The backup directory is to be readable by `clive` only (mode 700),
+and the off-machine copy (§11) is to be encrypted.
 
 ## 8. Backup procedure and schedule
 
