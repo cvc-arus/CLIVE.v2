@@ -115,6 +115,26 @@ Check a backup:
 cd ~/clive-backups/<YYYY-MM-DD_HHMM> && sha256sum -c MANIFEST.txt
 ```
 
+### Daily schedule
+
+A systemd timer runs the backup daily at 02:30 as user `clive`. The unit files are in `deploy/systemd/`. Install them (needs sudo), or re-install after changing them:
+
+```bash
+sudo install -m 0644 deploy/systemd/clive-backup.service deploy/systemd/clive-backup.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now clive-backup.timer
+systemctl list-timers clive-backup.timer
+```
+
+Run it once through systemd and read the log:
+
+```bash
+sudo systemctl start clive-backup.service
+journalctl -u clive-backup -n 30 --no-pager
+```
+
+The service runs `scripts/backup.sh` from the repository working tree, so the script on the checked-out branch is the one that runs. Remove the schedule with `sudo systemctl disable --now clive-backup.timer`, then delete the two files from `/etc/systemd/system/` and run `sudo systemctl daemon-reload`; existing backups are not touched.
+
 The mock's database (`simpro-mock-db`) is disposable dev/test data and is not part of the backup strategy — it can always be rebuilt from the seed script.
 
 ## 10. Rollback
