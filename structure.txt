@@ -14,6 +14,8 @@
 │   └── postgres
 │       └── init-pgvector.sql
 ├── deploy
+│   ├── smartd
+│   │   └── smartd.conf
 │   └── systemd
 │       ├── clive-backup.service
 │       └── clive-backup.timer
@@ -198,4 +200,4 @@
 │   └── test_spec_conformance.py
 └── uv.lock
 
-35 directories, 163 files
+36 directories, 164 files
