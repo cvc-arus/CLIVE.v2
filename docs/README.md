@@ -105,6 +105,7 @@ separate from living documents. Each gets a one-line header:
 | `scope/clive-scope.md` | Keep as historical. Original `Clive_Scope.txt`, added 2026-10-01 (decision 1) |
 | `scope/master-project-document.md` | Keep as historical. Original master project document, added 2026-10-01 (decision 1) |
 | `scope/scope-rev2.md` | Keep as historical (superseded by `roadmap.md`). Done 2026-10-05: renamed from `scope/scope&readmap-rev2.md` (no `&` in filenames) |
+| `scope/scope-rev3.md` | Keep as historical (superseded by `STATUS.md` and `course-correction-plan.md`, per its header). Added 2026-10-13 at course correction intake |
 
 ## 7. Content to relocate
 
