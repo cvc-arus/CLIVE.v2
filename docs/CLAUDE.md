@@ -118,6 +118,6 @@ including `roadmap.md`, link to it instead of restating status.
   Mention the `uv sync` vs `pip install -e ".[dev]"` pitfall where relevant.
 - No secrets, tokens, real customer data or `.env` values in docs. Use
   `.env.example` names only.
-- `ruff format --check .` also inspects Python code blocks inside Markdown
-  (`docs/phase3/phase3-summary.md` and `phase3-sprint4-contract.md`
-  currently fail it). Do not mass-reformat existing docs.
+- `ruff format --check .` also inspects Python code blocks inside Markdown,
+  and the whole repository passes it (re-verified 2026-10-15). Code blocks
+  you add must keep it passing. Do not mass-reformat existing docs.

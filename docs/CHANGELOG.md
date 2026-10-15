@@ -104,6 +104,7 @@ Implemented with deviations from ADR-010; see `src/simpro_client/CLAUDE.md`.
 - 2026-10-15: created `docs/reviews/` with a `README.md` (naming, historical header, where findings go, and the W2 and W3 reviews planned there); indexed in `docs/README.md` §3. Documentation only
 - 2026-10-15: `docs/PDDs/PDD-phase3.md` revised as-built and **closed** (Alex): rewritten from the codebase at `864264b` — the typed client layer, the mock as re-shaped by ADR-013, the ADR-009 handoff, plan vs delivery against `scope-rev2.md`, the decisions, and what was carried forward; sign-off evidence stays in `docs/phase3/phase3-signoff.md`. `docs/phase3/phase3-summary.md` stays a historical record and is not merged (Alex). `docs/README.md` §5, §6 and §8 updated. Documentation only
 - 2026-10-15: W6 complete, accepted by Alex. `/sprint-task` and `/status-update` confirmed after a restart; security documentation deferred to Phase 3B Sprint 2 (confirmed); the Proposed-ADR rules stay in root `CLAUDE.md` §3. Documentation only
+- 2026-10-15: lint statements corrected. PR #47 (2026-10-12) cleared the lint debt, but the documents still said `ruff check .` and `ruff format --check .` failed. Re-verified at `fb8a0e8`: both pass on the whole repository, Markdown code blocks included. `known-issues.md` marks the entry RESOLVED; root `CLAUDE.md` §1 and §7, `docs/CLAUDE.md` §6, `testing.md`, `development-standards.md`, `roadmap.md` and `docs/README.md` decision 4 updated. Documentation only
 
 ## Not Yet Started
 

@@ -29,8 +29,9 @@ the approver for every sprint and architectural decision.
     `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013), and
     `tests/test_spec_conformance.py` proves it without API access.
   - Closed does not mean frozen: `docs/known-issues.md` still lists the
-    `pip install -e ".[dev]"` pitfall and the pre-existing lint debt, and four
-    mock behaviours remain unverifiable without live credentials.
+    `pip install -e ".[dev]"` pitfall, and four mock behaviours remain
+    unverifiable without live credentials. (The lint debt carried past the
+    close was cleared on 2026-10-12, PR #47.)
 - Phase 4 (not started, **no longer blocked**): document generation. ADR-009's
   decision is recorded, so scoping can begin. Its entry criteria now include
   `clive-gateway`'s query catalogue covering Customers, Sites, Contacts, Jobs,
@@ -202,17 +203,19 @@ Mock and full stack: see `services/simpro_mock/CLAUDE.md`. Test layers:
 - Exact-pinned dependencies (`==`). Adding any runtime dependency needs a
   stated justification; adding a new category of dependency needs an ADR.
 
-**Lint baseline** (re-verify before relying on this): `ruff check .` and
-`ruff format --check .` do not pass (existing debt in `src/`, `tests/`,
-`services/`, `scripts/`, and Markdown code blocks). Therefore:
+**Lint baseline** (re-verified 2026-10-15; re-verify before relying on this):
+`uv run ruff check .` and `uv run ruff format --check .` pass on the whole
+repository, including Python code blocks in Markdown. The earlier debt was
+cleared on 2026-10-12 (PR #47). Therefore:
 
-- New files must pass `ruff check` and `ruff format --check`.
-- Modified files must not gain new violations. Code you add or rewrite must
-  be clean. Pre-existing violations elsewhere in the file are reported, not
-  fixed, unless the task asks for it. (Some are intentional; see
-  `services/simpro_mock/CLAUDE.md` §4 for `B008`/`N803` in `routers.py`.)
+- New and modified files must pass `ruff check` and `ruff format --check`;
+  the whole-repo commands must keep passing.
+- Intentional exceptions are per-file ignores in the root `pyproject.toml`
+  (`B008`/`N803` in the mock's `routers.py`; see `services/simpro_mock/CLAUDE.md`
+  §4). Add a new one only with a stated reason.
 - Do not run `ruff --fix` or `ruff format` on files outside your change.
-- Report pre-existing lint failures; do not silently fix them in unrelated work.
+- If a check fails on code you did not touch, report it; do not silently fix
+  it in unrelated work.
 
 ## 8. Git
 
@@ -242,10 +245,10 @@ Mock and full stack: see `services/simpro_mock/CLAUDE.md`. Test layers:
 - Never read, print, edit, or summarise `.env` or `.env.*` (denied in
   `.claude/settings.json`). Use `.env.example` to learn variable names.
 - Never hardcode secrets or log tokens, client secrets, or API keys.
+- Never print, log or commit secrets. Refer to `.env` variables by name only.
 - The mock's static bearer token (a default in its `config.py`) is
   development-only. Do not copy that pattern into new services or into
   `simpro_client`. Mock DB credentials come from `.env`
-- Never print, log or commit secrets. Refer to `.env` variables by name only.
   (`SIMPRO_MOCK_DB_*`).
 - New ports bind to `127.0.0.1` unless there is a stated reason not to.
   Keep exposed ports to a minimum.

@@ -22,7 +22,7 @@ uv run ruff check <paths>
 uv run ruff format --check <paths>
 ```
 
-New files must pass both checks, and modified files must not gain new violations. The repository has existing lint debt (`uv run ruff check .` does not pass), tracked in `docs/known-issues.md`; clearing it is a later code task. Do not run `ruff --fix` or `ruff format` on files outside your change (root `CLAUDE.md` §7).
+New files must pass both checks, and modified files must not gain new violations. Both whole-repo commands, `uv run ruff check .` and `uv run ruff format --check .`, pass and must keep passing (the earlier lint debt was cleared on 2026-10-12, PR #47). Do not run `ruff --fix` or `ruff format` on files outside your change (root `CLAUDE.md` §7).
 
 ## 2. Testing
 
