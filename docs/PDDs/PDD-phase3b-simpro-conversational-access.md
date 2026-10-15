@@ -81,8 +81,8 @@ work after Phase 3 and before Phase 4, which is where its dependencies put it.
 
 **Entry criteria**
 1. Phase 3 signed off. **Met:** Phase 3 closed 2026-10-09 (see `docs/roadmap.md`).
-2. ADR-009's decision recorded (PR #44, 2026-10-09). **Met**, although its
-   Status line still reads Proposed; updating it is pending Alex.
+2. ADR-009's decision recorded (PR #44, 2026-10-09). **Met**; ADR-009
+   accepted (Status line updated by Alex 2026-10-15).
 3. Course correction sprint complete (`docs/course-correction-plan.md`;
    progress in `docs/STATUS.md`).
 

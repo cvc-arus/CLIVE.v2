@@ -4,7 +4,7 @@
 > (`/status-update`). Keep this file short: history belongs in `docs/CHANGELOG.md`,
 > decisions in `docs/ADR/`.
 
-**Last updated:** 2026-10-14
+**Last updated:** 2026-10-15
 
 ## Phases
 
@@ -61,6 +61,5 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 
 | ADR | Title | Status |
 |---|---|---|
-| ADR-009 | Phase 3 → Phase 4 handoff (`clive-gateway` as the single Simpro access point) | Decision recorded 2026-10-09 (PR #44). Status line still reads Proposed and its `Related:` line miscites ADR-011; both pending Alex |
-| ADR-014 | Simpro data access control model | Proposed. **Conflict for Alex to resolve:** stores `clive_gateway` on the Phase 2 Postgres, against root `CLAUDE.md` §3 |
+| ADR-014 | Simpro data access control model | Proposed. Storage conflict with root `CLAUDE.md` §3 resolved by Alex 2026-10-15 (narrow exception in §3) |
 | ADR-015 | Conversational access approach | Proposed |

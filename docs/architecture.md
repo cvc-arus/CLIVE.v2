@@ -199,7 +199,7 @@ The Phase 3 → Phase 4 handoff is decided in ADR-009 (`docs/ADR/adr-009-phase3-
 | Component | New / existing | Planned role |
 |---|---|---|
 | `clive-gateway` | New service | FastAPI, single uvicorn worker so the ADR-010 limiter holds; the only runtime importer of `simpro_client` (ADR-009). Policy checks, field masking and audit (ADR-014). Port reachable only on the internal Docker network |
-| `clive_gateway` database | New database | Access control tables and audit log, with its own least-privilege DB user. ADR-014 places it on the Phase 2 `postgres` instance, which conflicts with the two-instance rule in §2 and root `CLAUDE.md` §3; unresolved until Alex decides |
+| `clive_gateway` database | New database | Access control tables and audit log, with its own least-privilege DB user. ADR-014 places it on the Phase 2 `postgres` instance, under a narrow exception to the two-instance rule in §2 that Alex approved on 2026-10-15 (root `CLAUDE.md` §3): the gateway uses only its own database and DB user, never the knowledge-base database, and no test runs against port 5432 |
 | Simpro tool | New, inside `open-webui` | Python tool that calls the gateway over HTTP with a service secret, the user's identity and a correlation ID; answers through a fixed query catalogue (ADR-015) |
 | `nginx` | New service | Reverse proxy with HTTPS in front of Open WebUI, the only entry point exposed to the LAN (Phase 3B Sprint 2, brought forward from Phase 5) |
 | `open-webui`, `ollama`, `simpro-mock`, `simpro-mock-db` | Existing | Open WebUI gets configuration changes only (groups, admin-only tools, sharing off); the mock stays the data source until live Simpro access |
