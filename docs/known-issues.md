@@ -118,6 +118,8 @@ Two caveats remain, both deliberate and documented in
   pagination headers exist (they are real but absent from the spec), and the
   exact default projection of routes the mock narrows by hand.
 
-## Existing lint debt
+## RESOLVED 2026-10-12 — existing lint debt
 
 Observed 2026-10-02. `uv run ruff check .` and `uv run ruff format --check .` do not pass on the existing code in `src/`, `tests/`, `services/`, `scripts/` and on Python blocks in some Markdown files. Run the commands for the current count. New and modified code must be lint-clean (root `CLAUDE.md` §7); clearing the existing errors is a later code task.
+
+**Resolved** by PR #47 (`2dacc22`, 2026-10-12), which applied `ruff format` and fixed lint across the repository. This entry was not updated at the time. Re-verified 2026-10-15 at `fb8a0e8`: `uv run ruff check .` reported "All checks passed!" and `uv run ruff format --check .` reported "145 files already formatted", Python blocks in Markdown included. The two intentional exceptions (`B008`, `N803` in the mock's `routers.py`) are configured as per-file ignores in the root `pyproject.toml`.

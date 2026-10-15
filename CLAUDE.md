@@ -29,8 +29,9 @@ the approver for every sprint and architectural decision.
     `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013), and
     `tests/test_spec_conformance.py` proves it without API access.
   - Closed does not mean frozen: `docs/known-issues.md` still lists the
-    `pip install -e ".[dev]"` pitfall and the pre-existing lint debt, and four
-    mock behaviours remain unverifiable without live credentials.
+    `pip install -e ".[dev]"` pitfall, and four mock behaviours remain
+    unverifiable without live credentials. (The lint debt carried past the
+    close was cleared on 2026-10-12, PR #47.)
 - Phase 4 (not started, **no longer blocked**): document generation. ADR-009's
   decision is recorded, so scoping can begin. Its entry criteria now include
   `clive-gateway`'s query catalogue covering Customers, Sites, Contacts, Jobs,
@@ -117,7 +118,7 @@ Where to find current state:
 | 006 | Library-first `simpro_client` | Accepted, implemented. **"No service wrapper" partially superseded by ADR-009**; the library-first part stands |
 | 007 | pydantic-settings, `SIMPRO_` / `SIMPRO_MOCK_` prefixes | Accepted, implemented |
 | 008 | Rate limiting | Withdrawn 2026-09-29 as a duplicate of ADR-010; kept for history |
-| 009 | Phase 3 → 4 handoff | **Decision recorded 2026-10-09 (Alex): Option B**, a single `clive-gateway` service imports `simpro_client` and serves every other consumer over HTTP. Its Status line still reads Proposed and its `Related:` line miscites ADR-011, both pending Alex. `clive-gateway` **does not exist yet** — do not build it unasked |
+| 009 | Phase 3 → 4 handoff | **Decision recorded 2026-10-09 (Alex): Option B**, a single `clive-gateway` service imports `simpro_client` and serves every other consumer over HTTP. **Accepted** (Status and `Related:` lines updated by Alex 2026-10-15). `clive-gateway` **does not exist yet** — do not build it unasked |
 | 010 | Resilience: token bucket, 401/429 budgets, error hierarchy | Approved; implemented with deviations (see `src/simpro_client/CLAUDE.md`). §2.5 superseded by ADR-011 |
 | 011 | Exception hierarchy and `SimproAuthError` context (supersedes ADR-010 §2.5) | Accepted 2026-10-06, implemented |
 | 012 | Retry delay ceiling (`SIMPRO_MAX_RETRY_DELAY`) and token-refresh concurrency | Accepted 2026-10-06 (supersedes ADR-010 §2.3, extends §2.1) |
@@ -202,17 +203,19 @@ Mock and full stack: see `services/simpro_mock/CLAUDE.md`. Test layers:
 - Exact-pinned dependencies (`==`). Adding any runtime dependency needs a
   stated justification; adding a new category of dependency needs an ADR.
 
-**Lint baseline** (re-verify before relying on this): `ruff check .` and
-`ruff format --check .` do not pass (existing debt in `src/`, `tests/`,
-`services/`, `scripts/`, and Markdown code blocks). Therefore:
+**Lint baseline** (re-verified 2026-10-15; re-verify before relying on this):
+`uv run ruff check .` and `uv run ruff format --check .` pass on the whole
+repository, including Python code blocks in Markdown. The earlier debt was
+cleared on 2026-10-12 (PR #47). Therefore:
 
-- New files must pass `ruff check` and `ruff format --check`.
-- Modified files must not gain new violations. Code you add or rewrite must
-  be clean. Pre-existing violations elsewhere in the file are reported, not
-  fixed, unless the task asks for it. (Some are intentional; see
-  `services/simpro_mock/CLAUDE.md` §4 for `B008`/`N803` in `routers.py`.)
+- New and modified files must pass `ruff check` and `ruff format --check`;
+  the whole-repo commands must keep passing.
+- Intentional exceptions are per-file ignores in the root `pyproject.toml`
+  (`B008`/`N803` in the mock's `routers.py`; see `services/simpro_mock/CLAUDE.md`
+  §4). Add a new one only with a stated reason.
 - Do not run `ruff --fix` or `ruff format` on files outside your change.
-- Report pre-existing lint failures; do not silently fix them in unrelated work.
+- If a check fails on code you did not touch, report it; do not silently fix
+  it in unrelated work.
 
 ## 8. Git
 
@@ -229,7 +232,8 @@ Mock and full stack: see `services/simpro_mock/CLAUDE.md`. Test layers:
   `--force`, and only when asked.
 - Commit only when Alex asks. At the end of a sprint, propose the commit
   message and wait. One logical change per commit, with a descriptive
-  message (existing history uses `feat:`, `fix:`, `chore:`, `refactor:`).
+  conventional commit message (`type(scope): summary`; existing history uses
+  `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`).
 - Never commit `.env`, `.venv/`, `__pycache__/`, `*.egg-info/`, `backups/`,
   or coverage output. Some bytecode and `egg-info` files are still tracked
   (re-verify before relying on this), so running tests can make them appear
@@ -241,6 +245,7 @@ Mock and full stack: see `services/simpro_mock/CLAUDE.md`. Test layers:
 - Never read, print, edit, or summarise `.env` or `.env.*` (denied in
   `.claude/settings.json`). Use `.env.example` to learn variable names.
 - Never hardcode secrets or log tokens, client secrets, or API keys.
+- Never print, log or commit secrets. Refer to `.env` variables by name only.
 - The mock's static bearer token (a default in its `config.py`) is
   development-only. Do not copy that pattern into new services or into
   `simpro_client`. Mock DB credentials come from `.env`

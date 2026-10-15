@@ -28,8 +28,8 @@ over HTTP), and the open defects were triaged.
 Two items carried past the close, neither a defect in the delivered code, both
 in `known-issues.md`: the `pip install -e ".[dev]"` pitfall, which is a
 consequence of PEP 735 `[dependency-groups]` and is handled by using `uv sync`
-everywhere; and the pre-existing lint debt, whose clearing `docs/README.md`
-decision 4 records as a later task.
+everywhere; and the pre-existing lint debt, which was cleared on 2026-10-12
+(PR #47).
 
 Four mock behaviours remain **unverifiable without live credentials** and are
 the first things to check when access arrives: whether Simpro returns `ID` in a
