@@ -1,118 +1,152 @@
-# Phase 3 Project Design Document — Simpro API Integration (As-Built)
+# Phase 3 Project Design Document — Simpro API Integration (As-Built, Closed)
 
 **Project:** CLIVE Enterprise AI Platform
 **Company:** CVC (CCTV and Security)
 **Repository:** `git@github.com:cvc-arus/CLIVE-I.git` (branch `develop`)
-**Document status:** As-built, generated from the codebase on 2026-09-04
-**Supersedes:** The original Phase 3 PDD drafted before live Simpro API access was known to be unavailable (see `Phase3-Sprint1.txt`)
+**Document status:** **Closed.** Phase 3 was closed by Alex on 2026-10-09. This
+as-built revision was written on 2026-10-15 from the codebase at commit
+`864264b` and is not maintained after that. Current architecture is in
+`docs/architecture.md`; current status is in `docs/STATUS.md`.
+**Supersedes:** the as-built version of 2026-09-04 (in git history), which
+predated the typed client layer, and the original Phase 3 PDD drafted before
+it was known that there was no live Simpro API access.
+**Sign-off evidence:** `docs/phase3/phase3-signoff.md` (test run, close,
+items carried past the close).
 
 ---
 
 ## 1. Objective
 
-Build a reusable, typed Python integration layer for the Simpro REST API that will serve as the shared data-access layer for Phase 4 (Document Generation) and later phases, without requiring live Simpro Premium API credentials during development.
+Build a reusable, typed Python integration layer for the Simpro REST API to
+serve as the shared data-access layer for Phase 4 (Document Generation) and
+later phases, without live Simpro API credentials during development.
 
 ## 2. Why the Original Plan Changed
 
-The original PDD assumed live Simpro sandbox access and planned to build typed endpoint modules early (Sprint 2), tested against a thin mock. Once it was confirmed CVC has **no live Simpro API access**, the team made an architecture decision (`docs/ADR/adr-mock-simpro-api.md`) to build a **high-fidelity mock service first**, covering all 12 target resources with realistic pagination, filtering, and PascalCase field fidelity. This means only `SIMPRO_BASE_URL` (and `SIMPRO_TOKEN_URL`) need to change when live access arrives — no client code changes.
+The original plan assumed live Simpro sandbox access and built typed endpoint
+modules early against a thin mock. Once it was confirmed that CVC had **no
+live Simpro API access**, the mock service was built first
+(`docs/ADR/adr-mock-simpro-api.md`), so that only configuration
+(`SIMPRO_BASE_URL`, `SIMPRO_TOKEN_URL`, credentials) changes when live access
+arrives. The revised plan is in `docs/scope/scope-rev2.md` (historical).
 
-This is documented in full in `docs/scope/scope-rev2.md` (formerly `RevisedScope.txt`), which supersedes the original 6-sprint plan.
+That cutover claim was first only asserted. In October 2026 Simpro's published
+OpenAPI spec showed the mock's payloads did not match it (`docs/known-issues.md`,
+entry RESOLVED 2026-10-08). ADR-013 re-shaped the mock and the client to that
+contract, vendored at `docs/contracts/simpro-openapi-v1-get-subset.json`, so the
+claim is now measured by `tests/test_spec_conformance.py` rather than asserted.
 
-## 3. Current State of the Codebase (verified by running the test suite, not just reading it)
+## 3. Delivered (as built)
 
-| Component | Status | Evidence |
+Detail is owned by `docs/architecture.md` §5 and the directory `CLAUDE.md`
+files; this section summarises it with file paths.
+
+### 3.1 `simpro_client` (`src/simpro_client/`)
+
+| Area | Files | Decision |
 |---|---|---|
-| `src/simpro_client/` — config, auth, base HTTP client, exceptions, structured logging | ✅ Built and tested | 18/18 unit tests pass (`pytest tests/ -v`, respx-mocked, no live dependency) |
-| `services/simpro_mock/` — FastAPI mock service + PostgreSQL schema + seed data | ✅ Built | 12 resources modelled, seeded, and routed; verified against a running instance |
-| `simpro_client/models/` and `simpro_client/endpoints/` (typed Pydantic models + endpoint modules) | ❌ Not yet started | These directories do not exist in the current tree; only the foundation client (`client.py`, `auth.py`, `config.py`) is present |
-| `pagination.py`, `rate_limiter.py` on the client side | ❌ Not yet started | Not present in `src/simpro_client/` |
+| Configuration via pydantic-settings, `SIMPRO_` prefix, per-`auth_mode` validation | `config.py` | ADR-007 |
+| OAuth2 Client Credentials with in-memory token cache and early refresh; static API key fallback; refresh lock and token-aware invalidate | `auth.py` | ADR-005, ADR-012 |
+| Sync `httpx.Client` transport: bearer and correlation-ID headers, one 401 retry, 429 and transient-error retries with a capped `Retry-After` | `client.py` | ADR-004, ADR-010, ADR-012 |
+| Typed exception hierarchy with auth-error context | `exceptions.py` | ADR-011 |
+| Token-bucket rate limiter, budget per client instance (default 8 req/s) | `rate_limiter.py` | ADR-010 |
+| Structured JSON logging with `ContextVar` correlation IDs | `logging.py` | — |
+| Typed Pydantic models, PascalCase-aliased, shaped to the vendored contract; money as `Decimal` | `models/` | ADR-013 |
+| Generic `ResourceEndpoint` with `get()`, `fetch_page()`, `iter_all()` and `columns=`; one module per resource | `endpoints/` | ADR-006, ADR-013 |
 
-**Important correction to the narrative in `docs/scope/scope-rev2.md`:** that document describes a "Sprint 4 — Typed Client Layer" as "🔶 In Progress." The code shows no `models/` or `endpoints/` package under `simpro_client` yet — the typed layer has not been started in code. What *is* complete is the client foundation (Sprint 1) and the mock service (Sprint 3), plus a set of hardening fixes applied on top of them (see §6). Per the project's own principle — code is the source of truth — this document reflects the code, not the plan.
+ADR-010 is implemented with deviations, listed in `src/simpro_client/CLAUDE.md`.
+There is no separate `pagination.py`; pagination lives in `endpoints/base.py`.
 
-## 4. Architecture (as implemented)
+### 3.2 `simpro_mock` (`services/simpro_mock/`)
+
+FastAPI + sync SQLAlchemy 2.0 + PostgreSQL 16 (`simpro-mock-db`, port 5433),
+Alembic migrations, two-company seed data, and Docker Compose services
+`simpro-mock` (port 8100) and `simpro-mock-db`, both bound to `127.0.0.1`.
+GET-only resource routes shaped to the vendored contract, plus `/health` and a
+development-only `POST /oauth2/token`. It honours `columns` on every route,
+`orderby` and `limit` on collection routes, Simpro-style filter operators and
+pagination headers, and returns `400` on an unknown filter or an unorderable
+`orderby` field (`routers.py`, `serializers.py`, `projection.py`,
+`filtering.py`, `ordering.py`, `middleware.py`).
+
+Simpro has no Projects resource: a project is a Job with `Type="Project"`, so
+the mock's earlier `projects` table and route were removed (ADR-013).
+
+### 3.3 Tests (`tests/`)
+
+Offline: `test_client.py`, `test_auth.py`, `test_config.py`, `test_logging.py`,
+`test_models.py`, `test_endpoints.py`, `test_pagination.py`,
+`test_rate_limiter.py`, `test_retries.py`, `test_route_contract.py` and
+`test_spec_conformance.py` (with `spec_conformance_baseline.json`, which is
+empty). Integration, needing the mock: `test_simpro_mock_v2.py` and
+`test_client_mock_drift.py`. Layers and commands: `docs/testing.md` and
+`tests/CLAUDE.md`. Test counts at the close: `docs/phase3/phase3-signoff.md`.
+
+## 4. Architecture at the Close
 
 ```
-                 CLIVE Platform
-        ┌─────────────────────────────┐
-        │   Open WebUI / future        │
-        │   Phase 4+ services           │
-        └───────────────┬──────────────┘
-                         │ (ADR-009: through `clive-gateway`, not built yet)
-        ┌────────────────▼──────────────┐
-        │      simpro_client (Python)    │
-        │  config → auth → client         │
-        │        (no typed models/         │
-        │         endpoints yet)           │
-        └────────────────┬──────────────┘
-                         │ HTTP (Bearer token)
-        ┌────────────────▼──────────────┐
-        │   simpro-mock (FastAPI, :8100) │
-        │   ── BearerAuthMiddleware       │
-        │   ── 12 resource routers        │
-        │   ── pagination + filtering     │
-        └────────────────┬──────────────┘
-                         │ SQLAlchemy 2.0 (sync)
-        ┌────────────────▼──────────────┐
-        │  simpro-mock-db (Postgres 16,   │
-        │  container port 5433)           │
-        └─────────────────────────────────┘
+        ┌──────────────────────────────────────┐
+        │ clive-gateway (ADR-009, Phase 3B)     │
+        │ planned; the only runtime importer    │
+        └──────────────────┬───────────────────┘
+                           │ Python import
+        ┌──────────────────▼───────────────────┐
+        │ simpro_client (src/simpro_client/)    │
+        │ config · auth · client · rate limiter │
+        │ models/ · endpoints/                  │
+        └──────────────────┬───────────────────┘
+                           │ HTTP (OAuth2 bearer token)
+        ┌──────────────────▼───────────────────┐
+        │ simpro-mock (FastAPI, :8100)          │
+        │ later: {build}.simprosuite.com        │
+        └──────────────────┬───────────────────┘
+                           │ SQLAlchemy 2.0 (sync)
+        ┌──────────────────▼───────────────────┐
+        │ simpro-mock-db (Postgres 16, :5433)   │
+        └──────────────────────────────────────┘
 ```
 
-When live Simpro access is enabled, `SIMPRO_BASE_URL` and `SIMPRO_TOKEN_URL` swap from the mock's URLs to `https://{build}.simprosuite.com/api/v1.0` and its token endpoint. No other change is required to `simpro_client`'s foundation layer.
+**Handoff (ADR-009, accepted):** a single `clive-gateway` service imports
+`simpro_client` and serves every other consumer, Phase 4 included, over HTTP.
+It does not exist yet; it is planned in Phase 3B
+(`docs/PDDs/PDD-phase3b-simpro-conversational-access.md`). ADR-006's
+library-first design stands; only its "no service wrapper" part is superseded.
 
-## 5. Scope Delivered So Far
+## 5. Plan vs Delivery
 
-**In scope, delivered:**
-- OAuth2 Client Credentials token management with in-memory caching, refresh, and 401-triggered retry (`simpro_client/auth.py`, `client.py`)
-- API Key fallback auth mode
-- Typed exception hierarchy (`SimproError` → `SimproAuthError`, `SimproAPIError` → `SimproRateLimitError`, `SimproNotFoundError`)
-- Structured JSON logging with `ContextVar`-based correlation IDs, propagated as an `X-Correlation-ID` request header
-- Configuration via `pydantic-settings`, `.env`-driven, `SIMPRO_` prefix, `extra="ignore"` so it coexists with PGVector's `.env` keys
-- A full mock Simpro REST API (`simpro_mock`) covering 12 resources: Companies, Customers, Jobs, Quotes, Contacts, Sites, Assets, Employees, Projects, Job Notes, Attachments, Statuses
-- Simpro-style query filtering (`gt()`, `lt()`, `le()`, `ge()`, `ne()`, `between()`, `in()`, `!in()`, `search=all|any`)
-- Simpro-style pagination (`page`, `pageSize`, `Result-Total`/`Result-Count`/`Result-Pages` headers)
-- PascalCase response field fidelity to match the real Simpro API shape
-- Two-company seed data model (`CVC Service` = company 1, `CVC Projects` = company 2)
-- Alembic migrations for the mock's schema
-- Docker Compose integration (`simpro-mock`, `simpro-mock-db` services)
-
-**In scope, not yet delivered:**
-- Typed Pydantic resource models importable from `simpro_client.models`
-- Endpoint modules (`simpro_client.endpoints.customers`, `.jobs`, etc.)
-- Pagination iterator on the client side
-- Token-bucket rate limiter on the client side (mock does not enforce/emit 429 either — see ADR limitations)
-- Full retry/backoff policy beyond the single 401 retry
-- Phase 3 → Phase 4 handoff ADR (direct import vs. service wrapper) — **written: ADR-009**, decision recorded 2026-10-09 (Alex): Option B, a single `clive-gateway` service imports `simpro_client` and serves every other consumer over HTTP. `clive-gateway` does not exist yet
-
-**Not in scope (unchanged from original PDD):**
-- Write operations (POST/PATCH/DELETE) against Simpro
-- Caching/persistence layer beyond the mock's own database
-- Real-time sync or webhooks
-- UI/dashboard
-- Authorization Code Grant (deferred to a future user-facing portal, Phase 6+)
-
-## 6. Fixes Applied During Review
-
-A codebase review (run against the actual test suite, not static reading) found and fixed:
-1. A pytest-collection hazard: `tests/test_simpro_mock.py` was a script with module-level `assert` statements that ran at import time and required a live mock service, breaking collection whenever the mock wasn't running. A skip-gated version exists as `tests/test_simpro_mock_v2.py`. **Note:** the original `tests/test_simpro_mock.py` was deleted on 2026-09-04.
-2. A phantom-test hazard: helper functions in a manual diagnostic script were named `test_*`, which pytest tried to collect and run. The script now lives at `scripts/verify-simpro-mock.py`, outside `tests/`, explicitly documented as "not a pytest test."
-3. An unreachable branch in `client.py`'s correlation-ID handling was removed; the correlation ID is now generated once per request context and attached to the outgoing `X-Correlation-ID` header.
-4. `simpro_mock/models.py` was normalized to consistent SQLAlchemy 2.0 style (`Mapped[]` / `mapped_column`, `back_populates` on both sides of every relationship).
-
-`simpro_mock/schemas.py` — previously flagged as mixing `Optional[str]` and `str | None` — is now consistently `str | None` throughout; this item is resolved.
-
-## 7. Risks Carried Forward
-
-| Risk | Mitigation status |
+| Planned (`scope-rev2.md`) | Outcome |
 |---|---|
-| Real Simpro rate limits (10 req/sec/build) unknown in practice | Not yet mitigated — no client-side rate limiter exists yet |
-| Real Simpro payload shape may differ from the mock's assumptions | Mock uses `from_attributes=True` Pydantic schemas per resource; real-world validation deferred until live access |
-| No Phase 3 → Phase 4 handoff decision recorded | Closed 2026-10-09: ADR-009 records Option B (`clive-gateway`); the gateway is not built yet (see §8) |
+| Sprint 1 — client foundation | Delivered |
+| Sprint 2 — architecture pivot | Delivered as planning (mock-first decision) |
+| Sprint 3 — Simpro mock service | Delivered |
+| Sprint 4 — typed client layer | Delivered (sprint records in `docs/phase3/sprints/`) |
+| Sprint 5 — hardening and documentation | Delivered as the resilience ADRs (ADR-010 to ADR-012), the ADR-013 re-shape (seven sprints, 2026-10-07 to 2026-10-08) and the October documentation audit (`docs/doc-audit.md`) |
+| Sprint 6 — Phase 4 readiness review | Replaced by the Phase 3B handover checklist (Phase 3B PDD §5) |
 
-## 8. Immediate Next Steps
+Not in scope, and not built: write operations, caching or persistence beyond
+the mock's database, webhooks, a UI, and the Authorization Code Grant (ADR-005).
 
-1. Decide and record the **Phase 3 → Phase 4 handoff ADR** (direct `import simpro_client` vs. a thin FastAPI service wrapper). Done 2026-10-09: ADR-009, Option B (`clive-gateway`).
-2. Build `simpro_client/models/` (Pydantic models per resource, PascalCase-aliased) and `simpro_client/endpoints/` (endpoint modules over the existing base client).
-3. Add a pagination iterator and token-bucket rate limiter to `simpro_client`.
-4. Resolve the duplicate mock-integration test file (`test_simpro_mock.py` vs `test_simpro_mock_v2.py`).
-5. Refresh `structure.txt`, which currently omits `scripts/verify-simpro-mock.py`, `services/simpro_mock/`, and `test_simpro_mock_v2.py`, and still lists `test_simpro_integration.py`, which no longer exists.
+## 6. Decisions
+
+ADR-004 (httpx), ADR-005 (auth), ADR-006 (library-first, partially superseded
+by ADR-009), ADR-007 (configuration), ADR-009 (handoff), ADR-010 (resilience),
+ADR-011 (exceptions), ADR-012 (retry ceiling and refresh concurrency), ADR-013
+(published contract) and `adr-mock-simpro-api.md` (mock-first; its "Capabilities
+& Coverage" superseded by ADR-013). ADR-008 was withdrawn as a duplicate of
+ADR-010. Status of each: `docs/ADR/ADR-index.md`.
+
+## 7. Carried Forward
+
+| Item | Where it is tracked |
+|---|---|
+| No live Simpro API access at the close | `docs/STATUS.md` (Simpro access), course correction W1 |
+| Four mock behaviours unverifiable without live credentials: `ID` in an unrequested `columns` projection, the `Result-*` pagination headers, `limit`'s semantics, `/companies/` pagination | `docs/phase3/phase3-signoff.md`, `docs/roadmap.md` |
+| Real Simpro rate limits and token lifetime undocumented; conservative defaults kept | `docs/STATUS.md` (open risks), ADR-010, ADR-012 |
+| The rate limiter's budget is per client instance, not per Simpro build | `src/simpro_client/CLAUDE.md` §10; the gateway runs a single worker (Phase 3B PDD §11) |
+| `pip install -e ".[dev]"` does not install dev tools; use `uv sync` | `docs/known-issues.md` |
+
+## 8. Close
+
+Phase 3 was closed by Alex on 2026-10-09, once ADR-009 was decided. Evidence:
+`docs/phase3/phase3-signoff.md`. Next: Phase 3B and Phase 4, in the order set
+at the end of the course correction sprint (`docs/STATUS.md`).

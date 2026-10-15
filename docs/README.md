@@ -1,7 +1,7 @@
 # CLIVE Documentation Index
 
 > **Status: adopted 2026-09-29.** Structure agreed by Alex. Section 6 actions
-> are done (2026-10-05) except the `phase3-summary.md` merge; section 7
+> are done (2026-10-05; `phase3-summary.md` stays historical, Alex 2026-10-15); section 7
 > actions are still to do; section 8 records the decisions made.
 
 This index lists every document, what it is for, and whether it is kept up
@@ -84,7 +84,7 @@ to date. If a document is not listed here, either add it here or delete it.
 | `ADR/adr-mock-simpro-api.md` | Decision stands; its "Capabilities & Coverage" list is superseded by ADR-013 |
 | `ADR/adr-008-rate-limiting-strategy.md` | Withdrawn 2026-09-29 (duplicate of ADR-010). Kept for history |
 | `PDDs/PDD-phase1.md`, `PDD-phase2.md` | Phases complete. 2026-10-14: `PDD-phase2.md` §8 has a dated note that the Phase 2 backup script was replaced in course correction W5 |
-| `PDDs/PDD-phase3.md` | "As-built" at 2026-09-04; predates Sprint 4. **To do: revise now** (decided 2026-09-29). 2026-10-14: §4, §5, §7 and §8 record ADR-009's decision instead of saying the handoff ADR is not written (W6 T3); the rest is still unrevised |
+| `PDDs/PDD-phase3.md` | **Closed.** Revised as-built and closed 2026-10-15 at commit `864264b` (Alex): typed layer, ADR-013 contract, ADR-009 handoff, plan vs delivery, items carried forward. Not maintained; current architecture is in `architecture.md`. (Earlier: as-built 2026-09-04; 2026-10-14 handoff lines updated in W6 T3) |
 | `PDDs/PDD-phase3b-simpro-conversational-access.md` | Draft 0.1 (2026-10-09), awaiting approval. Phase 3B plan: `clive-gateway`, access control, query catalogue, minimum security slice. 2026-10-14: Simpro findings applied (W6 T4). 2026-10-15: ADR-014 storage conflict note marked resolved |
 | `course-correction-plan.md` | Course correction plan v2 (2026-10-12), approved. Task files in `sprints/course-correction/` |
 | `PDDs/PDD-phase4.md` | Draft. Handoff link fixed 2026-10-02 (now ADR-009). 2026-10-14: §1–§6 and the diagram consume Simpro through `clive-gateway` (ADR-009) instead of importing `simpro_client`; entry criteria add the gateway's query catalogue (W6 T5). 2026-10-14: §3 adds the `docgen` service account (W6 T7) |
@@ -100,7 +100,7 @@ separate from living documents. Each gets a one-line header:
 |---|---|
 | `phase1/summary.md` | Keep as historical. Done 2026-10-05: correction note added (container is `clive-ollama`; original commands unchanged) |
 | `phase2/summary.md` | Keep as historical |
-| `phase3/phase3-summary.md` | Keep as the Phase 3 historical summary. Checked 2026-10-05 for content still current and not in `architecture.md` / `testing.md`; merging waits for Alex's decision |
+| `phase3/phase3-summary.md` | Keep as the Phase 3 historical summary. Decided 2026-10-15 (Alex): it stays a historical record and is not merged into `architecture.md` / `testing.md` |
 | `phase3/phase3-signoff.md` | Historical. Phase 3 sign-off evidence (close, test run at commit `8b11657`, items carried past the close), added 2026-10-13 (W6 T1) |
 | `phase3/sprints/phase3-sprint4-contract.md` | Done 2026-10-05: moved to `phase3/sprints/`. Still the reference spec for Sprint 4 |
 | `phase3/sprints/phase3-sprint4-preflight-audit.md` | Done 2026-10-05: moved to `phase3/sprints/` |
@@ -108,7 +108,7 @@ separate from living documents. Each gets a one-line header:
 | `phase3/sprints/phase3-sprint4-2-typed-python-sdk-endpoint-layer.md` | Done 2026-10-05: moved to `phase3/sprints/`, renamed (lowercase `sdk`), correction note added (claims don't match the repository) |
 | `phase3/sprints/phase3-sprint4-4-pagination-and-retries.md` | Done 2026-10-05: moved to `phase3/sprints/` |
 | `phase3/sprints/phase3-sprint4.md` | Done 2026-10-05: moved to `phase3/sprints/` and kept as historical (not deleted). Chat fragment duplicating the contract's test sequence |
-| `doc-audit.md` | Keep as historical. Full `/doc-check all` report of 2026-10-01, with a 2026-10-02 correction note. All findings fixed 2026-10-02, except `PDD-phase3.md` content, which waits for its planned revision (section 5) |
+| `doc-audit.md` | Keep as historical. Full `/doc-check all` report of 2026-10-01, with a 2026-10-02 correction note. All findings fixed 2026-10-02, except `PDD-phase3.md` content, which was fixed by its revision on 2026-10-15 (section 5) |
 | `scope/clive-scope.md` | Keep as historical. Original `Clive_Scope.txt`, added 2026-10-01 (decision 1) |
 | `scope/master-project-document.md` | Keep as historical. Original master project document, added 2026-10-01 (decision 1) |
 | `scope/scope-rev2.md` | Keep as historical (superseded by `roadmap.md`). Done 2026-10-05: renamed from `scope/scope&readmap-rev2.md` (no `&` in filenames) |
@@ -129,11 +129,11 @@ separate from living documents. Each gets a one-line header:
 
 | Decision | Outcome | Done |
 |---|---|---|
-| Living/historical split (sections 3–7) | Accepted | Index adopted; section 6 done 2026-10-05 (except `phase3-summary.md` merge); section 7 to do |
+| Living/historical split (sections 3–7) | Accepted | Index adopted; section 6 done 2026-10-05; `phase3-summary.md` kept historical, not merged (Alex, 2026-10-15); section 7 to do |
 | ADR-008 | Withdrawn as a duplicate of ADR-010 | Yes |
 | `structure.txt` | Regenerate from tracked files | Yes |
 | `scope/initial.md` | Delete (was empty) | Yes |
-| `PDD-phase3.md` | Revise now, not at sign-off | To do |
+| `PDD-phase3.md` | Revise now, not at sign-off | Yes (2026-10-15): revised as-built and closed |
 
 ### Decisions from the documentation audit (2026-10-01, Alex)
 
