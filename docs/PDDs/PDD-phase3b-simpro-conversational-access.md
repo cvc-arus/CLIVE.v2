@@ -112,10 +112,13 @@ work after Phase 3 and before Phase 4, which is where its dependencies put it.
 | `ollama` | Existing | Model may change following the Sprint 1 evaluation |
 | `nginx` | New | Reverse proxy with HTTPS in front of Open WebUI |
 
-> **Conflict for Alex to resolve.** Putting the `clive_gateway` database on the
-> Phase 2 Postgres instance (ADR-014) conflicts with root `CLAUDE.md` §3, which
-> keeps the Phase 2 instance (`postgres`, port 5432) and the Phase 3 instance
-> (`simpro-mock-db`, port 5433) isolated. To be resolved before ADR-014 is accepted.
+> **Conflict resolved (Alex, 2026-10-15).** Putting the `clive_gateway` database
+> on the Phase 2 Postgres instance (ADR-014) conflicted with root `CLAUDE.md` §3,
+> which kept the Phase 2 instance (`postgres`, port 5432) and the Phase 3
+> instance (`simpro-mock-db`, port 5433) isolated. Alex kept the storage choice
+> and narrowed §3: `clive-gateway` may use its own `clive_gateway` database
+> there, through its own least-privilege DB user, but must never connect to the
+> knowledge-base database, and no test may run against port 5432.
 
 ### 6.2 Component diagram
 

@@ -85,8 +85,13 @@ Where to find current state:
   GET-only (the mock's only POST is `/oauth2/token`). Do not add write
   operations without an approved scope change.
 - **Two isolated Postgres instances.** `postgres` (port 5432, Phase 2
-  PGVector knowledge base) must never be used by Phase 3 code or tests.
-  `simpro-mock-db` (port 5433) is the only database for Phase 3.
+  PGVector knowledge base) must never be used by Phase 3 code or tests, with
+  one exception (ADR-014; resolved by Alex 2026-10-15): `clive-gateway` keeps
+  its own data in a dedicated `clive_gateway` database on this instance,
+  through its own least-privilege DB user. It must never connect to the
+  knowledge-base database, and no test may run against port 5432.
+  `simpro-mock-db` (port 5433) is the only database for the mock and Phase 3
+  tests.
 - **No architectural change without an ADR** (new service, new dependency
   category, async, auth flow, handoff mechanism, persistence strategy).
 - **Self-hosted.** No cloud AI providers or external SaaS calls unless Alex
@@ -117,7 +122,7 @@ Where to find current state:
 | 011 | Exception hierarchy and `SimproAuthError` context (supersedes ADR-010 §2.5) | Accepted 2026-10-06, implemented |
 | 012 | Retry delay ceiling (`SIMPRO_MAX_RETRY_DELAY`) and token-refresh concurrency | Accepted 2026-10-06 (supersedes ADR-010 §2.3, extends §2.1) |
 | 013 | Re-shape mock and client to Simpro's published OpenAPI spec | Accepted 2026-10-07, **implemented 2026-10-08** (all 7 sprints). **All 50 conformance checks pass and `tests/spec_conformance_baseline.json` is empty**, so every client model validates payloads generated from Simpro's published contract. Field names, types and optionality are governed by `docs/contracts/simpro-openapi-v1-get-subset.json`. The mock honours `columns` on all 25 routes, `orderby` and `limit` on all 13 collection routes, and returns a 400 on an unknown filter or an unorderable `orderby` field |
-| 014 | Simpro data access control model | **Proposed** 2026-10-09. Stores `clive_gateway` on the Phase 2 Postgres, against §3; for Alex to resolve before acceptance |
+| 014 | Simpro data access control model | **Proposed** 2026-10-09. Stores `clive_gateway` on the Phase 2 Postgres; the §3 conflict was resolved by Alex on 2026-10-15 with a narrow exception in §3 |
 | 015 | Conversational access approach (tool calling over a fixed query catalogue) | **Proposed** 2026-10-09 |
 
 Re-verify this table before relying on it; it is a snapshot.
