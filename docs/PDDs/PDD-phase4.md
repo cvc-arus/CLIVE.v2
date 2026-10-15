@@ -4,19 +4,20 @@
 
 ## 1. Objective
 
-Generate CVC's core business documents — Quotes, RAMS, Contracts, Equipment specifications, Tender responses, Technical documentation — by combining structured business data from Simpro (via `simpro_client`) with unstructured boilerplate/templates/clauses retrieved from the Phase 2 knowledge base.
+Generate CVC's core business documents — Quotes, RAMS, Contracts, Equipment specifications, Tender responses, Technical documentation — by combining structured business data from Simpro (via `clive-gateway`'s HTTP API, ADR-009) with unstructured boilerplate/templates/clauses retrieved from the Phase 2 knowledge base.
 
-## 2. Entry Criteria (not yet met)
+## 2. Entry Criteria
 
 1. Phase 3's typed client layer (`simpro_client.models`, `simpro_client.endpoints`) signed off with test coverage.
-2. The Phase 3 → Phase 4 handoff ADR finalised (direct import vs. thin service wrapper — see `docs/ADR/adr-009-phase3-phase4-handoff.md`, currently Proposed/open).
+2. The Phase 3 → Phase 4 handoff ADR finalised. ADR-009's decision was recorded on 2026-10-09 (Alex): Option B, a single `clive-gateway` service imports `simpro_client` and serves every other consumer, including Phase 4, over HTTP (`docs/ADR/adr-009-phase3-phase4-handoff.md`).
+3. `clive-gateway`'s query catalogue covers Customers, Sites, Contacts, Jobs, Quotes, Projects, Assets and Employees (ADR-009, Consequences). `clive-gateway` does not exist yet; it is planned in Phase 3B (`PDD-phase3b-simpro-conversational-access.md`).
 
-**Phase 4 should not begin implementation until both are satisfied.**
+Whether each criterion is met is recorded in `docs/STATUS.md`. **Phase 4 should not begin implementation until all three are satisfied.**
 
 ## 3. Scope (planned, subject to revision at Phase 4 kickoff)
 
 **In scope:**
-- Consume `simpro_client` as a Python library (pending the handoff ADR decision)
+- Consume Simpro data through `clive-gateway`'s HTTP API (ADR-009); Phase 4 does not import `simpro_client`
 - Feeder data: Customers, Sites, Contacts, Jobs, Quotes, Projects, Assets, Employees
 - Generate: Quotes, RAMS (Risk Assessment Method Statements), Contracts, Equipment specifications, Tender responses, Technical documentation, Compliance documentation
 - Use Phase 2's PGVector knowledge base as a RAG source for boilerplate clauses, templates, and case studies
@@ -37,10 +38,16 @@ Generate CVC's core business documents — Quotes, RAMS, Contracts, Equipment sp
                                 │          │
                      (structured data)  (unstructured context)
                                 │          │
+                           HTTP │          │
                      ┌──────────▼───┐  ┌───▼─────────────────┐
-                     │ simpro_client │  │  PGVector Knowledge  │
-                     │ (Phase 3)     │  │  Base (Phase 2)       │
+                     │ clive-gateway │  │  PGVector Knowledge  │
+                     │ (ADR-009)     │  │  Base (Phase 2)       │
                      └──────────┬───┘  └───────────────────────┘
+                                │ imports
+                     ┌──────────▼───┐
+                     │ simpro_client │
+                     │ (Phase 3)     │
+                     └──────────┬───┘
                                 │
                      ┌──────────▼───┐
                      │ simpro-mock   │  (until live Simpro access
@@ -48,11 +55,11 @@ Generate CVC's core business documents — Quotes, RAMS, Contracts, Equipment sp
                      └───────────────┘
 ```
 
-This diagram assumes the "direct import" resolution of the handoff ADR; if the service-wrapper option is chosen instead, Document Generation would call a thin internal API rather than importing `simpro_client` directly. **This diagram must be corrected once the ADR is decided.**
+Corrected for ADR-009's decision (2026-10-09): Document Generation calls `clive-gateway` over HTTP and never imports `simpro_client`; the gateway is the only runtime service that does. `clive-gateway` is planned in Phase 3B and does not exist yet.
 
 ## 5. Open Questions for Phase 4 Kickoff
 
-1. Handoff mechanism (see §2) — blocking.
+1. Handoff mechanism — resolved by ADR-009 (2026-10-09): through `clive-gateway`.
 2. Output file format(s) and templating approach (e.g. Jinja2 → docx, or a docx-editing library against CVC templates).
 3. Which Simpro resources are actually needed for a first-cut Quote/RAMS generator — full coverage of all 12 mock resources, or a smaller subset to start?
 4. Whether generated documents need versioning/audit trail from day one, given the Knowledge Base's stated requirement for document versioning.
@@ -63,7 +70,7 @@ This diagram assumes the "direct import" resolution of the handoff ADR; if the s
 | Risk | Notes |
 |---|---|
 | Phase 3's typed layer isn't built yet | Phase 4 cannot meaningfully start until `simpro_client.models`/`endpoints` exist |
-| Handoff mechanism undecided | Building against an assumed mechanism (e.g. direct import) risks rework if the ADR resolves the other way |
+| Phase 4 depends on `clive-gateway` | The handoff is decided (ADR-009), but the gateway and its query catalogue are planned in Phase 3B and do not exist yet |
 | No real Simpro data validated yet | Document templates built against mock data may need adjustment once real payload shapes are confirmed |
 
 ## 7. Next Step
