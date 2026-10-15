@@ -37,7 +37,7 @@ This is documented in full in `docs/scope/scope-rev2.md` (formerly `RevisedScope
         │   Open WebUI / future        │
         │   Phase 4+ services           │
         └───────────────┬──────────────┘
-                         │ (planned: direct Python import)
+                         │ (ADR-009: through `clive-gateway`, not built yet)
         ┌────────────────▼──────────────┐
         │      simpro_client (Python)    │
         │  config → auth → client         │
@@ -82,7 +82,7 @@ When live Simpro access is enabled, `SIMPRO_BASE_URL` and `SIMPRO_TOKEN_URL` swa
 - Pagination iterator on the client side
 - Token-bucket rate limiter on the client side (mock does not enforce/emit 429 either — see ADR limitations)
 - Full retry/backoff policy beyond the single 401 retry
-- Phase 3 → Phase 4 handoff ADR (direct import vs. service wrapper) — **not yet written**
+- Phase 3 → Phase 4 handoff ADR (direct import vs. service wrapper) — **written: ADR-009**, decision recorded 2026-10-09 (Alex): Option B, a single `clive-gateway` service imports `simpro_client` and serves every other consumer over HTTP. `clive-gateway` does not exist yet
 
 **Not in scope (unchanged from original PDD):**
 - Write operations (POST/PATCH/DELETE) against Simpro
@@ -107,11 +107,11 @@ A codebase review (run against the actual test suite, not static reading) found 
 |---|---|
 | Real Simpro rate limits (10 req/sec/build) unknown in practice | Not yet mitigated — no client-side rate limiter exists yet |
 | Real Simpro payload shape may differ from the mock's assumptions | Mock uses `from_attributes=True` Pydantic schemas per resource; real-world validation deferred until live access |
-| No Phase 3 → Phase 4 handoff decision recorded | Open — ADR needed before Phase 4 scoping (see §8) |
+| No Phase 3 → Phase 4 handoff decision recorded | Closed 2026-10-09: ADR-009 records Option B (`clive-gateway`); the gateway is not built yet (see §8) |
 
 ## 8. Immediate Next Steps
 
-1. Decide and record the **Phase 3 → Phase 4 handoff ADR** (direct `import simpro_client` vs. a thin FastAPI service wrapper).
+1. Decide and record the **Phase 3 → Phase 4 handoff ADR** (direct `import simpro_client` vs. a thin FastAPI service wrapper). Done 2026-10-09: ADR-009, Option B (`clive-gateway`).
 2. Build `simpro_client/models/` (Pydantic models per resource, PascalCase-aliased) and `simpro_client/endpoints/` (endpoint modules over the existing base client).
 3. Add a pagination iterator and token-bucket rate limiter to `simpro_client`.
 4. Resolve the duplicate mock-integration test file (`test_simpro_mock.py` vs `test_simpro_mock_v2.py`).

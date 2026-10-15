@@ -76,10 +76,12 @@ to date. If a document is not listed here, either add it here or delete it.
 | `ADR/adr-011-exception-hierarchy-and-auth-errors.md` | Accepted 2026-10-06, implemented (supersedes ADR-010 §2.5) |
 | `ADR/adr-012-retry-delay-ceiling-and-auth-concurrency.md` | Accepted 2026-10-06 (supersedes ADR-010 §2.3, extends §2.1) |
 | `ADR/adr-013-reshape-to-published-simpro-spec.md` | Accepted 2026-10-07, implemented 2026-10-08 (all 7 sprints). Governs field names, types and optionality via `contracts/simpro-openapi-v1-get-subset.json`; supersedes `adr-mock-simpro-api.md` "Capabilities & Coverage" |
+| `ADR/adr-014-simpro-access-control-model.md` | Proposed 2026-10-09 (Phase 3B). Stores `clive_gateway` on the Phase 2 Postgres, against root `CLAUDE.md` §3; for Alex to resolve |
+| `ADR/adr-015-conversational-access-approach.md` | Proposed 2026-10-09 (Phase 3B): tool calling over a fixed query catalogue |
 | `ADR/adr-mock-simpro-api.md` | Decision stands; its "Capabilities & Coverage" list is superseded by ADR-013 |
 | `ADR/adr-008-rate-limiting-strategy.md` | Withdrawn 2026-09-29 (duplicate of ADR-010). Kept for history |
 | `PDDs/PDD-phase1.md`, `PDD-phase2.md` | Phases complete. 2026-10-14: `PDD-phase2.md` §8 has a dated note that the Phase 2 backup script was replaced in course correction W5 |
-| `PDDs/PDD-phase3.md` | "As-built" at 2026-09-04; predates Sprint 4. **To do: revise now** (decided 2026-09-29) |
+| `PDDs/PDD-phase3.md` | "As-built" at 2026-09-04; predates Sprint 4. **To do: revise now** (decided 2026-09-29). 2026-10-14: §4, §5, §7 and §8 record ADR-009's decision instead of saying the handoff ADR is not written (W6 T3); the rest is still unrevised |
 | `PDDs/PDD-phase4.md` | Draft. Handoff link fixed 2026-10-02 (now ADR-009) |
 
 ## 6. Historical documents
