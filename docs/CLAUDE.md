@@ -58,8 +58,8 @@ including `roadmap.md`, link to it instead of restating status.
 ## 4. ADR rules
 
 - Location: `docs/ADR/`. Naming: `adr-NNN-kebab-title.md`. The next free
-  number is **014**. Add every ADR to `docs/ADR/ADR-index.md` in the same
-  change.
+  number is **016**. Add every ADR to `docs/ADR/ADR-index.md` in the same
+  change; its naming and numbering rules apply.
 - Minimum sections: Status, Context, Decision, Alternatives Considered,
   Consequences. Status is one of Proposed, Accepted / Approved, Superseded by
   ADR-NNN, Rejected, or Withdrawn (with a reason). Also record Deciders and a
@@ -72,7 +72,7 @@ including `roadmap.md`, link to it instead of restating status.
 - Claude drafts ADRs as **Proposed** with options and a non-binding
   recommendation. Only Alex accepts them. **ADR-009's Decision was written by
   Alex on 2026-10-09** (Option B, a single `clive-gateway` service); do not
-  reword or reinterpret it. Its Status line still reads Proposed.
+  reword or reinterpret it. Alex accepted it (Status line updated 2026-10-15).
 - ADR-008 is **Withdrawn** (duplicate of ADR-010). Do not implement from it,
   cite it, or renumber it; ADR-010 is the authoritative record.
 - `structure.txt` is generated. Regenerate it with the command in
@@ -83,6 +83,10 @@ including `roadmap.md`, link to it instead of restating status.
 | Content | Location |
 |---|---|
 | Current status | `docs/STATUS.md` (the only place status is stated) |
+| Course correction and later sprint task files | `docs/sprints/<sprint>/` |
+| Sprint plan templates | `docs/templates/sprint-full.md`, `sprint-short.md` |
+| Facts about Simpro's API and service | `docs/simpro/` |
+| Reviews of the project or its documents | `docs/reviews/` (rules in its `README.md`; each review is historical) |
 | Architecture decisions | `docs/ADR/` |
 | Phase design | `docs/PDDs/PDD-phaseN.md` |
 | Sprint plans, contracts, reports | `docs/phaseN/` |
@@ -95,6 +99,11 @@ including `roadmap.md`, link to it instead of restating status.
   names without spaces. Phase documents are prefixed with the phase, as in
   `docs/phase3/sprints/phase3-sprint4-contract.md`.
 
+- Historical documents (listed in `docs/README.md` §6) are read-only. Ask
+  Alex before editing one.
+- New sprints use `docs/templates/sprint-full.md` when they change
+  infrastructure, security or data, and `docs/templates/sprint-short.md`
+  otherwise (root `CLAUDE.md` §5).
 - Sprint reports are historical records. Do not rewrite them to match later
   code. If one contains a factual error, add a dated correction note at the
   end of the file, and only when asked.
@@ -109,6 +118,6 @@ including `roadmap.md`, link to it instead of restating status.
   Mention the `uv sync` vs `pip install -e ".[dev]"` pitfall where relevant.
 - No secrets, tokens, real customer data or `.env` values in docs. Use
   `.env.example` names only.
-- `ruff format --check .` also inspects Python code blocks inside Markdown
-  (`docs/phase3/phase3-summary.md` and `phase3-sprint4-contract.md`
-  currently fail it). Do not mass-reformat existing docs.
+- `ruff format --check .` also inspects Python code blocks inside Markdown,
+  and the whole repository passes it (re-verified 2026-10-15). Code blocks
+  you add must keep it passing. Do not mass-reformat existing docs.

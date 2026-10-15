@@ -1,9 +1,9 @@
 # ADR-009: Phase 3 → Phase 4 handoff mechanism
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-09
 - **Deciders:** Alex
-- **Related:** ADR-010 (resilience policy / rate limiter), ADR-011 (Simpro data access control model, proposed)
+- **Related:** ADR-010 (resilience policy / rate limiter), ADR-014 (Simpro data access control model, proposed)
 
 ## Context
 

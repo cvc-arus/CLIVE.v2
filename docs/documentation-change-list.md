@@ -13,7 +13,7 @@ are marked, and documents that do not exist are marked "to create".
 |---|---|---|
 | `docs/PDDs/PDD-phase3b-simpro-conversational-access.md` | Drafted | Plan, architecture, schema, sprints, schedule, risks |
 | `docs/scope/scope-rev3.md` | Drafted (historical) | Supersedes Revision 2 (`docs/scope/scope-rev2.md`) |
-| `docs/ADR/adr-009-phase3-phase4-handoff.md` | Exists; decision recorded 2026-10-09 (PR #44) | Repo version is authoritative and already makes `clive-gateway` the single Simpro access point for every consumer. No new ADR needed for that. Its Status line (still Proposed) and its `Related:` line (cites ADR-011 for access control) are pending Alex |
+| `docs/ADR/adr-009-phase3-phase4-handoff.md` | Exists; decision recorded 2026-10-09 (PR #44) | Repo version is authoritative and already makes `clive-gateway` the single Simpro access point for every consumer. No new ADR needed for that. **Done** 2026-10-15: Alex set its Status line to Accepted and its `Related:` line to cite ADR-014 |
 | `docs/ADR/adr-014-simpro-access-control-model.md` | Drafted (Proposed) | |
 | `docs/ADR/adr-015-conversational-access-approach.md` | Drafted (Proposed) | |
 | `docs/user-guide-simpro-qa.md` | Phase 3B Sprint 6 (to create) | How to ask questions; what's supported |
@@ -26,21 +26,21 @@ are marked, and documents that do not exist are marked "to create".
 | `docs/scope/master-project-document.md` | **Historical** (`docs/README.md` §6), so not rewritten. Its stale §2 "Current Status" is superseded by `docs/roadmap.md` / `docs/STATUS.md`. Conversational access and Phase 3B go into the living documents (`docs/roadmap.md`, `docs/architecture.md`) instead | — |
 | `docs/scope/clive-scope.md` (was `Clive_Scope.txt`) | Already historical (`docs/README.md` §6). **Done** | — |
 | `docs/scope/scope-rev2.md` (was `RevisedScope.txt`) | Already historical, "superseded by `roadmap.md`" (`docs/README.md` §6). **Done** | — |
-| `docs/PDDs/PDD-phase3.md` | As-built at 2026-09-04 (§1–§8). §4/§5/§7/§8 still say the handoff ADR is "not yet written"; record ADR-009's decision (gateway). Revision already marked "To do: revise now" in `docs/README.md` §5 | High |
-| `docs/PDDs/PDD-phase4.md` | Entry criteria and data source change: consumes `clive-gateway` (ADR-009), not `simpro_client` directly; §2/§4 still describe the handoff as open. Add `docgen` service account | High |
+| `docs/PDDs/PDD-phase3.md` | As-built at 2026-09-04 (§1–§8). §4/§5/§7/§8 still say the handoff ADR is "not yet written"; record ADR-009's decision (gateway). Revision already marked "To do: revise now" in `docs/README.md` §5 | High — **Done** 2026-10-14 (W6 T3, `906314d`): ADR-009's decision recorded in §4/§5/§7/§8. Revised as-built and closed 2026-10-15 |
+| `docs/PDDs/PDD-phase4.md` | Entry criteria and data source change: consumes `clive-gateway` (ADR-009), not `simpro_client` directly; §2/§4 still describe the handoff as open. Add `docgen` service account | High — **Done** 2026-10-14: gateway as data source and entry criteria (W6 T5, `405f5cd`); `docgen` service account (W6 T7, `7709baf`) |
 | Phase 5 PDD | Does not exist (only `PDD-phase1`–`4`). To create when Phase 5 is scoped, listing only the scope left after 3B Sprint 2 | Medium |
-| `docs/architecture.md` | Add `clive-gateway`, Simpro tool, Nginx, `clive_gateway` DB **as Planned**; component and data-flow diagrams from the 3B PDD | High |
-| `docs/roadmap.md` | Add Phase 3B and schedule; update Phase 4 start. Status column becomes a link to `docs/STATUS.md` when W6 transfers ownership | High |
+| `docs/architecture.md` | Add `clive-gateway`, Simpro tool, Nginx, `clive_gateway` DB **as Planned**; component and data-flow diagrams from the 3B PDD | High — **Done** 2026-10-14: §6 records ADR-009 (W6 T5, `405f5cd`); §6.1 lists the planned components and request path (W6 T7, `7709baf`) |
+| `docs/roadmap.md` | Add Phase 3B and schedule; update Phase 4 start. Status column becomes a link to `docs/STATUS.md` when W6 transfers ownership | High — **Done** 2026-10-14: Status column links to `STATUS.md` (W6 T1, `5e00ee0`); Phase 3B row, planned scope and schedule, Phase 4 order pointing at `STATUS.md` (W6 T5, `405f5cd`) |
 | Docker documentation | No separate document; ports, volumes and containers live in `docs/architecture.md`. New `clive-gateway` and Nginx services go there | Medium (with Sprint 2/3) |
 | Network documentation | No separate document; use `docs/architecture.md`. Gateway port internal only; Nginx the only exposed entry point | Medium (with Sprint 2) |
-| Security documentation | Does not exist; to create (admin-only tool creation, gateway secret handling, chat sharing disabled, access control model, audit log) | High |
+| Security documentation | Does not exist; to create (admin-only tool creation, gateway secret handling, chat sharing disabled, access control model, audit log) | High — **Deferred** to Phase 3B Sprint 2 (W6 T7; confirmed by Alex 2026-10-15): every control listed is planned, not built; the requirements are owned by the Phase 3B PDD §10 and ADR-014, and current controls by `docs/architecture.md` §2 and root `CLAUDE.md` §9. A separate document now would only duplicate them or describe unbuilt controls. Create it when Sprint 2 lands Nginx, HTTPS and Open WebUI hardening |
 | Knowledge base documentation | No separate document (nearest: `docs/PDDs/PDD-phase2.md`). Rule: Simpro data is never written to PGVector (ADR-015) | Low |
 | Backup strategy / `scripts/backup.sh` | Strategy is described in `docs/installation.md` §9 and `docs/PDDs/PDD-phase2.md` §8. `scripts/backup.sh` dumps only the Phase 2 pgvector database. Include `clive_gateway`; agree audit retention | Medium (with Sprint 3; W5 first) |
 | Disaster recovery plan | Does not exist; created by W5 | Medium |
 | `docs/installation.md` | New services, `.env` variables (gateway secret, DB credentials), migration step | Medium (with Sprint 3/5) |
 | `docs/development-standards.md` | ADR-009 import rule; single-worker constraint; deny-by-default; field classification test | Medium |
 | `.env.example` | Gateway secret, gateway DB URL, gateway URL for the tool | With Sprint 3 |
-| `docs/CHANGELOG.md` | Entry for scope change and new ADRs | High |
+| `docs/CHANGELOG.md` | Entry for scope change and new ADRs | High — **Done** 2026-10-13 at intake (PR #49, `bdaa7bf`); W6 tasks each add an entry |
 | `structure.txt` | Generated; regenerate with the command in `docs/README.md` after files are added | With each sprint |
 | Directory `CLAUDE.md` files | ADR-009 import rule: **done** in root `CLAUDE.md` §3 (PR #45). Add 3B context when Phase 3B starts | Medium |
 

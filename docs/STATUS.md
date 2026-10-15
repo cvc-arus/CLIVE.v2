@@ -4,7 +4,7 @@
 > (`/status-update`). Keep this file short: history belongs in `docs/CHANGELOG.md`,
 > decisions in `docs/ADR/`.
 
-**Last updated:** 2026-10-14
+**Last updated:** 2026-10-15
 
 ## Phases
 
@@ -33,9 +33,9 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 | W3 Knowledge base audit | ⏳ Not started | Bulk ingestion paused until complete |
 | W4 Evaluation set | ⏳ Not started | |
 | W5 Backups and restore drill | 🔶 In progress | T1: all data on sdb1; target `<home>/clive-backups/` (sda2). T2: inventory agreed. T3: `scripts/backup.sh` backs up the full inventory except `.env` (GPG key deferred). T4: daily systemd timer at 02:30 installed. T5: `smartd` monitoring both disks; both are past their rated write endurance (recovery plan §9). T6: restore drill passed, about 68 s of commands from checksums to a working Open WebUI (recovery plan §10). T7 (off-machine copy) to be done later. See `docs/recovery-plan.md` |
-| W6 Docs consolidation | 🔶 In progress | T1: Phase 3 evidence recorded; `STATUS.md` owns status. T2: Scope Revision 3 recorded as historical |
+| W6 Docs consolidation | ✅ Complete 2026-10-15 | Accepted by Alex. `STATUS.md` owns status; Phase 3 evidence in `phase3/phase3-signoff.md`; ADR index conventions merged; Simpro findings applied to Phase 3B; root `CLAUDE.md` additions merged and `/sprint-task`, `/status-update` confirmed; `PDD-phase3.md` revised and closed; `docs/reviews/` created. Security documentation deferred to Phase 3B Sprint 2 |
 
-**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases); W6 T3 (ADR index, new ADRs and reference checks); W5 T7 [HUMAN] (off-machine copy) later.
+**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases); W1 T2 (check what ADR-013 left unverified); W5 T7 [HUMAN] (off-machine copy) later.
 **Next decision:** phase order, at end of sprint.
 
 ## Simpro access
@@ -61,6 +61,5 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 
 | ADR | Title | Status |
 |---|---|---|
-| ADR-009 | Phase 3 → Phase 4 handoff (`clive-gateway` as the single Simpro access point) | Decision recorded 2026-10-09 (PR #44). Status line still reads Proposed and its `Related:` line miscites ADR-011; both pending Alex |
-| ADR-014 | Simpro data access control model | Proposed. **Conflict for Alex to resolve:** stores `clive_gateway` on the Phase 2 Postgres, against root `CLAUDE.md` §3 |
+| ADR-014 | Simpro data access control model | Proposed. Storage conflict with root `CLAUDE.md` §3 resolved by Alex 2026-10-15 (narrow exception in §3) |
 | ADR-015 | Conversational access approach | Proposed |

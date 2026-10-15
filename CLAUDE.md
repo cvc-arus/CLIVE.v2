@@ -29,8 +29,9 @@ the approver for every sprint and architectural decision.
     `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013), and
     `tests/test_spec_conformance.py` proves it without API access.
   - Closed does not mean frozen: `docs/known-issues.md` still lists the
-    `pip install -e ".[dev]"` pitfall and the pre-existing lint debt, and four
-    mock behaviours remain unverifiable without live credentials.
+    `pip install -e ".[dev]"` pitfall, and four mock behaviours remain
+    unverifiable without live credentials. (The lint debt carried past the
+    close was cleared on 2026-10-12, PR #47.)
 - Phase 4 (not started, **no longer blocked**): document generation. ADR-009's
   decision is recorded, so scoping can begin. Its entry criteria now include
   `clive-gateway`'s query catalogue covering Customers, Sites, Contacts, Jobs,
@@ -53,6 +54,18 @@ report, or earlier CLAUDE.md describes it. Confirm the file exists and read
 it. When documents and code disagree, say so explicitly. Do not quietly
 "fix" either side to match the other.
 
+Where to find current state:
+
+- **Current status:** `docs/STATUS.md`, the only living document that states
+  status. Never write status into other documents; link to it instead.
+- **Current sprint:** `docs/sprints/course-correction/` (plan:
+  `docs/course-correction-plan.md`).
+- **Decisions:** `docs/ADR/ADR-index.md`. Proposed ADRs are not decisions yet.
+- **Historical documents:** listed in `docs/README.md` §6 (`docs/scope/`,
+  `docs/phase*/` sprint records, `docs/doc-audit.md`). Read-only; factual errors
+  get a dated correction note only when Alex asks.
+- **Simpro facts:** `docs/simpro/simpro-api-findings.md`.
+
 ## 3. Architecture constraints (hard rules)
 
 - **Synchronous throughout.** Sync `httpx.Client`; sync SQLAlchemy 2.0 with
@@ -73,12 +86,26 @@ it. When documents and code disagree, say so explicitly. Do not quietly
   GET-only (the mock's only POST is `/oauth2/token`). Do not add write
   operations without an approved scope change.
 - **Two isolated Postgres instances.** `postgres` (port 5432, Phase 2
-  PGVector knowledge base) must never be used by Phase 3 code or tests.
-  `simpro-mock-db` (port 5433) is the only database for Phase 3.
+  PGVector knowledge base) must never be used by Phase 3 code or tests, with
+  one exception (ADR-014; resolved by Alex 2026-10-15): `clive-gateway` keeps
+  its own data in a dedicated `clive_gateway` database on this instance,
+  through its own least-privilege DB user. It must never connect to the
+  knowledge-base database, and no test may run against port 5432.
+  `simpro-mock-db` (port 5433) is the only database for the mock and Phase 3
+  tests.
 - **No architectural change without an ADR** (new service, new dependency
   category, async, auth flow, handoff mechanism, persistence strategy).
 - **Self-hosted.** No cloud AI providers or external SaaS calls unless Alex
   explicitly approves. Code and tests must never contact `*.simprosuite.com`.
+- **Simpro company IDs are configuration.** Never assume 1 and 2 outside the mock.
+- **Rate limiter budget is per `SimproClient` instance** (ADR-010;
+  `src/simpro_client/CLAUDE.md` §10), not per process or per Simpro build.
+  Services calling Simpro run a single worker with one client.
+- **Mock scope is frozen.** Only add mock behaviour required by an approved task.
+- From Proposed ADRs (not yet decisions, but no code may contradict them
+  until Alex decides): Simpro data is never written to the pgvector knowledge
+  base (ADR-015); access control is enforced server-side and deny-by-default,
+  never via prompts (ADR-014).
 
 ## 4. ADR status (snapshot; re-verify before relying on this)
 
@@ -91,22 +118,46 @@ it. When documents and code disagree, say so explicitly. Do not quietly
 | 006 | Library-first `simpro_client` | Accepted, implemented. **"No service wrapper" partially superseded by ADR-009**; the library-first part stands |
 | 007 | pydantic-settings, `SIMPRO_` / `SIMPRO_MOCK_` prefixes | Accepted, implemented |
 | 008 | Rate limiting | Withdrawn 2026-09-29 as a duplicate of ADR-010; kept for history |
-| 009 | Phase 3 → 4 handoff | **Decision recorded 2026-10-09 (Alex): Option B**, a single `clive-gateway` service imports `simpro_client` and serves every other consumer over HTTP. Its Status line still reads Proposed and its `Related:` line miscites ADR-011, both pending Alex. `clive-gateway` **does not exist yet** — do not build it unasked |
+| 009 | Phase 3 → 4 handoff | **Decision recorded 2026-10-09 (Alex): Option B**, a single `clive-gateway` service imports `simpro_client` and serves every other consumer over HTTP. **Accepted** (Status and `Related:` lines updated by Alex 2026-10-15). `clive-gateway` **does not exist yet** — do not build it unasked |
 | 010 | Resilience: token bucket, 401/429 budgets, error hierarchy | Approved; implemented with deviations (see `src/simpro_client/CLAUDE.md`). §2.5 superseded by ADR-011 |
 | 011 | Exception hierarchy and `SimproAuthError` context (supersedes ADR-010 §2.5) | Accepted 2026-10-06, implemented |
 | 012 | Retry delay ceiling (`SIMPRO_MAX_RETRY_DELAY`) and token-refresh concurrency | Accepted 2026-10-06 (supersedes ADR-010 §2.3, extends §2.1) |
 | 013 | Re-shape mock and client to Simpro's published OpenAPI spec | Accepted 2026-10-07, **implemented 2026-10-08** (all 7 sprints). **All 50 conformance checks pass and `tests/spec_conformance_baseline.json` is empty**, so every client model validates payloads generated from Simpro's published contract. Field names, types and optionality are governed by `docs/contracts/simpro-openapi-v1-get-subset.json`. The mock honours `columns` on all 25 routes, `orderby` and `limit` on all 13 collection routes, and returns a 400 on an unknown filter or an unorderable `orderby` field |
+| 014 | Simpro data access control model | **Proposed** 2026-10-09. Stores `clive_gateway` on the Phase 2 Postgres; the §3 conflict was resolved by Alex on 2026-10-15 with a narrow exception in §3 |
+| 015 | Conversational access approach (tool calling over a fixed query catalogue) | **Proposed** 2026-10-09 |
 
 Re-verify this table before relying on it; it is a snapshot.
+
+ADR rules:
+
+- Follow the naming convention and numbering rules in `docs/ADR/ADR-index.md`.
+- Before creating an ADR, read the index and the `docs/ADR/` folder; the next
+  number is the highest existing number + 1. Add the index row in the same commit.
+- Drafts arriving from outside the repo use `ADR-XXX`; assign the real number
+  only at commit time and update every reference to it.
+- Never reuse a number, never rewrite an accepted ADR (write a superseding ADR
+  and update only the old one's Status line, per `docs/CLAUDE.md` §4), and
+  never change a status to Accepted without Alex.
 
 ## 5. How to work
 
 - **Plan before code.** For sprint work, produce the plan in the project's
-  sprint format (Goal, Business value, Tasks, Implementation, Commands,
-  Configuration, Folder structure, Files created, Verification, Rollback,
-  Common issues, Documentation updates, Git commit, Acceptance criteria;
-  see `docs/development-standards.md` §8). Wait for Alex's approval.
+  sprint format and wait for Alex's approval. Sprints that change
+  infrastructure, security or data use the full 14-section format
+  (`docs/templates/sprint-full.md`: Goal, Business value, Tasks,
+  Implementation, Commands, Configuration, Folder structure, Files created,
+  Verification, Rollback, Common issues, Documentation updates, Git commit,
+  Acceptance criteria). Other sprints may use `docs/templates/sprint-short.md`
+  (Goal, Tasks, Verification, Rollback, Git commit, Acceptance criteria). If in
+  doubt, use the full format. See `docs/development-standards.md` §8.
 - One sprint and one task at a time. Do not start the next until Alex confirms.
+- Sprint tasks run with `/sprint-task <file> <task id>`, one task per
+  session: after verification, report and stop. After an approved commit, Alex
+  runs `/status-update`.
+- Tasks marked **[HUMAN]** are never performed by Claude Code; list what Alex
+  must do and stop.
+- If a task file, document or ADR disagrees with the code, the code is the
+  source of truth: stop and report the discrepancy.
 - Explain why before how, and state trade-offs when proposing a change.
 - Prefer targeted, minimal changes over rewrites. Do not refactor, reformat,
   or "tidy" code outside the task's scope.
@@ -152,17 +203,19 @@ Mock and full stack: see `services/simpro_mock/CLAUDE.md`. Test layers:
 - Exact-pinned dependencies (`==`). Adding any runtime dependency needs a
   stated justification; adding a new category of dependency needs an ADR.
 
-**Lint baseline** (re-verify before relying on this): `ruff check .` and
-`ruff format --check .` do not pass (existing debt in `src/`, `tests/`,
-`services/`, `scripts/`, and Markdown code blocks). Therefore:
+**Lint baseline** (re-verified 2026-10-15; re-verify before relying on this):
+`uv run ruff check .` and `uv run ruff format --check .` pass on the whole
+repository, including Python code blocks in Markdown. The earlier debt was
+cleared on 2026-10-12 (PR #47). Therefore:
 
-- New files must pass `ruff check` and `ruff format --check`.
-- Modified files must not gain new violations. Code you add or rewrite must
-  be clean. Pre-existing violations elsewhere in the file are reported, not
-  fixed, unless the task asks for it. (Some are intentional; see
-  `services/simpro_mock/CLAUDE.md` §4 for `B008`/`N803` in `routers.py`.)
+- New and modified files must pass `ruff check` and `ruff format --check`;
+  the whole-repo commands must keep passing.
+- Intentional exceptions are per-file ignores in the root `pyproject.toml`
+  (`B008`/`N803` in the mock's `routers.py`; see `services/simpro_mock/CLAUDE.md`
+  §4). Add a new one only with a stated reason.
 - Do not run `ruff --fix` or `ruff format` on files outside your change.
-- Report pre-existing lint failures; do not silently fix them in unrelated work.
+- If a check fails on code you did not touch, report it; do not silently fix
+  it in unrelated work.
 
 ## 8. Git
 
@@ -179,7 +232,8 @@ Mock and full stack: see `services/simpro_mock/CLAUDE.md`. Test layers:
   `--force`, and only when asked.
 - Commit only when Alex asks. At the end of a sprint, propose the commit
   message and wait. One logical change per commit, with a descriptive
-  message (existing history uses `feat:`, `fix:`, `chore:`, `refactor:`).
+  conventional commit message (`type(scope): summary`; existing history uses
+  `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`).
 - Never commit `.env`, `.venv/`, `__pycache__/`, `*.egg-info/`, `backups/`,
   or coverage output. Some bytecode and `egg-info` files are still tracked
   (re-verify before relying on this), so running tests can make them appear
@@ -191,6 +245,7 @@ Mock and full stack: see `services/simpro_mock/CLAUDE.md`. Test layers:
 - Never read, print, edit, or summarise `.env` or `.env.*` (denied in
   `.claude/settings.json`). Use `.env.example` to learn variable names.
 - Never hardcode secrets or log tokens, client secrets, or API keys.
+- Never print, log or commit secrets. Refer to `.env` variables by name only.
 - The mock's static bearer token (a default in its `config.py`) is
   development-only. Do not copy that pattern into new services or into
   `simpro_client`. Mock DB credentials come from `.env`
@@ -198,6 +253,15 @@ Mock and full stack: see `services/simpro_mock/CLAUDE.md`. Test layers:
 - New ports bind to `127.0.0.1` unless there is a stated reason not to.
   Keep exposed ports to a minimum.
 - Least privilege: Phase 3 is read-only against Simpro.
+- Ask before any destructive action: removing volumes or containers holding
+  data, dropping databases, deleting or overwriting backups, `git push --force`,
+  rewriting git history.
+- Ask before host-level changes: apt packages, systemd units, cron, firewall,
+  files outside the repo (except the agreed backup target).
+- Never run tests or scripts against <ENVIRONMENT_TYPE> Simpro. Sandbox tests run
+  only when Alex has set sandbox credentials and asked for them, and only once
+  Alex has approved an exception to §3 (code and tests must never contact
+  `*.simprosuite.com`).
 
 ## 10. Reporting results
 

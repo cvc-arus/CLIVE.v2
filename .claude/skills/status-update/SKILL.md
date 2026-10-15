@@ -11,8 +11,8 @@ Update CLIVE's status after an approved task. Optional notes: $ARGUMENTS
    Simpro access, ADR status. Set "Last updated" to today's date.
 3. Add a concise `docs/CHANGELOG.md` entry if the task changed behaviour,
    infrastructure or documentation structure.
-   Until W6 T1 transfers phase-status ownership, keep `docs/roadmap.md`'s phase
-   table consistent with `STATUS.md`.
+   `STATUS.md` owns phase status (since W6 T1); `docs/roadmap.md` links to it
+   and is not updated with status.
    For every living document changed (including `STATUS.md` and the
    CHANGELOG), update its "Current state" cell in `docs/README.md` §3 in the
    same commit.

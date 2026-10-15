@@ -188,6 +188,38 @@ Write operations (POST/PATCH/DELETE) are out of scope for both the mock and `sim
 
 `simpro_client`'s `SimproSettings.company_id_service` / `company_id_projects` (defaulting to 1/2) mirror this, but are **reserved**: no client code reads them, and endpoint calls take an explicit `company_id` argument. `company_id_projects` names the company whose *jobs* are projects; it is a company id, not a resource selector.
 
-## 6. Planned but Not Yet Decided
+## 6. Decided but Not Yet Built
 
-The Phase 3 → Phase 4 handoff mechanism — whether Phase 4 imports `simpro_client` directly as a Python library, or talks to it through a thin FastAPI service wrapper — is recorded as ADR-009 (`docs/ADR/adr-009-phase3-phase4-handoff.md`, Proposed, open). The library-first architecture decision from the original PDD favors direct import, but this needs to be formally confirmed before Phase 4 scoping begins.
+The Phase 3 → Phase 4 handoff is decided in ADR-009 (`docs/ADR/adr-009-phase3-phase4-handoff.md`, decision recorded 2026-10-09 by Alex): Option B, a single `clive-gateway` service is the only runtime service that imports `simpro_client`, and every other consumer, Phase 4 included, reaches Simpro through its HTTP API. Tests and developer tooling against the mock are the only exceptions. `simpro_client` stays a library-first package (ADR-006's library-first part stands). `clive-gateway` does not exist yet; it is planned in Phase 3B (`docs/PDDs/PDD-phase3b-simpro-conversational-access.md`).
+
+### 6.1 Planned Phase 3B components
+
+**Planned, not built.** None of these exist in `docker-compose.yml` or the repository yet. The design is in the Phase 3B PDD (§6) and in ADR-014 and ADR-015, both **Proposed**; this section moves into §2 and gets its own section as each component is built.
+
+| Component | New / existing | Planned role |
+|---|---|---|
+| `clive-gateway` | New service | FastAPI, single uvicorn worker so the ADR-010 limiter holds; the only runtime importer of `simpro_client` (ADR-009). Policy checks, field masking and audit (ADR-014). Port reachable only on the internal Docker network |
+| `clive_gateway` database | New database | Access control tables and audit log, with its own least-privilege DB user. ADR-014 places it on the Phase 2 `postgres` instance, under a narrow exception to the two-instance rule in §2 that Alex approved on 2026-10-15 (root `CLAUDE.md` §3): the gateway uses only its own database and DB user, never the knowledge-base database, and no test runs against port 5432 |
+| Simpro tool | New, inside `open-webui` | Python tool that calls the gateway over HTTP with a service secret, the user's identity and a correlation ID; answers through a fixed query catalogue (ADR-015) |
+| `nginx` | New service | Reverse proxy with HTTPS in front of Open WebUI, the only entry point exposed to the LAN (Phase 3B Sprint 2, brought forward from Phase 5) |
+| `open-webui`, `ollama`, `simpro-mock`, `simpro-mock-db` | Existing | Open WebUI gets configuration changes only (groups, admin-only tools, sharing off); the mock stays the data source until live Simpro access |
+
+Planned request path (PDD §6.2–§6.3):
+
+```
+Browser (CVC LAN, HTTPS)
+   │
+   ▼
+nginx ──► open-webui + Simpro tool ◄──► ollama (tool calling)
+                │  HTTP, internal network only:
+                │  service secret + user identity + correlation ID
+                ▼
+          clive-gateway ──► clive_gateway DB (roles, rules, audit)
+          policy · masking · audit
+                │  imports simpro_client; OAuth2 Client Credentials,
+                │  rate limited (ADR-010)
+                ▼
+          simpro-mock :8100 now; {build}.simprosuite.com later
+```
+
+The gateway authenticates the caller, resolves the user to roles, denies anything not explicitly allowed, calls Simpro through `simpro_client`, removes fields the user's roles do not unlock, caps the rows returned and writes an audit record. Simpro data is never written to the PGVector knowledge base (ADR-015).

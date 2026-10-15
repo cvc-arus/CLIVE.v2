@@ -4,7 +4,6 @@
 - **Date:** 2026-10-09
 - **Deciders:** Alex
 - **Related:** ADR-009 (Phase 3 → Phase 4 handoff: `clive-gateway` as the single Simpro access point), ADR-015 (conversational access approach).
-  ADR-009's `Related:` line cites this draft as "ADR-011 (Simpro data access control model, proposed)"; correcting it is pending Alex.
 
 ## Context
 
@@ -18,6 +17,10 @@ backend a single service identity with no notion of the individual user.
 
 Restrictions placed in prompts are not access control: a model can be talked
 into revealing anything it has been given.
+
+Simpro applies security groups to API applications as well as to users
+(`docs/simpro/simpro-api-findings.md` §2.2), so Simpro itself can bound what
+CLIVE's service identity can read.
 
 ## Options considered
 
@@ -53,18 +56,24 @@ Rules:
 - A user's permissions are the union of their roles.
 - Every request is audited (allow, deny, error).
 - Service accounts (no human user) use the same model.
+- CLIVE's roles operate inside a dedicated, read-only Simpro security group
+  for CLIVE's API application, limited to the resources CLIVE needs. That
+  group is the outer boundary: even a CLIVE bug cannot expose data it excludes.
 
 Storage: a dedicated `clive_gateway` database and least-privilege DB user on
 the existing Phase 2 Postgres instance, rather than a new container. This keeps
 hardware use down while isolating access by credentials. Schema: see the
 Phase 3B PDD, section 7.2.
 
-> **Conflict for Alex to resolve (recorded 2026-10-13).** Placing `clive_gateway`
-> on the Phase 2 Postgres instance (`postgres`, port 5432) conflicts with root
-> `CLAUDE.md` §3, which keeps two isolated Postgres instances and says the
-> Phase 2 instance must never be used by Phase 3 code or tests. Either this
-> storage choice or that rule must change before the ADR is accepted. The
-> decision text above is unchanged.
+> **Conflict resolved (Alex, 2026-10-15).** Placing `clive_gateway` on the
+> Phase 2 Postgres instance (`postgres`, port 5432) conflicted with root
+> `CLAUDE.md` §3, which kept that instance off-limits to Phase 3 code and
+> tests (recorded 2026-10-13). Alex kept this storage choice and narrowed §3
+> instead: `clive-gateway` may use its own `clive_gateway` database there,
+> through its own least-privilege DB user. It must never connect to the
+> knowledge-base database, and no test may run against port 5432, so the
+> gateway's tests need a disposable database. The decision text above is
+> unchanged. This resolves the conflict only; the ADR itself is still Proposed.
 
 ## Consequences
 
@@ -77,4 +86,6 @@ Phase 3B PDD, section 7.2.
 ## Revisit if
 
 - Live Simpro access is enabled and its per-user permission behaviour can be verified.
+- Sandbox testing can verify how Simpro applies security groups per user: that
+  makes Option 2 more realistic and it should be re-evaluated then.
 - Permission drift between CLIVE and Simpro becomes a recurring problem.

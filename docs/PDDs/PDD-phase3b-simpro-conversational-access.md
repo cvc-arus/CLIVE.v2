@@ -81,8 +81,10 @@ work after Phase 3 and before Phase 4, which is where its dependencies put it.
 
 **Entry criteria**
 1. Phase 3 signed off. **Met:** Phase 3 closed 2026-10-09 (see `docs/roadmap.md`).
-2. ADR-009's decision recorded (PR #44, 2026-10-09). **Met**, although its
-   Status line still reads Proposed; updating it is pending Alex.
+2. ADR-009's decision recorded (PR #44, 2026-10-09). **Met**; ADR-009
+   accepted (Status line updated by Alex 2026-10-15).
+3. Course correction sprint complete (`docs/course-correction-plan.md`;
+   progress in `docs/STATUS.md`).
 
 **Exit criteria**
 1. All Phase 3B sprint acceptance criteria met.
@@ -110,10 +112,13 @@ work after Phase 3 and before Phase 4, which is where its dependencies put it.
 | `ollama` | Existing | Model may change following the Sprint 1 evaluation |
 | `nginx` | New | Reverse proxy with HTTPS in front of Open WebUI |
 
-> **Conflict for Alex to resolve.** Putting the `clive_gateway` database on the
-> Phase 2 Postgres instance (ADR-014) conflicts with root `CLAUDE.md` §3, which
-> keeps the Phase 2 instance (`postgres`, port 5432) and the Phase 3 instance
-> (`simpro-mock-db`, port 5433) isolated. To be resolved before ADR-014 is accepted.
+> **Conflict resolved (Alex, 2026-10-15).** Putting the `clive_gateway` database
+> on the Phase 2 Postgres instance (ADR-014) conflicted with root `CLAUDE.md` §3,
+> which kept the Phase 2 instance (`postgres`, port 5432) and the Phase 3
+> instance (`simpro-mock-db`, port 5433) isolated. Alex kept the storage choice
+> and narrowed §3: `clive-gateway` may use its own `clive_gateway` database
+> there, through its own least-privilege DB user, but must never connect to the
+> knowledge-base database, and no test may run against port 5432.
 
 ### 6.2 Component diagram
 
@@ -179,7 +184,7 @@ work after Phase 3 and before Phase 4, which is where its dependencies put it.
 | `users` | Human users and service accounts | `id`, `account_type` (human/service), `openwebui_user_id`, `email`, `display_name`, `simpro_employee_id` (nullable), `is_active` |
 | `roles` | Named roles | `id`, `name`, `description` |
 | `user_roles` | Many-to-many user ↔ role | `user_id`, `role_id` |
-| `role_companies` | Simpro companies a role may see | `role_id`, `company_id` (1 Service, 2 Projects) |
+| `role_companies` | Simpro companies a role may see | `role_id`, `company_id` (Service and Projects IDs from configuration) |
 | `role_resources` | Resources a role may query, and row scope | `role_id`, `resource`, `scope` (`all` / `assigned`) |
 | `classifications` | Sensitivity labels | `code` (e.g. `financial`, `personal`), `description` |
 | `field_classifications` | Which model fields carry which label | `resource`, `field_name`, `classification` |
@@ -188,6 +193,15 @@ work after Phase 3 and before Phase 4, which is where its dependencies put it.
 
 A test fails the build if any `simpro_client` model field is neither classified
 nor recorded as reviewed-and-unclassified, so new fields cannot silently become visible.
+
+CVC's Simpro custom fields are readable through the API and may hold sensitive
+data, so each one is added to the field classification list (classified or
+reviewed-and-unclassified) before go-live (`docs/simpro/simpro-api-findings.md` §2.4).
+
+Simpro company IDs are configuration, never constants. The mock uses `1`
+(Service) and `2` (Projects); the real IDs are read from Simpro's
+System > Setup > Company and set in configuration. No gateway code, seed data
+or test outside the mock may assume `1` and `2` (`simpro-api-findings.md` §2.3).
 
 ### 7.3 Policy evaluation order
 
@@ -264,6 +278,7 @@ parameterised, and returns a compact summary rather than raw records.
 | Latency | Gateway p95 under 2 s per query against the mock (excluding LLM time) |
 | Logging | JSON logs with correlation IDs, propagated from the tool to Simpro calls |
 | Availability | Restart policy `unless-stopped`; health check on `/healthz` |
+| Testing | Unit and integration tests run offline against `simpro-mock`, which stays the fast, deterministic default. Contract tests against Simpro's shared sandbox prove `simpro_client` models match the real API; differences found there are fixed in the mock. Running them needs Alex's approval of an exception to root `CLAUDE.md` §3 (no contact with `*.simprosuite.com`) (`docs/simpro/simpro-api-findings.md` §2.1) |
 | Backups | `clive_gateway` database included in the backup script (`scripts/backup.sh` currently dumps only the Phase 2 `POSTGRES_DB`, so this needs a change; see W5) |
 
 ## 12. Sprint plan
@@ -275,7 +290,8 @@ Each sprint ends with passing tests, documentation updates and a git commit.
 - Complete the permission matrix with CVC stakeholders.
 - Finalise query catalogue v1 from the user research.
 - Model spike: evaluate 2–3 tool-calling models that fit in 10 GB VRAM against
-  a fixed set of test questions.
+  the course correction W4 evaluation set
+  (`docs/sprints/course-correction/W4-evaluation.md`; not built yet).
 
 **Acceptance:** ADRs accepted; matrix and catalogue signed off; model chosen
 with recorded test results.
