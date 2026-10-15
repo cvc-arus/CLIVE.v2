@@ -103,6 +103,7 @@ Implemented with deviations from ADR-010; see `src/simpro_client/CLAUDE.md`.
 - 2026-10-15: ADR-009 **accepted** by Alex: its Status line reads Accepted and its `Related:` line cites ADR-014 instead of ADR-011. ADR-014's storage conflict with root `CLAUDE.md` §3 resolved by Alex with a narrow exception (`clive_gateway` database on the Phase 2 instance, own least-privilege user, never the knowledge-base database, no tests against port 5432). `ADR-index.md`, `docs/README.md`, `STATUS.md`, `architecture.md` §6.1, the Phase 3B PDD and the change list updated to match. Documentation only
 - 2026-10-15: created `docs/reviews/` with a `README.md` (naming, historical header, where findings go, and the W2 and W3 reviews planned there); indexed in `docs/README.md` §3. Documentation only
 - 2026-10-15: `docs/PDDs/PDD-phase3.md` revised as-built and **closed** (Alex): rewritten from the codebase at `864264b` — the typed client layer, the mock as re-shaped by ADR-013, the ADR-009 handoff, plan vs delivery against `scope-rev2.md`, the decisions, and what was carried forward; sign-off evidence stays in `docs/phase3/phase3-signoff.md`. `docs/phase3/phase3-summary.md` stays a historical record and is not merged (Alex). `docs/README.md` §5, §6 and §8 updated. Documentation only
+- 2026-10-15: W6 complete, accepted by Alex. `/sprint-task` and `/status-update` confirmed after a restart; security documentation deferred to Phase 3B Sprint 2 (confirmed); the Proposed-ADR rules stay in root `CLAUDE.md` §3. Documentation only
 
 ## Not Yet Started
 
