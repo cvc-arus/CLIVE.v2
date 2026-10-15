@@ -4,7 +4,6 @@
 - **Date:** 2026-10-09
 - **Deciders:** Alex
 - **Related:** ADR-009 (Phase 3 → Phase 4 handoff: `clive-gateway` as the single Simpro access point), ADR-015 (conversational access approach).
-  ADR-009's `Related:` line cites this draft as "ADR-011 (Simpro data access control model, proposed)"; correcting it is pending Alex.
 
 ## Context
 

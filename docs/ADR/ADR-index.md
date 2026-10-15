@@ -11,7 +11,7 @@
 | 006 | Library-First Architecture for `simpro_client` | 3 | Accepted, implemented; **"no service wrapper" partially superseded by ADR-009** |
 | 007 | Configuration Management — pydantic-settings | 3 | Accepted, implemented |
 | 008 | Client-Side Resilience, Rate Limiting, and Error Handling (`adr-008-rate-limiting-strategy.md`) | 3 | Withdrawn 2026-09-29 (duplicate of ADR-010) |
-| 009 | Phase 3 → Phase 4 Handoff Mechanism | 3→4 | **Decision recorded 2026-10-09 (Alex): Option B, a single `clive-gateway` service.** Status line still reads Proposed; `clive-gateway` not built yet |
+| 009 | Phase 3 → Phase 4 Handoff Mechanism | 3→4 | **Accepted** (decision recorded 2026-10-09; Status line updated by Alex 2026-10-15): Option B, a single `clive-gateway` service. `clive-gateway` not built yet |
 | 010 | Client-Side Resilience, Rate Limiting, and Error Handling | 3 | Approved, implemented with deviations (see `src/simpro_client/CLAUDE.md`); §2.5 superseded by ADR-011; §2.3 superseded and §2.1 extended by ADR-012 |
 | 011 | Exception Hierarchy and Authentication Error Context (supersedes ADR-010 §2.5) | 3 | Accepted 2026-10-06, implemented |
 | 012 | Retry Delay Ceiling and Token-Refresh Concurrency (supersedes ADR-010 §2.3, extends §2.1) | 3 | Accepted 2026-10-06 |

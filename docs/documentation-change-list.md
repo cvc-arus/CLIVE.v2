@@ -13,7 +13,7 @@ are marked, and documents that do not exist are marked "to create".
 |---|---|---|
 | `docs/PDDs/PDD-phase3b-simpro-conversational-access.md` | Drafted | Plan, architecture, schema, sprints, schedule, risks |
 | `docs/scope/scope-rev3.md` | Drafted (historical) | Supersedes Revision 2 (`docs/scope/scope-rev2.md`) |
-| `docs/ADR/adr-009-phase3-phase4-handoff.md` | Exists; decision recorded 2026-10-09 (PR #44) | Repo version is authoritative and already makes `clive-gateway` the single Simpro access point for every consumer. No new ADR needed for that. Its Status line (still Proposed) and its `Related:` line (cites ADR-011 for access control) are pending Alex |
+| `docs/ADR/adr-009-phase3-phase4-handoff.md` | Exists; decision recorded 2026-10-09 (PR #44) | Repo version is authoritative and already makes `clive-gateway` the single Simpro access point for every consumer. No new ADR needed for that. **Done** 2026-10-15: Alex set its Status line to Accepted and its `Related:` line to cite ADR-014 |
 | `docs/ADR/adr-014-simpro-access-control-model.md` | Drafted (Proposed) | |
 | `docs/ADR/adr-015-conversational-access-approach.md` | Drafted (Proposed) | |
 | `docs/user-guide-simpro-qa.md` | Phase 3B Sprint 6 (to create) | How to ask questions; what's supported |
