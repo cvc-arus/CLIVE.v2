@@ -19,6 +19,10 @@ backend a single service identity with no notion of the individual user.
 Restrictions placed in prompts are not access control: a model can be talked
 into revealing anything it has been given.
 
+Simpro applies security groups to API applications as well as to users
+(`docs/simpro/simpro-api-findings.md` §2.2), so Simpro itself can bound what
+CLIVE's service identity can read.
+
 ## Options considered
 
 ### Option 1 — Shared service account + CLIVE-managed roles
@@ -53,6 +57,9 @@ Rules:
 - A user's permissions are the union of their roles.
 - Every request is audited (allow, deny, error).
 - Service accounts (no human user) use the same model.
+- CLIVE's roles operate inside a dedicated, read-only Simpro security group
+  for CLIVE's API application, limited to the resources CLIVE needs. That
+  group is the outer boundary: even a CLIVE bug cannot expose data it excludes.
 
 Storage: a dedicated `clive_gateway` database and least-privilege DB user on
 the existing Phase 2 Postgres instance, rather than a new container. This keeps
@@ -77,4 +84,6 @@ Phase 3B PDD, section 7.2.
 ## Revisit if
 
 - Live Simpro access is enabled and its per-user permission behaviour can be verified.
+- Sandbox testing can verify how Simpro applies security groups per user: that
+  makes Option 2 more realistic and it should be re-evaluated then.
 - Permission drift between CLIVE and Simpro becomes a recurring problem.
