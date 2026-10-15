@@ -117,7 +117,7 @@ Where to find current state:
 | 006 | Library-first `simpro_client` | Accepted, implemented. **"No service wrapper" partially superseded by ADR-009**; the library-first part stands |
 | 007 | pydantic-settings, `SIMPRO_` / `SIMPRO_MOCK_` prefixes | Accepted, implemented |
 | 008 | Rate limiting | Withdrawn 2026-09-29 as a duplicate of ADR-010; kept for history |
-| 009 | Phase 3 → 4 handoff | **Decision recorded 2026-10-09 (Alex): Option B**, a single `clive-gateway` service imports `simpro_client` and serves every other consumer over HTTP. Its Status line still reads Proposed and its `Related:` line miscites ADR-011, both pending Alex. `clive-gateway` **does not exist yet** — do not build it unasked |
+| 009 | Phase 3 → 4 handoff | **Decision recorded 2026-10-09 (Alex): Option B**, a single `clive-gateway` service imports `simpro_client` and serves every other consumer over HTTP. **Accepted** (Status and `Related:` lines updated by Alex 2026-10-15). `clive-gateway` **does not exist yet** — do not build it unasked |
 | 010 | Resilience: token bucket, 401/429 budgets, error hierarchy | Approved; implemented with deviations (see `src/simpro_client/CLAUDE.md`). §2.5 superseded by ADR-011 |
 | 011 | Exception hierarchy and `SimproAuthError` context (supersedes ADR-010 §2.5) | Accepted 2026-10-06, implemented |
 | 012 | Retry delay ceiling (`SIMPRO_MAX_RETRY_DELAY`) and token-refresh concurrency | Accepted 2026-10-06 (supersedes ADR-010 §2.3, extends §2.1) |
@@ -229,7 +229,8 @@ Mock and full stack: see `services/simpro_mock/CLAUDE.md`. Test layers:
   `--force`, and only when asked.
 - Commit only when Alex asks. At the end of a sprint, propose the commit
   message and wait. One logical change per commit, with a descriptive
-  message (existing history uses `feat:`, `fix:`, `chore:`, `refactor:`).
+  conventional commit message (`type(scope): summary`; existing history uses
+  `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`).
 - Never commit `.env`, `.venv/`, `__pycache__/`, `*.egg-info/`, `backups/`,
   or coverage output. Some bytecode and `egg-info` files are still tracked
   (re-verify before relying on this), so running tests can make them appear
@@ -244,6 +245,7 @@ Mock and full stack: see `services/simpro_mock/CLAUDE.md`. Test layers:
 - The mock's static bearer token (a default in its `config.py`) is
   development-only. Do not copy that pattern into new services or into
   `simpro_client`. Mock DB credentials come from `.env`
+- Never print, log or commit secrets. Refer to `.env` variables by name only.
   (`SIMPRO_MOCK_DB_*`).
 - New ports bind to `127.0.0.1` unless there is a stated reason not to.
   Keep exposed ports to a minimum.

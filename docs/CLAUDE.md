@@ -72,7 +72,7 @@ including `roadmap.md`, link to it instead of restating status.
 - Claude drafts ADRs as **Proposed** with options and a non-binding
   recommendation. Only Alex accepts them. **ADR-009's Decision was written by
   Alex on 2026-10-09** (Option B, a single `clive-gateway` service); do not
-  reword or reinterpret it. Its Status line still reads Proposed.
+  reword or reinterpret it. Alex accepted it (Status line updated 2026-10-15).
 - ADR-008 is **Withdrawn** (duplicate of ADR-010). Do not implement from it,
   cite it, or renumber it; ADR-010 is the authoritative record.
 - `structure.txt` is generated. Regenerate it with the command in
@@ -86,7 +86,7 @@ including `roadmap.md`, link to it instead of restating status.
 | Course correction and later sprint task files | `docs/sprints/<sprint>/` |
 | Sprint plan templates | `docs/templates/sprint-full.md`, `sprint-short.md` |
 | Facts about Simpro's API and service | `docs/simpro/` |
-| Reviews of the project or its documents | `docs/reviews/` (none yet; create when the first review is filed) |
+| Reviews of the project or its documents | `docs/reviews/` (rules in its `README.md`; each review is historical) |
 | Architecture decisions | `docs/ADR/` |
 | Phase design | `docs/PDDs/PDD-phaseN.md` |
 | Sprint plans, contracts, reports | `docs/phaseN/` |
