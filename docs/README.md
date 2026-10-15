@@ -78,13 +78,13 @@ to date. If a document is not listed here, either add it here or delete it.
 | `ADR/adr-011-exception-hierarchy-and-auth-errors.md` | Accepted 2026-10-06, implemented (supersedes ADR-010 §2.5) |
 | `ADR/adr-012-retry-delay-ceiling-and-auth-concurrency.md` | Accepted 2026-10-06 (supersedes ADR-010 §2.3, extends §2.1) |
 | `ADR/adr-013-reshape-to-published-simpro-spec.md` | Accepted 2026-10-07, implemented 2026-10-08 (all 7 sprints). Governs field names, types and optionality via `contracts/simpro-openapi-v1-get-subset.json`; supersedes `adr-mock-simpro-api.md` "Capabilities & Coverage" |
-| `ADR/adr-014-simpro-access-control-model.md` | Proposed 2026-10-09 (Phase 3B). Stores `clive_gateway` on the Phase 2 Postgres, against root `CLAUDE.md` §3; for Alex to resolve |
+| `ADR/adr-014-simpro-access-control-model.md` | Proposed 2026-10-09 (Phase 3B). Stores `clive_gateway` on the Phase 2 Postgres; the conflict with root `CLAUDE.md` §3 was resolved by Alex on 2026-10-15 with a narrow exception in §3 |
 | `ADR/adr-015-conversational-access-approach.md` | Proposed 2026-10-09 (Phase 3B): tool calling over a fixed query catalogue |
 | `ADR/adr-mock-simpro-api.md` | Decision stands; its "Capabilities & Coverage" list is superseded by ADR-013 |
 | `ADR/adr-008-rate-limiting-strategy.md` | Withdrawn 2026-09-29 (duplicate of ADR-010). Kept for history |
 | `PDDs/PDD-phase1.md`, `PDD-phase2.md` | Phases complete. 2026-10-14: `PDD-phase2.md` §8 has a dated note that the Phase 2 backup script was replaced in course correction W5 |
 | `PDDs/PDD-phase3.md` | "As-built" at 2026-09-04; predates Sprint 4. **To do: revise now** (decided 2026-09-29). 2026-10-14: §4, §5, §7 and §8 record ADR-009's decision instead of saying the handoff ADR is not written (W6 T3); the rest is still unrevised |
-| `PDDs/PDD-phase3b-simpro-conversational-access.md` | Draft 0.1 (2026-10-09), awaiting approval. Phase 3B plan: `clive-gateway`, access control, query catalogue, minimum security slice. 2026-10-14: Simpro findings applied (W6 T4) |
+| `PDDs/PDD-phase3b-simpro-conversational-access.md` | Draft 0.1 (2026-10-09), awaiting approval. Phase 3B plan: `clive-gateway`, access control, query catalogue, minimum security slice. 2026-10-14: Simpro findings applied (W6 T4). 2026-10-15: ADR-014 storage conflict note marked resolved |
 | `course-correction-plan.md` | Course correction plan v2 (2026-10-12), approved. Task files in `sprints/course-correction/` |
 | `PDDs/PDD-phase4.md` | Draft. Handoff link fixed 2026-10-02 (now ADR-009). 2026-10-14: §1–§6 and the diagram consume Simpro through `clive-gateway` (ADR-009) instead of importing `simpro_client`; entry criteria add the gateway's query catalogue (W6 T5). 2026-10-14: §3 adds the `docgen` service account (W6 T7) |
 

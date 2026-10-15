@@ -66,12 +66,15 @@ the existing Phase 2 Postgres instance, rather than a new container. This keeps
 hardware use down while isolating access by credentials. Schema: see the
 Phase 3B PDD, section 7.2.
 
-> **Conflict for Alex to resolve (recorded 2026-10-13).** Placing `clive_gateway`
-> on the Phase 2 Postgres instance (`postgres`, port 5432) conflicts with root
-> `CLAUDE.md` §3, which keeps two isolated Postgres instances and says the
-> Phase 2 instance must never be used by Phase 3 code or tests. Either this
-> storage choice or that rule must change before the ADR is accepted. The
-> decision text above is unchanged.
+> **Conflict resolved (Alex, 2026-10-15).** Placing `clive_gateway` on the
+> Phase 2 Postgres instance (`postgres`, port 5432) conflicted with root
+> `CLAUDE.md` §3, which kept that instance off-limits to Phase 3 code and
+> tests (recorded 2026-10-13). Alex kept this storage choice and narrowed §3
+> instead: `clive-gateway` may use its own `clive_gateway` database there,
+> through its own least-privilege DB user. It must never connect to the
+> knowledge-base database, and no test may run against port 5432, so the
+> gateway's tests need a disposable database. The decision text above is
+> unchanged. This resolves the conflict only; the ADR itself is still Proposed.
 
 ## Consequences
 
