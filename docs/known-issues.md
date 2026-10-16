@@ -7,6 +7,35 @@ Found by reading the actual codebase and running the test suite, per the project
 
 The root `pyproject.toml` defines dev dependencies under `[dependency-groups]` (PEP 735 style) rather than `[project.optional-dependencies]`. `pip install -e ".[dev]"` prints `WARNING: simpro-client 0.1.0 does not provide the extra 'dev'` and installs only the base package — `pytest`, `respx`, `ruff`, and `pytest-cov` are not installed by that command. `uv sync` (or explicit `pip install pytest respx ruff pytest-cov`) is required instead.
 
+## `/companies/` is not paginated upstream; the client and mock assume it is
+
+Found 2026-10-17 by the first live read-only check
+(`docs/simpro/mock-vs-public-api.md` §6, item 4). Live `GET /companies/`
+returns `Result-Count` only, with no `Result-Total` or `Result-Pages`.
+`CompaniesEndpoint.fetch_page()` and `iter_all()` (`src/simpro_client/endpoints/base.py`)
+require all three headers and raise `SimproProtocolError`. The mock paginates
+`/companies/` and sends all three, so the offline and integration suites do not
+see it. To fix in W1 T4.
+
+## Simpro does not add `ID` to a `columns` projection; the mock does
+
+Found 2026-10-17 (`docs/simpro/mock-vs-public-api.md` §6, item 1). Live
+`columns=CompanyName` returns only `CompanyName`. The mock always adds `ID`
+(`services/simpro_mock/simpro_mock/projection.py`, `ALWAYS_INCLUDED`), and every
+client model requires `ID`, so a caller that omits `ID` from `columns` passes
+against the mock and fails against Simpro. To fix in W1 T4.
+
+## Simpro sends `""` for empty dates the spec declares nullable
+
+Found 2026-10-17 (`docs/simpro/mock-vs-public-api.md` §6, item 17). A live job
+detail returned `CustomerContract.StartDate` and `EndDate` as the empty string;
+the vendored contract declares both as nullable `date`. `ContractRef`
+(`src/simpro_client/models/common.py`) rejects `""`, so `Job` validation fails
+and `client.jobs.get()` raises for such a job. `ContractRef` is also used by
+`Quote` and `Asset`, and other date fields may behave the same way. The mock
+never sends `""`. This is a case where the published spec is wrong and the code
+is wrong with it (see the ADR-013 entry below). To fix in W1 T4.
+
 ## RESOLVED 2026-10-08 — unused mock settings `SIMPRO_MOCK_MOCK_CLIENT_ID` and `SIMPRO_MOCK_MOCK_CLIENT_SECRET`
 
 Observed 2026-10-02. `services/simpro_mock/simpro_mock/config.py` defined `mock_client_id` and `mock_client_secret`, but nothing read them: `issue_token` in `services/simpro_mock/simpro_mock/routers.py` ignores the submitted credentials and always returns the static token.
