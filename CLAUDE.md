@@ -21,17 +21,19 @@ the approver for every sprint and architectural decision.
 
 - Phases 1–2 (complete, rarely touched): Ollama + Open WebUI; RAG via
   PostgreSQL/PGVector + Apache Tika.
-- Phase 3 (**closed 2026-10-09**, Alex): Simpro integration. **There is still no
-  live Simpro API access.**
+- Phase 3 (**closed 2026-10-09**, Alex): Simpro integration. **Live Simpro API
+  access arrived 2026-10-16** (OAuth2 Client Credentials on CVC's production
+  build; the environment type is in the private build notes). It is used read-only, under the rules in §3 and
+  §9; nothing in the code points at it yet.
   - `src/simpro_client/` — reusable, typed, synchronous Python client library.
   - `services/simpro_mock/` — FastAPI + PostgreSQL mock of the Simpro REST API.
   - Both are shaped to Simpro's **published** OpenAPI contract, vendored at
     `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013), and
     `tests/test_spec_conformance.py` proves it without API access.
   - Closed does not mean frozen: `docs/known-issues.md` still lists the
-    `pip install -e ".[dev]"` pitfall, and four mock behaviours remain
-    unverifiable without live credentials. (The lint debt carried past the
-    close was cleared on 2026-10-12, PR #47.)
+    `pip install -e ".[dev]"` pitfall, and four mock behaviours were
+    unverifiable before live access; checking them is course correction W1.
+    (The lint debt carried past the close was cleared on 2026-10-12, PR #47.)
 - Phase 4 (not started, **no longer blocked**): document generation. ADR-009's
   decision is recorded, so scoping can begin. Its entry criteria now include
   `clive-gateway`'s query catalogue covering Customers, Sites, Contacts, Jobs,
@@ -85,6 +87,13 @@ Where to find current state:
 - **Read-only scope.** All typed endpoints and all mock resource routes are
   GET-only (the mock's only POST is `/oauth2/token`). Do not add write
   operations without an approved scope change.
+- **Live Simpro is read-only (Alex, 2026-10-16).** CLIVE works against CVC's live
+  Simpro build; the environment type is in the private build notes. The only requests allowed to
+  `*.simprosuite.com` are `GET`s and the OAuth2 token `POST`. Nothing is ever
+  written to Simpro: no `POST`, `PUT`, `PATCH` or `DELETE` on any resource,
+  whatever an endpoint or task appears to need. The API application has <APP_PERMISSION_LEVEL>
+  rights in Simpro (no dedicated read-only security group), so this rule and the
+  GET-only client are the only guard against writes.
 - **Two isolated Postgres instances.** `postgres` (port 5432, Phase 2
   PGVector knowledge base) must never be used by Phase 3 code or tests, with
   one exception (ADR-014; resolved by Alex 2026-10-15): `clive-gateway` keeps
@@ -96,8 +105,12 @@ Where to find current state:
 - **No architectural change without an ADR** (new service, new dependency
   category, async, auth flow, handoff mechanism, persistence strategy).
 - **Self-hosted.** No cloud AI providers or external SaaS calls unless Alex
-  explicitly approves. Code and tests must never contact `*.simprosuite.com`.
-- **Simpro company IDs are configuration.** Never assume 1 and 2 outside the mock.
+  explicitly approves. CVC's own Simpro build (`*.simprosuite.com`) is the one
+  approved external API, read-only as above.
+- **Simpro company IDs are configuration.** CVC's are Service <company-id> and Projects
+  <company-id> (Alex, 2026-10-16). **Only <company-id> and <company-id> are ever used** (Alex, 2026-10-17): the
+  build also lists companies <company-id> and <company-id>, which CLIVE never queries, lists or
+  includes. Never assume 1 and 2 outside the mock.
 - **Rate limiter budget is per `SimproClient` instance** (ADR-010;
   `src/simpro_client/CLAUDE.md` §10), not per process or per Simpro build.
   Services calling Simpro run a single worker with one client.
@@ -258,10 +271,16 @@ cleared on 2026-10-12 (PR #47). Therefore:
   rewriting git history.
 - Ask before host-level changes: apt packages, systemd units, cron, firewall,
   files outside the repo (except the agreed backup target).
-- Never run tests or scripts against <ENVIRONMENT_TYPE> Simpro. Sandbox tests run
-  only when Alex has set sandbox credentials and asked for them, and only once
-  Alex has approved an exception to §3 (code and tests must never contact
-  `*.simprosuite.com`).
+- **No CVC client data reaches Claude Code (Alex, 2026-10-16).** Anything a
+  command prints lands in the conversation, so code that reads live Simpro
+  data or knowledge-base content prints only status codes, counts, field
+  names, header names and pass/fail, never values. Watch for indirect leaks:
+  pytest and Pydantic failure output echoes input values (run with
+  `--tb=no`), as do log lines and error bodies. When values must be looked
+  at, give Alex the command to run and ask for a summary.
+- Requests to live Simpro (GET only, §3) run only when Alex asks for them. The
+  default test suite never contacts Simpro; any live test must be opt-in and
+  skipped by default.
 
 ## 10. Reporting results
 

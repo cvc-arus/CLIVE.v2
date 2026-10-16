@@ -573,4 +573,5 @@ questions were embedded and searched against the restored knowledge base.
 
 ## 11. Off-machine copy
 
-Not yet done (W5 T7).
+Not yet done (W5 T7). Alex closed W5 on 2026-10-16 with this recorded as an
+accepted risk in `docs/STATUS.md` (Open risks); no end date set.

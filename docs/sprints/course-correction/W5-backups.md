@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Template** | Full (changes data handling and the host) |
-| **Status** | Approved |
+| **Status** | Complete 2026-10-16 (Alex), T7 as an accepted risk — see `docs/STATUS.md` |
 | **Depends on** | W6 T1 (`STATUS.md` exists) |
 | **Related** | Phase 2 `scripts/backup.sh`, recovery plan |
 
@@ -210,9 +210,9 @@ report), installation guide (timer setup), `.env.example`, `docs/STATUS.md`,
 
 ## 14. Acceptance criteria
 
-- [ ] Data location per disk documented; backup target is the other disk
-- [ ] Every inventory item backed up, with checksummed manifest
-- [ ] Daily schedule running; retention applied
-- [ ] Disk health baseline recorded for both disks
-- [ ] Restore drill completed and documented with time taken
-- [ ] Off-machine copy in place, or recorded as an accepted risk with a date
+- [x] Data location per disk documented; backup target is the other disk
+- [x] Every inventory item backed up, with checksummed manifest
+- [x] Daily schedule running; retention applied
+- [x] Disk health baseline recorded for both disks
+- [x] Restore drill completed and documented with time taken
+- [x] Off-machine copy in place, or recorded as an accepted risk with a date

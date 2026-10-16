@@ -86,6 +86,6 @@ Phase 3B PDD, section 7.2.
 ## Revisit if
 
 - Live Simpro access is enabled and its per-user permission behaviour can be verified.
-- Sandbox testing can verify how Simpro applies security groups per user: that
+- Read-only checks against live Simpro can verify how Simpro applies security groups per user: that
   makes Option 2 more realistic and it should be re-evaluated then.
 - Permission drift between CLIVE and Simpro becomes a recurring problem.

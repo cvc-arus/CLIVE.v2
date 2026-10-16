@@ -75,6 +75,8 @@
 │   │       └── phase3-sprint4-preflight-audit.md
 │   ├── README.md
 │   ├── recovery-plan.md
+│   ├── reviews
+│   │   └── README.md
 │   ├── roadmap.md
 │   ├── scope
 │   │   ├── clive-scope.md
@@ -82,6 +84,7 @@
 │   │   ├── scope-rev2.md
 │   │   └── scope-rev3.md
 │   ├── simpro
+│   │   ├── mock-vs-public-api.md
 │   │   └── simpro-api-findings.md
 │   ├── simpro-mock-api-reference.md
 │   ├── sprints
@@ -202,4 +205,4 @@
 │   └── test_spec_conformance.py
 └── uv.lock
 
-37 directories, 165 files
+38 directories, 167 files
