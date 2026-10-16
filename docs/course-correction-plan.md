@@ -32,11 +32,20 @@ needed to choose the next phase order.
 
 Full Simpro detail: `docs/simpro/simpro-api-findings.md`.
 
+**Amendment 2026-10-16 (Alex): <ENVIRONMENT_TYPE>.** Live API access to CVC's production
+build arrived (OAuth2 Client Credentials, free). CLIVE works against it
+**read-only**: `GET` requests and the token request only, nothing written to
+Simpro, and no client data reaching Claude Code (root `CLAUDE.md` §3 and §9).
+The sandbox row above and the sandbox wording in §4 and §7 are superseded
+by this; W1 T1 (Support cases) is not needed. The API application
+has <APP_PERMISSION_LEVEL> access in Simpro rather than a dedicated read-only security group
+(`simpro-api-findings.md` §2.2; open risk in `docs/STATUS.md`).
+
 ## 3. Workstreams
 
 | # | Workstream | Template | Who | Effort |
 |---|---|---|---|---|
-| W1 | Simpro access and sandbox | Short | Alex (support cases) + Claude Code (mock comparison) | 1–2 days, then waiting |
+| W1 | Simpro access and live API checks | Short | Alex (support cases) + Claude Code (mock comparison) | 1–2 days, then waiting |
 | W2 | Document generation value check | Short | Alex | ~2 days, spread out |
 | W3 | Knowledge base audit | Short | Claude Code + Alex | 2–3 days |
 | W4 | Evaluation set and baseline | Short | Alex (questions) + Claude Code (runner) | 2–3 days |
@@ -75,15 +84,14 @@ every later task updates `STATUS.md`.
 
 ## 6. Decision point (end of sprint)
 
-Inputs: W1 (commercial answer, sandbox access, mock discrepancies), W2 (value
+Inputs: W1 (live read-only checks, mock discrepancies), W2 (value
 ranking), W3 (knowledge base gaps), W4 (baseline quality).
 
 | Scenario | Next phase order |
 |---|---|
-| Sandbox available; Simpro Q&A ranks highest | 3B (built against mock, validated on sandbox) → 4A → 4B |
-| Sandbox delayed; RAMS/template documents rank highly | 4A → 3B → 4B |
+| Simpro Q&A ranks highest | 3B (built against mock, validated read-only on live Simpro) → 4A → 4B |
+| RAMS/template documents rank highly | 4A → 3B → 4B |
 | Knowledge base audit finds major gaps | Phase 2B (knowledge base remediation) first; 4A depends on it |
-| <ENVIRONMENT_TYPE> API access refused | 4A; 3B and 4B paused; mock and sandbox work frozen |
 
 The decision is recorded in `docs/STATUS.md` and, if architectural, in an ADR.
 
@@ -103,6 +111,6 @@ The decision is recorded in `docs/STATUS.md` and, if architectural, in an ADR.
 
 | Item | Owner | Status |
 |---|---|---|
-| Simpro price and access level | Simpro representative | Awaited |
-| Simpro Support cases (sandbox, OpenAPI export, cross-company credentials, read-only scoping) | Alex | To raise on day 1 |
+| Simpro price and access level | Simpro representative | Resolved 2026-10-16: free; live access granted |
+| Simpro Support cases (sandbox, OpenAPI export, cross-company credentials, read-only scoping) | Alex | Not needed (Alex, 2026-10-16); answers in `simpro-api-findings.md` §3 |
 | Off-machine backup target (NAS or external drive) | Alex / CVC | **Not yet agreed.** Until it exists, backups are cross-disk only and this is recorded as an accepted risk. |

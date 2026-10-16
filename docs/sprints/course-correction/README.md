@@ -31,7 +31,7 @@ Tasks marked **[HUMAN]** are yours. Claude Code will stop and list them.
 
 | File | Workstream | Template |
 |---|---|---|
-| `W1-simpro-access.md` | Simpro access and sandbox | Short |
+| `W1-simpro-access.md` | Simpro access and live API checks | Short |
 | `W2-docgen-value-check.md` | Document generation value check | Short |
 | `W3-kb-audit.md` | Knowledge base audit | Short |
 | `W4-evaluation.md` | Evaluation set and baseline | Short |

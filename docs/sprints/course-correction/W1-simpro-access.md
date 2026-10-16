@@ -1,4 +1,4 @@
-# W1 — Simpro Access and Sandbox
+# W1 — Simpro Access and Live API Checks
 
 | | |
 |---|---|
@@ -9,15 +9,24 @@
 
 ## Goal
 
-Get CLIVE onto the real Simpro API as early as possible. The shared sandbox
-lets `simpro_client` be checked against real responses now, instead of waiting
-for production access. The mock stays for fast offline tests, with its scope frozen.
+Get CLIVE onto the real Simpro API as early as possible, so `simpro_client` is
+checked against real responses. The mock stays for fast offline tests, with its
+scope frozen.
+
+**Amended 2026-10-16 (Alex):** the environment type is in the private build notes. Live API access to CVC's
+<ENVIRONMENT_TYPE> build arrived (OAuth2 Client Credentials, credentials in `.env`), and
+the checks run against it **read-only**: `GET` requests and the token request
+only, nothing written to Simpro, and no client data reaching Claude Code (root
+`CLAUDE.md` §3 and §9). The tasks below are rewritten from "sandbox" to "live,
+read-only".
 
 ## Tasks
 
-### T1 — [HUMAN] Raise Simpro Support cases
-Raise the five cases in `docs/simpro/simpro-api-findings.md` section 3, sandbox first.
-Record case numbers in section 4. Also chase the price and access-level answer.
+### T1 — [HUMAN] Raise Simpro Support cases — **not needed** (Alex, 2026-10-16)
+Access arrived without them; Alex's answers are in
+`docs/simpro/simpro-api-findings.md` §3. The questions still open there
+(rate limits, token lifetime, application-level read-only scoping) are answered
+by the live checks in T5 or raised later if needed.
 
 ### T2 — Check what ADR-013 left unverified
 ADR-013 (implemented 2026-10-08) already compared the mock and client with
@@ -40,40 +49,49 @@ covers only what the spec cannot settle:
 4. Do **not** change the mock or client in this task.
 **Stop point:** report with a count of differences by severity.
 
-### T3 — Prepare sandbox contract tests (do not run against any live system)
-Running them later needs Alex's approval of an exception to root `CLAUDE.md` §3
-(code and tests must never contact `*.simprosuite.com`). Only the `integration`
-marker is registered today (root `pyproject.toml`).
-1. Add a pytest marker `sandbox`, registered in config, skipped unless
-   `SIMPRO_SANDBOX_BASE_URL` and credentials are set.
+### T3 — Prepare live read-only contract tests (do not run them in this task)
+Only the `integration` marker is registered today (root `pyproject.toml`).
+1. Add a pytest marker `live`, registered in config, skipped unless an explicit
+   opt-in variable is set, so that live credentials in `.env` alone never make
+   the default run contact Simpro. The tests read the live settings at runtime;
+   record that exception to `tests/CLAUDE.md`'s "never depend on `.env`" rule
+   in that file.
 2. Write read-only contract tests: authenticate; list and fetch each resource
-   used by Phase 3B; validate responses with the existing Pydantic models;
-   check pagination headers.
-3. Document how to run them in `docs/simpro/simpro-api-findings.md`.
-4. Confirm the normal test suite still passes and sandbox tests are skipped.
-**Stop point:** test run output showing sandbox tests skipped.
+   used by Phase 3B in both companies (Service <company-id>, Projects <company-id>); validate
+   responses with the existing Pydantic models; check pagination headers.
+   First checks, from `docs/simpro/mock-vs-public-api.md` §5: token request
+   encoding (item 13), token invalidation across instances (item 15),
+   `/companies/` headers (item 4), `ID` in projections (item 1).
+3. **GET only**, and **no client data in output**: assertions and messages
+   report status codes, counts, field and header names, pass/fail; no response
+   values (run with `--tb=no`).
+4. Document how to run them in `docs/simpro/simpro-api-findings.md`.
+5. Confirm the normal test suite still passes and live tests are skipped.
+**Stop point:** test run output showing live tests skipped.
 
 ### T4 — Fix high-severity differences (only after Alex reviews T2)
 Fix differences rated "breaks client" in the mock and/or client, one resource
 at a time, with tests. Skip if T2 finds none.
 
-### T5 — [HUMAN, when sandbox access arrives] Run contract tests
-Set sandbox credentials in `.env`, run `uv run pytest -m sandbox`, record results in
+### T5 — Run live contract tests (only when Alex asks)
+Credentials are already in `.env` (Alex). Alex approved a read-only smoke check
+against <ENVIRONMENT_TYPE> on 2026-10-16. Run the T3 tests with the opt-in set, record
+pass/fail and the settled unknowns in `docs/simpro/mock-vs-public-api.md` and
 `docs/simpro/simpro-api-findings.md`. Any failures become fix tasks.
 
 ## Verification
 - `docs/simpro/mock-vs-public-api.md` exists and covers the four unverified behaviours and error responses.
-- `uv run pytest -q` passes; `uv run pytest -m sandbox` skips cleanly without credentials.
+- `uv run pytest -q` passes; `uv run pytest -m live` skips cleanly without the opt-in.
 
 ## Rollback
 `git revert <commit>`.
 
 ## Git commit
 `docs(simpro): compare mock against published Simpro API`
-`test(simpro): add opt-in sandbox contract tests`
+`test(simpro): add opt-in live read-only contract tests`
 
 ## Acceptance criteria
-- [ ] Support cases raised and logged
-- [ ] Mock vs public API report complete
-- [ ] Sandbox contract tests ready and skipped by default
+- [x] Support cases raised and logged — not needed (Alex, 2026-10-16)
+- [x] Mock vs public API report complete
+- [ ] Live read-only contract tests ready and skipped by default
 - [ ] `STATUS.md` updated

@@ -12,7 +12,7 @@ the running mock over HTTP. Configuration lives in root `pyproject.toml`
 | Mock integration | modules marked `pytest.mark.integration` (`test_simpro_mock_v2.py`, `test_client_mock_drift.py`) | only when `simpro-mock` is up on `localhost:8100` | real HTTP to the local mock only |
 | Contract conformance | `test_spec_conformance.py` | always | none: payloads are generated from the vendored spec |
 | Manual diagnostic | `scripts/verify-simpro-mock.py` | by hand | local mock |
-| Live Simpro | **does not exist** | never | — |
+| Live Simpro | **does not exist yet**; planned as opt-in read-only contract tests (course correction W1 T3) | never by default | — |
 
 Rules:
 - New tests are offline unit tests unless the behaviour can only be proven
@@ -20,9 +20,11 @@ Rules:
 - Integration tests must carry `pytestmark = pytest.mark.integration` **and**
   skip at runtime (not at import) when `GET http://localhost:8100/health`
   fails. Follow `test_simpro_mock_v2.py`.
-- No test may contact real Simpro (`*.simprosuite.com`) or any external host.
-  Do not create a "live" marker or live-test layer. Real API access is not
-  available, and adding it needs Alex's decision.
+- No test in the default run may contact real Simpro (`*.simprosuite.com`)
+  or any external host. Live access exists since 2026-10-16 (root `CLAUDE.md`
+  §1); the only live tests allowed are the opt-in, skipped-by-default,
+  GET-only contract tests planned in W1 T3. They must print no client data
+  (root `CLAUDE.md` §9) and run only when Alex asks.
 - Tests never connect to PostgreSQL directly and never import `simpro_mock`.
   The mock is exercised only through its HTTP API.
 - `test_spec_conformance.py` is the authority on model field names, types and
