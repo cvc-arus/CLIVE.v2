@@ -28,14 +28,14 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 
 | Workstream | Status | Notes |
 |---|---|---|
-| W1 Simpro access and sandbox | ⏳ Not started | |
+| W1 Simpro access and sandbox | 🔶 In progress | T2: `docs/simpro/mock-vs-public-api.md` — 16 items: 0 break the client, 4 cosmetic, 9 unknown, 3 match. `Result-*` headers now documented; four unknowns would break the client if they go the wrong way (token request encoding, token invalidation across instances, `/companies/` headers, `ID` in projections) and are the first sandbox checks. T1 [HUMAN] not yet done |
 | W2 Doc generation value check | 🔶 In progress | T1 [HUMAN] interviews under way (Alex, 2026-10-16) |
 | W3 Knowledge base audit | ⏳ Not started | Bulk ingestion paused until complete |
 | W4 Evaluation set | ⏳ Not started | |
 | W5 Backups and restore drill | ✅ Complete 2026-10-16 | Closed by Alex with T7 recorded as an accepted risk (Open risks). T1: all data on sdb1; target `<home>/clive-backups/` (sda2). T2: inventory agreed. T3: `scripts/backup.sh` backs up the full inventory except `.env` (GPG key deferred). T4: daily systemd timer at 02:30 installed. T5: `smartd` monitoring both disks; both are past their rated write endurance (recovery plan §9). T6: restore drill passed, about 68 s of commands from checksums to a working Open WebUI (recovery plan §10). T7 (off-machine copy) not done: accepted risk. See `docs/recovery-plan.md` |
 | W6 Docs consolidation | ✅ Complete 2026-10-15 | Accepted by Alex. `STATUS.md` owns status; Phase 3 evidence in `phase3/phase3-signoff.md`; ADR index conventions merged; Simpro findings applied to Phase 3B; root `CLAUDE.md` additions merged and `/sprint-task`, `/status-update` confirmed; `PDD-phase3.md` revised and closed; `docs/reviews/` created. Security documentation deferred to Phase 3B Sprint 2 |
 
-**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases); W1 T2 (check what ADR-013 left unverified); W3 T1 (unblocked by W5).
+**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases); W1 T3 (sandbox contract tests, after Alex reviews T2); W3 T1 (unblocked by W5).
 **Next decision:** phase order, at end of sprint.
 
 ## Simpro access
