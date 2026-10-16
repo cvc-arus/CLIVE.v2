@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Template** | Short |
-| **Status** | Approved |
+| **Status** | Complete 2026-10-15 (Alex) — see `docs/STATUS.md` |
 | **Depends on** | Nothing (T1 runs first in the sprint) |
 | **Related** | `docs/documentation-change-list.md`, `docs/simpro/simpro-api-findings.md` |
 
@@ -155,10 +155,10 @@ One commit per task, e.g.
 `docs(adr): merge ADR index conventions; add ADR-014 and ADR-015 rows`
 
 ## Acceptance criteria
-- [ ] Phase 3 test evidence (commit hash, test summary) recorded in a historical record and linked from `STATUS.md`
-- [ ] `STATUS.md` is the only living document stating current status; `docs/README.md`, `docs/CLAUDE.md` and `roadmap.md` updated to match
-- [ ] Scope documents, including `scope-rev3.md`, listed as historical in `docs/README.md` §6
-- [ ] `ADR-index.md` complete with naming convention; ADR-014 and ADR-015 present as Proposed; ADR-009's Status and `Related:` lines raised with Alex
-- [ ] Simpro findings applied to the Phase 3B PDD and ADR-014
-- [ ] Templates, skills and `CLAUDE.md` updates in place and working
-- [ ] High-priority change-list items done or explicitly deferred
+- [x] Phase 3 test evidence (commit hash, test summary) recorded in a historical record and linked from `STATUS.md`
+- [x] `STATUS.md` is the only living document stating current status; `docs/README.md`, `docs/CLAUDE.md` and `roadmap.md` updated to match
+- [x] Scope documents, including `scope-rev3.md`, listed as historical in `docs/README.md` §6
+- [x] `ADR-index.md` complete with naming convention; ADR-014 and ADR-015 present as Proposed; ADR-009's Status and `Related:` lines raised with Alex
+- [x] Simpro findings applied to the Phase 3B PDD and ADR-014
+- [x] Templates, skills and `CLAUDE.md` updates in place and working
+- [x] High-priority change-list items done or explicitly deferred

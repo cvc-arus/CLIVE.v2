@@ -4,7 +4,7 @@
 > (`/status-update`). Keep this file short: history belongs in `docs/CHANGELOG.md`,
 > decisions in `docs/ADR/`.
 
-**Last updated:** 2026-10-15
+**Last updated:** 2026-10-16
 
 ## Phases
 
@@ -29,13 +29,13 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 | Workstream | Status | Notes |
 |---|---|---|
 | W1 Simpro access and sandbox | ⏳ Not started | |
-| W2 Doc generation value check | ⏳ Not started | |
+| W2 Doc generation value check | 🔶 In progress | T1 [HUMAN] interviews under way (Alex, 2026-10-16) |
 | W3 Knowledge base audit | ⏳ Not started | Bulk ingestion paused until complete |
 | W4 Evaluation set | ⏳ Not started | |
-| W5 Backups and restore drill | 🔶 In progress | T1: all data on sdb1; target `<home>/clive-backups/` (sda2). T2: inventory agreed. T3: `scripts/backup.sh` backs up the full inventory except `.env` (GPG key deferred). T4: daily systemd timer at 02:30 installed. T5: `smartd` monitoring both disks; both are past their rated write endurance (recovery plan §9). T6: restore drill passed, about 68 s of commands from checksums to a working Open WebUI (recovery plan §10). T7 (off-machine copy) to be done later. See `docs/recovery-plan.md` |
+| W5 Backups and restore drill | ✅ Complete 2026-10-16 | Closed by Alex with T7 recorded as an accepted risk (Open risks). T1: all data on sdb1; target `<home>/clive-backups/` (sda2). T2: inventory agreed. T3: `scripts/backup.sh` backs up the full inventory except `.env` (GPG key deferred). T4: daily systemd timer at 02:30 installed. T5: `smartd` monitoring both disks; both are past their rated write endurance (recovery plan §9). T6: restore drill passed, about 68 s of commands from checksums to a working Open WebUI (recovery plan §10). T7 (off-machine copy) not done: accepted risk. See `docs/recovery-plan.md` |
 | W6 Docs consolidation | ✅ Complete 2026-10-15 | Accepted by Alex. `STATUS.md` owns status; Phase 3 evidence in `phase3/phase3-signoff.md`; ADR index conventions merged; Simpro findings applied to Phase 3B; root `CLAUDE.md` additions merged and `/sprint-task`, `/status-update` confirmed; `PDD-phase3.md` revised and closed; `docs/reviews/` created. Security documentation deferred to Phase 3B Sprint 2 |
 
-**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases); W1 T2 (check what ADR-013 left unverified); W5 T7 [HUMAN] (off-machine copy) later.
+**Next task:** W1 T1 [HUMAN] (raise Simpro Support cases); W1 T2 (check what ADR-013 left unverified); W3 T1 (unblocked by W5).
 **Next decision:** phase order, at end of sprint.
 
 ## Simpro access
@@ -50,7 +50,7 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 
 | Risk | Status |
 |---|---|
-| No off-machine backup | Open — agreed, to be done later (Alex, 2026-10-14); target not yet chosen |
+| No off-machine backup — accepted until the off-machine copy is in place (Alex, 2026-10-16; no end date set) | Open — W5 closed without T7; target not yet chosen. Cross-disk backups do not cover theft, fire, `rm` or ransomware (`docs/recovery-plan.md` §11) |
 | Both SSDs are past their rated write endurance (129 % and 116 %), from the same batch, so both could fail close together | Open — replace both, `sdb` first; firmware update to be looked into (Alex, 2026-10-14). See `docs/recovery-plan.md` §9 |
 | Knowledge base may not meet metadata/versioning/access requirements | Under audit (W3) |
 | Simpro rate limits and token lifetime undocumented | Open — conservative defaults (ADR-010, ADR-012) |
