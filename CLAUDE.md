@@ -108,7 +108,9 @@ Where to find current state:
   explicitly approves. CVC's own Simpro build (`*.simprosuite.com`) is the one
   approved external API, read-only as above.
 - **Simpro company IDs are configuration.** CVC's are Service <company-id> and Projects
-  <company-id> (Alex, 2026-10-16). Never assume 1 and 2 outside the mock, and never 0.
+  <company-id> (Alex, 2026-10-16). **Only <company-id> and <company-id> are ever used** (Alex, 2026-10-17): the
+  build also lists companies <company-id> and <company-id>, which CLIVE never queries, lists or
+  includes. Never assume 1 and 2 outside the mock.
 - **Rate limiter budget is per `SimproClient` instance** (ADR-010;
   `src/simpro_client/CLAUDE.md` §10), not per process or per Simpro build.
   Services calling Simpro run a single worker with one client.

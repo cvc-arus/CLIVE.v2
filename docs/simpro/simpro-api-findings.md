@@ -17,7 +17,7 @@ API (course correction W1 T5). the environment type is in the private build note
 | Provisioning lead time | Not specified | Moot: access arrived 2026-10-16 |
 | Access scoping | API credentials operate within the Security Group boundaries of the authenticating user/application | Stated. CVC's application has **<APP_PERMISSION_LEVEL> access** (§2.2); application-level read-only scoping *unverified* |
 | Field restrictions | Custom fields can be set Read Only or locked via the API | Stated |
-| Multi-company | Company IDs listed under System > Setup > Company; single-company builds use 0 | CVC: **Service <company-id>, Projects <company-id>**. Never use 0 (Alex) |
+| Multi-company | Company IDs listed under System > Setup > Company; single-company builds use 0 | CVC: **Service <company-id>, Projects <company-id>**. The build also lists 0 and <company-id> (live check 2026-10-17); **only <company-id> and <company-id> are ever used** (Alex, 2026-10-17) |
 | Cross-company calls with one credential | One credential calls both companies; the company is selected by the company ID in the path | Answered by Alex |
 | Sandbox | Free shared sandbox (no live data) offered via Support case | **Not used** (Alex, 2026-10-16): CLIVE works against the live build, read-only |
 | UAT build | Dedicated UAT build via Operations: minimum one user licence per month, possible migration fees | Stated; not used |
@@ -69,8 +69,15 @@ Simpro applies them.
 
 The mock uses `company_id=1` (Service) and `2` (Projects). CVC's real IDs are
 **<company-id> (Service)** and **<company-id> (Projects)** (Alex, 2026-10-16), set in configuration
-(`SIMPRO_COMPANY_ID_SERVICE`, `SIMPRO_COMPANY_ID_PROJECTS`). Nothing may assume
-1 and 2, and nothing may use 0.
+(`SIMPRO_COMPANY_ID_SERVICE`, `SIMPRO_COMPANY_ID_PROJECTS`). Live `/companies/`
+also returns 0 and <company-id>; **only <company-id> and <company-id> are ever used** (Alex, 2026-10-17), so
+code must not iterate `/companies/` to discover companies. Nothing may assume
+1 and 2.
+
+Customers and sites are build-wide: both companies report the same totals
+(<COUNT> customers, <COUNT> sites on 2026-10-17), while jobs, quotes and employees
+differ. Counts of customers or sites must not be added across companies
+(`docs/simpro/mock-vs-public-api.md` §6, item 19).
 
 ### 2.4 Custom fields need classification
 
@@ -114,7 +121,7 @@ No cases raised (§3).
 - [x] Store client ID and secret in `.env` only — done (Alex)
 - [x] Record Company IDs for CVC Service and CVC Projects — <company-id> and <company-id> (Alex)
 - [ ] List custom fields and classify them (ADR-014)
-- [ ] Run a read-only smoke check against <ENVIRONMENT_TYPE> — **approved** by Alex 2026-10-16; not yet run (W1 T5)
+- [x] Run a read-only smoke check against <ENVIRONMENT_TYPE> — approved by Alex 2026-10-16, run 2026-10-17: authentication and every GET probed worked; three differences break the client (`docs/simpro/mock-vs-public-api.md` §6)
 - [ ] Switch `SIMPRO_BASE_URL` and `SIMPRO_TOKEN_URL` — live values are in `.env` (Alex); no code or test reads them by default (§6)
 
 ## 6. Credentials as delivered vs CLIVE configuration
@@ -143,12 +150,11 @@ prefix `SIMPRO_`; names as in `.env.example`):
 | grant_type | — | not configurable: `src/simpro_client/auth.py` always sends `client_credentials` |
 | — | `SIMPRO_COMPANY_ID_SERVICE`, `SIMPRO_COMPANY_ID_PROJECTS` | `<company-id>`, `<company-id>` (§2.3) |
 
-Two differences from Simpro's documented token request, both unverified until
-the live smoke check (`docs/simpro/mock-vs-public-api.md` items 13 and 15):
+Two differences from Simpro's documented token request (`docs/simpro/mock-vs-public-api.md` items 13 and 15):
 
 - Simpro's docs show the token request as JSON; `auth.py` sends it
-  form-encoded, with `client_id` and `client_secret` in the body. Alex's Postman
-  check worked, but which encoding Postman sent is not recorded.
+  form-encoded, with `client_id` and `client_secret` in the body. **Settled
+  2026-10-17:** the live smoke check authenticated with the form-encoded request.
 - A new token invalidates the old one, so `.env`'s credentials should be used
   by one `SimproClient` at a time (for example, not by a live test run while
   `clive-gateway` is running).
