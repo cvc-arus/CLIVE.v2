@@ -8,7 +8,7 @@ Consolidated from `docs/scope/master-project-document.md` (master roadmap) and `
 |---|---|---|---|
 | 1 | Local AI Platform | [See `STATUS.md`](STATUS.md) | Ollama + Open WebUI on Docker |
 | 2 | Production RAG | [See `STATUS.md`](STATUS.md) | PGVector + Tika + Hybrid Search |
-| 3 | Simpro API Integration | [See `STATUS.md`](STATUS.md) | Client foundation, mock service and typed client layer implemented (`src/simpro_client/models/`, `endpoints/`, `rate_limiter.py`), with deviations from ADR-010 listed in `src/simpro_client/CLAUDE.md`. Shaped to Simpro's published contract and proved by `tests/test_spec_conformance.py` (ADR-013). Closed by Alex once ADR-009 was decided. There is still no live Simpro API access |
+| 3 | Simpro API Integration | [See `STATUS.md`](STATUS.md) | Client foundation, mock service and typed client layer implemented (`src/simpro_client/models/`, `endpoints/`, `rate_limiter.py`), with deviations from ADR-010 listed in `src/simpro_client/CLAUDE.md`. Shaped to Simpro's published contract and proved by `tests/test_spec_conformance.py` (ADR-013). Closed by Alex once ADR-009 was decided. Live Simpro API access arrived 2026-10-16 and is used read-only (root `CLAUDE.md` §3) |
 | 3B | Simpro Conversational Access | [See `STATUS.md`](STATUS.md) | Role-restricted Simpro Q&A in Open WebUI through `clive-gateway` (ADR-009, ADR-014, ADR-015). Added October 2026; see "Phase 3B Planned Scope" below. Order relative to Phase 4: see `STATUS.md` |
 | 4 | Document Generation | [See `STATUS.md`](STATUS.md) | Entry criteria include `clive-gateway`'s query catalogue (Customers, Sites, Contacts, Jobs, Quotes, Projects, Assets, Employees) |
 | 5 | Security & Reverse Proxy | [See `STATUS.md`](STATUS.md) | Nginx, HTTPS, firewall, auth. A minimum slice (Nginx + HTTPS, LAN-only firewall, Open WebUI hardening) is planned in Phase 3B Sprint 2 |
@@ -31,8 +31,8 @@ consequence of PEP 735 `[dependency-groups]` and is handled by using `uv sync`
 everywhere; and the pre-existing lint debt, which was cleared on 2026-10-12
 (PR #47).
 
-Four mock behaviours remain **unverifiable without live credentials** and are
-the first things to check when access arrives: whether Simpro returns `ID` in a
+Four mock behaviours were **unverifiable without live credentials**; live
+access arrived on 2026-10-16 and they are the first things to check (W1): whether Simpro returns `ID` in a
 `columns` projection that did not ask for it, whether the `Result-Total` /
 `Result-Count` / `Result-Pages` headers exist (they are real and documented but
 absent from the published spec), `limit`'s exact semantics, and `/companies/`
