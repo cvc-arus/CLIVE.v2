@@ -34,7 +34,13 @@ def token() -> str:
     return response.json()["access_token"]
 
 
-def test_companies_list_uses_pascal_case_and_pagination_headers(token: str):
+def test_companies_list_is_pascal_case_and_unpaginated(token: str):
+    """``/companies/`` is not paginated upstream: ``Result-Count`` only.
+
+    Live Simpro sends no ``Result-Total`` or ``Result-Pages`` here
+    (``docs/simpro/mock-vs-public-api.md`` §6, item 4), and the mock must not
+    either, or the client's handling of it goes untested.
+    """
     headers = {"Authorization": f"Bearer {token}"}
     response = httpx.get(f"{BASE}/api/v1.0/companies/", headers=headers)
 
@@ -42,9 +48,9 @@ def test_companies_list_uses_pascal_case_and_pagination_headers(token: str):
     data = response.json()
     assert data
     assert "ID" in data[0]
-    assert "Result-Total" in response.headers
-    assert "Result-Pages" in response.headers
-    assert "Result-Count" in response.headers
+    assert response.headers["Result-Count"] == str(len(data))
+    assert "Result-Total" not in response.headers
+    assert "Result-Pages" not in response.headers
 
 
 def test_unauthenticated_request_returns_401():

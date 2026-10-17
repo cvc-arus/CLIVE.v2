@@ -7,7 +7,7 @@ Found by reading the actual codebase and running the test suite, per the project
 
 The root `pyproject.toml` defines dev dependencies under `[dependency-groups]` (PEP 735 style) rather than `[project.optional-dependencies]`. `pip install -e ".[dev]"` prints `WARNING: simpro-client 0.1.0 does not provide the extra 'dev'` and installs only the base package — `pytest`, `respx`, `ruff`, and `pytest-cov` are not installed by that command. `uv sync` (or explicit `pip install pytest respx ruff pytest-cov`) is required instead.
 
-## `/companies/` is not paginated upstream; the client and mock assume it is
+## RESOLVED 2026-10-17 — `/companies/` is not paginated upstream; the client and mock assumed it was
 
 Found 2026-10-17 by the first live read-only check
 (`docs/simpro/mock-vs-public-api.md` §6, item 4). Live `GET /companies/`
@@ -16,6 +16,12 @@ returns `Result-Count` only, with no `Result-Total` or `Result-Pages`.
 require all three headers and raise `SimproProtocolError`. The mock paginates
 `/companies/` and sends all three, so the offline and integration suites do not
 see it. To fix in W1 T4.
+
+**Resolved 2026-10-17** (W1 T4). `CompaniesEndpoint`
+(`src/simpro_client/endpoints/company.py`) overrides `fetch_page()` and
+`iter_all()` to make one request without `page`/`pageSize` and to need only
+`Result-Count`. The mock's `/companies/` returns every company with
+`Result-Count` alone, so the integration suite now exercises the live shape.
 
 ## Simpro does not add `ID` to a `columns` projection; the mock does
 

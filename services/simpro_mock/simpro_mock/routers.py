@@ -20,7 +20,11 @@ from simpro_mock.models import (
     Status,
 )
 from simpro_mock.ordering import apply_ordering
-from simpro_mock.projection import collection_response, detail_response
+from simpro_mock.projection import (
+    collection_response,
+    detail_response,
+    unpaginated_response,
+)
 from simpro_mock.schemas import (
     AssetDetailResponse,
     AssetListResponse,
@@ -125,23 +129,23 @@ def issue_token(
 def list_companies(
     request: Request,
     response: Response,
-    page: int = Query(1, ge=1),
-    pageSize: int = Query(30, ge=1, le=250),
     columns: str | None = Query(None),
     orderby: str | None = Query(None),
-    limit: int | None = Query(None, ge=1),
     db: Session = Depends(get_db),
 ):
-    """Retrieve all seeded company entities with filtering and pagination."""
+    """Retrieve every seeded company in one response.
+
+    Unpaginated, as upstream: the contract documents no ``page``, ``pageSize``
+    or ``limit`` here, and live Simpro sends ``Result-Count`` only
+    (``docs/simpro/mock-vs-public-api.md`` §6, item 4).
+    """
     query = db.query(Company)
     query = apply_filters(query, Company, dict(request.query_params))
     query = apply_ordering(query, Company, orderby)
 
-    items, total, total_pages = paginate_query(query, page, pageSize, limit)
+    results = [company_list_dict(company) for company in query.all()]
 
-    results = [company_list_dict(company) for company in items]
-
-    return collection_response(response, results, total, total_pages, columns)
+    return unpaginated_response(response, results, columns)
 
 
 @api_router.get("/companies/{company_id}", response_model=CompanyDetailResponse)

@@ -104,7 +104,7 @@ Numeric operators (`gt`, `lt`, `ge`, `le`, `between`) attempt `int` then `float`
 
 **Combining filters:** `search=all` (default) ANDs every filter together; `search=any` ORs them.
 
-`page`, `pageSize`, `columns`, `orderby`, `search`, and `limit` are reserved and never treated as filter fields. All six are honoured, except that `/companies/` has no `limit` upstream (see §7).
+`page`, `pageSize`, `columns`, `orderby`, `search`, and `limit` are reserved and never treated as filter fields. All six are honoured, except on `/companies/`, which is unpaginated: it takes no `page`, `pageSize` or `limit` (see §7).
 
 ### `columns` projection
 
@@ -148,7 +148,7 @@ For every resource below: all fields are returned in PascalCase; `ID` is always 
 Every resource returns a **narrow projection from the collection route** and the full record from the detail route, as real Simpro does. Both field sets are listed below.
 
 ### Companies
-- `GET /api/v1.0/companies/` — list, filterable/paginated
+- `GET /api/v1.0/companies/` — list, filterable, **unpaginated** (`Result-Count` header only)
 - `GET /api/v1.0/companies/{company_id}` — detail, `404` if not found
 
 List fields: `ID`, `Name`
@@ -302,6 +302,6 @@ Attachments are not seeded per company: `seed.py` adds 1–3 attachments to each
 - No Projects resource — correct, since Simpro has none. A project is a job with `Type: "Project"`, and the `projects` table has been dropped; its rows are now `Type="Project"` jobs
 - Not served, although documented upstream: the `Totals` block on jobs and quotes, `Forecast` on quotes, `Banking`/`Rates` on customers, `Rates` on sites, `Banking`/`PayRates` on employees — all out of ADR-013's fidelity scope. Also `Job.ConvertedFromQuote` and `STC`: the spec marks them required, but they are only meaningful for a converted job, and inventing values is the problem ADR-013 exists to fix. All are additive later and non-breaking, because the client models set `extra="ignore"`
 - `limit` is honoured as a narrowing of `pageSize`, but the contract defines it only as "the limit of number of records in a request", so its exact semantics are **unverified** (see §4)
-- The contract documents no `page`, `pageSize` or `limit` on `/companies/` — that collection is unpaginated upstream. The mock paginates it like every other collection; this predates ADR-013 and is left as is because the typed client pages it
+- The contract documents no `page`, `pageSize` or `limit` on `/companies/` — that collection is unpaginated upstream. Since 2026-10-17 the mock matches: every company in one response, with `Result-Count` and no `Result-Total` or `Result-Pages`, as the live smoke check observed (`simpro/mock-vs-public-api.md` §6, item 4)
 - Thin data behind correct shapes in the re-shaped resources: `Attachment.Folder`, `Company.DefaultCostCenter`, `Customer.Contracts`, `Customer.ResponseTimes`, `Contact.Contact`, `Site.STCZone` and `Site.VEECZone` are always `null`; `JobNote.Attachments`, `Customer.Tags`, `Customer.PreferredTechs`, `Customer.CustomFields`, `Contact.CustomFields`, `Site.PreferredTechs` and `Site.PreferredTechnicians` are always `[]`; `Employee.Zones` holds only that employee's default zone
 - Read-only: no POST/PATCH/DELETE routes, no business-logic state transitions (e.g. Quote → Job conversion)

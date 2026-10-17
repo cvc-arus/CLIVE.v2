@@ -70,8 +70,13 @@ def test_list_endpoint(
     expected_fields: list,
     resource_name: str,
     allow_empty: bool = False,
+    paginated: bool = True,
 ):
-    """Test a list endpoint with field checks and pagination headers."""
+    """Test a list endpoint with field checks and pagination headers.
+
+    ``paginated=False`` is for ``/companies/``, which Simpro does not page:
+    only ``Result-Count`` is expected there.
+    """
     r = httpx.get(url, headers=headers)
     data = check_response(r, resource_name, expect_list=True)
     if not allow_empty and len(data) == 0:
@@ -86,7 +91,12 @@ def test_list_endpoint(
                     f"Keys: {list(first.keys())}"
                 )
                 sys.exit(1)
-    for header in ("Result-Total", "Result-Count", "Result-Pages"):
+    expected_headers = (
+        ("Result-Total", "Result-Count", "Result-Pages")
+        if paginated
+        else ("Result-Count",)
+    )
+    for header in expected_headers:
         if header not in r.headers:
             print(f"❌ Missing pagination header '{header}' for {resource_name}")
             sys.exit(1)
@@ -168,6 +178,7 @@ def main():
         f"{BASE_URL}/api/v1.0/companies/",
         ["ID", "Name"],
         "Companies",
+        paginated=False,
     )
     test_list_endpoint(
         headers,

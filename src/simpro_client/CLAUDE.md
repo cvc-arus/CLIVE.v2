@@ -250,6 +250,10 @@ failures. (Missing route parameters currently raise `ValueError` from
 - `fetch_page()` makes one request and returns `Page` (`items`, `page`,
   `page_size`, `total`, `count`, `pages`) from the `Result-Total`,
   `Result-Count` and `Result-Pages` headers.
+- **`/companies/` is unpaginated upstream** (live: `Result-Count` only).
+  `CompaniesEndpoint` overrides `fetch_page()` and `iter_all()` to make one
+  request without `page`/`pageSize`; `page` must be 1 and the `Page` reports
+  `pages=1` and `total=count`.
 - `iter_all()` is a lazy generator: no request until first iteration, one
   request per page, one page held in memory. It raises `SimproProtocolError`
   on a missing or invalid `Result-Pages` value, on a page past the last page,

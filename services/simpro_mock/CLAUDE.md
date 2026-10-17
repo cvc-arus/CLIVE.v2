@@ -98,7 +98,8 @@ matching client change, updated tests, and Alex's approval:
   `Manufacturer`. It is identified by `AssetType`, and the last three live in
   custom fields — which is where Simpro keeps CVC's CCTV asset data.
 - List routes accept `page` (≥1, default 1) and `pageSize` (1–250,
-  default 30) and set `Result-Total`, `Result-Count`, `Result-Pages`.
+  default 30) and set `Result-Total`, `Result-Count`, `Result-Pages` —
+  except `/companies/`, which is unpaginated and sets `Result-Count` only.
   `pageSize` is camelCase on purpose. Do not rename it to satisfy ruff `N803`.
 - **`columns` is implemented**, on detail routes as well as collections. It
   selects top-level keys only, and a selected key yields its whole nested
@@ -136,9 +137,11 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
   mean a cap on the whole result set across pages. Re-check on first live
   access.
 - The contract documents **no `page`, `pageSize` or `limit` on `/companies/`** —
-  that collection is unpaginated upstream. The mock paginates it like every
-  other collection, which predates ADR-013 and is left alone because the client
-  pages it; `orderby`, which the contract *does* document there, is honoured.
+  that collection is unpaginated upstream, and live Simpro sends only
+  `Result-Count` there (`docs/simpro/mock-vs-public-api.md` §6, item 4). Since
+  2026-10-17 the mock matches (`projection.unpaginated_response()`); `orderby`,
+  which the contract *does* document there, is honoured. The client's
+  `CompaniesEndpoint` makes one unpaged request.
 - Whether real Simpro always includes `ID` in a projected response is
   **unverified** — the mock does (`projection.ALWAYS_INCLUDED`). Re-check on
   first live access, and do not let callers depend on it meanwhile.

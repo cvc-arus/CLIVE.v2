@@ -111,6 +111,37 @@ def collection_response(
     )
 
 
+def unpaginated_response(
+    response: Response,
+    rows: list[dict[str, Any]],
+    columns: str | None,
+) -> Any:
+    """Return an unpaginated collection body, projected when asked.
+
+    For ``/companies/``, which Simpro does not paginate: live it sends
+    ``Result-Count`` and no ``Result-Total`` or ``Result-Pages``
+    (``docs/simpro/mock-vs-public-api.md`` §6, item 4).
+
+    Args:
+        response: The injected response, used to carry the header on the
+            unprojected path.
+        rows: Serializer output, one dict per record.
+        columns: The raw ``columns`` parameter.
+
+    Returns:
+        The list of dicts, so the route's ``response_model`` validates it, or
+        a ``JSONResponse`` carrying the projected rows and the same header.
+    """
+    headers = {"Result-Count": str(len(rows))}
+    requested = parse_columns(columns)
+    if requested is None:
+        response.headers.update(headers)
+        return rows
+    return JSONResponse(
+        content=[project(row, requested) for row in rows], headers=headers
+    )
+
+
 def detail_response(payload: dict[str, Any], columns: str | None) -> Any:
     """Return a detail body, projected when ``columns`` was supplied.
 
