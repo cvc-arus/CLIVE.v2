@@ -31,8 +31,9 @@ the approver for every sprint and architectural decision.
     `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013), and
     `tests/test_spec_conformance.py` proves it without API access.
   - Closed does not mean frozen: `docs/known-issues.md` still lists the
-    `pip install -e ".[dev]"` pitfall, and four mock behaviours were
-    unverifiable before live access; checking them is course correction W1.
+    `pip install -e ".[dev]"` pitfall, and the 2026-10-17 live
+    smoke check found three differences that break the client
+    (`docs/simpro/mock-vs-public-api.md` §6); fixing them is course correction W1.
     (The lint debt carried past the close was cleared on 2026-10-12, PR #47.)
 - Phase 4 (not started, **no longer blocked**): document generation. ADR-009's
   decision is recorded, so scoping can begin. Its entry criteria now include

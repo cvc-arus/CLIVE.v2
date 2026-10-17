@@ -62,6 +62,8 @@ Only the `integration` marker is registered today (root `pyproject.toml`).
    First checks, from `docs/simpro/mock-vs-public-api.md` §5: token request
    encoding (item 13), token invalidation across instances (item 15),
    `/companies/` headers (item 4), `ID` in projections (item 1).
+   *(2026-10-17: the smoke check settled items 1, 4 and 13 — §6; the tests
+   pin those results so a regression is caught.)*
 3. **GET only**, and **no client data in output**: assertions and messages
    report status codes, counts, field and header names, pass/fail; no response
    values (run with `--tb=no`).
@@ -72,10 +74,14 @@ Only the `integration` marker is registered today (root `pyproject.toml`).
 ### T4 — Fix high-severity differences (only after Alex reviews T2)
 Fix differences rated "breaks client" in the mock and/or client, one resource
 at a time, with tests. Skip if T2 finds none.
+*(2026-10-17: T2 found none, but the live smoke check found three — items 1,
+4 and 17 in `docs/simpro/mock-vs-public-api.md` §6.2 — so T4 applies.)*
 
 ### T5 — Run live contract tests (only when Alex asks)
 Credentials are already in `.env` (Alex). Alex approved a read-only smoke check
-against <ENVIRONMENT_TYPE> on 2026-10-16. Run the T3 tests with the opt-in set, record
+against <ENVIRONMENT_TYPE> on 2026-10-16; it was run on 2026-10-17 at `68da1bc` as a
+scratch script ahead of T3, with results in `docs/simpro/mock-vs-public-api.md`
+§6. T5 proper is the run of the T3 tests. Run the T3 tests with the opt-in set, record
 pass/fail and the settled unknowns in `docs/simpro/mock-vs-public-api.md` and
 `docs/simpro/simpro-api-findings.md`. Any failures become fix tasks.
 
@@ -93,5 +99,7 @@ pass/fail and the settled unknowns in `docs/simpro/mock-vs-public-api.md` and
 ## Acceptance criteria
 - [x] Support cases raised and logged — not needed (Alex, 2026-10-16)
 - [x] Mock vs public API report complete
+- [x] Live read-only smoke check run (2026-10-17, `mock-vs-public-api.md` §6)
+- [ ] "Breaks client" differences fixed (T4)
 - [ ] Live read-only contract tests ready and skipped by default
 - [ ] `STATUS.md` updated

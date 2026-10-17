@@ -145,7 +145,9 @@ Two caveats remain, both deliberate and documented in
 - Three behaviours cannot be verified without live access: whether Simpro
   always returns `ID` in a `columns` projection, whether the `Result-*`
   pagination headers exist (they are real but absent from the spec), and the
-  exact default projection of routes the mock narrows by hand.
+  exact default projection of routes the mock narrows by hand. *(2026-10-17:
+  the live smoke check settled the first two — `ID` is not added, the headers
+  exist — see `docs/simpro/mock-vs-public-api.md` §6.)*
 
 ## RESOLVED 2026-10-12 — existing lint debt
 
