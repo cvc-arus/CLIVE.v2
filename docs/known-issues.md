@@ -31,7 +31,7 @@ Found 2026-10-17 (`docs/simpro/mock-vs-public-api.md` §6, item 1). Live
 client model requires `ID`, so a caller that omits `ID` from `columns` passes
 against the mock and fails against Simpro. To fix in W1 T4.
 
-## Simpro sends `""` for empty dates the spec declares nullable
+## RESOLVED 2026-10-17 — Simpro sends `""` for empty dates the spec declares nullable
 
 Found 2026-10-17 (`docs/simpro/mock-vs-public-api.md` §6, item 17). A live job
 detail returned `CustomerContract.StartDate` and `EndDate` as the empty string;
@@ -41,6 +41,14 @@ and `client.jobs.get()` raises for such a job. `ContractRef` is also used by
 `Quote` and `Asset`, and other date fields may behave the same way. The mock
 never sends `""`. This is a case where the published spec is wrong and the code
 is wrong with it (see the ADR-013 entry below). To fix in W1 T4.
+
+**Resolved 2026-10-17** (W1 T4) in the client. `SimproBaseModel`
+(`src/simpro_client/models/base.py`) has one `mode="before"` validator that
+reads `""` as `None` on every field annotated `date` or `datetime`, nullable
+or not, so all date and timestamp fields in every model are covered, not only
+`ContractRef`. An empty string on any other field is kept. The mock still
+never sends `""`; that is left as a known mock difference (mock scope is
+frozen), and `tests/test_models.py` covers the live shape offline.
 
 ## RESOLVED 2026-10-08 — unused mock settings `SIMPRO_MOCK_MOCK_CLIENT_ID` and `SIMPRO_MOCK_MOCK_CLIENT_SECRET`
 

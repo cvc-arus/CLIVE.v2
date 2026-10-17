@@ -198,7 +198,10 @@ failures. (Missing route parameters currently raise `ValueError` from
   (Before ADR-013 this rule pointed at the mock's schemas and
   `docs/phase3/sprints/phase3-sprint4-contract.md`. That sprint report is a
   historical record and is no longer normative; do not rewrite it.)
-- Dates are `datetime.date`; timestamps are `datetime.datetime`. Money is
+- Dates are `datetime.date`; timestamps are `datetime.datetime`. Live
+  Simpro sends `""` for an empty date the contract declares nullable, so
+  `SimproBaseModel` reads `""` as `None` on every `date`/`datetime` field
+  (`models/base.py`); other fields keep `""`. Money is
   `Decimal`, because the spec constrains money to two decimal places. Money
   arrives as a nested `Money` object (`{ExTax, Tax, IncTax}`), not a bare
   number, and the mock sends JSON numbers, which `Decimal` accepts.
