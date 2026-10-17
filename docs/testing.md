@@ -10,15 +10,15 @@ There are three distinct layers of testing in Phase 3, deliberately kept separat
 | `test_client.py` | Successful GET, 401 triggers refresh-and-retry, 404 raises `SimproNotFoundError`, 429 raises `SimproRateLimitError`, context-manager close behaviour |
 | `test_config.py` | Settings load from explicit values, missing required field raises, defaults apply correctly, unknown `auth_mode` values are rejected, each `auth_mode` requires its own credentials (an empty value counts as missing) |
 | `test_logging.py` | Correlation ID set/get, auto-generation when unset, `JSONFormatter` includes correlation ID, `JSONFormatter` includes HTTP fields, `configure_logging()` returns a usable logger |
-| `test_models.py` | Typed resource models accept PascalCase aliases, ignore unknown fields, convert date/datetime fields, and parse money into `Decimal` from both a JSON number and a string |
+| `test_models.py` | Typed resource models accept PascalCase aliases, ignore unknown fields, convert date/datetime fields (reading `""` on them as `None`), and parse money into `Decimal` from both a JSON number and a string |
 | `test_endpoints.py` | Typed endpoints use the exact route and model, keep pagination headers and filters, reject a missing nested scope before any request, send `columns` as csv on both collection and detail routes, reject a `page_size` outside 1–250, and refuse `get()` on the list-only polymorphic customers endpoint |
-| `test_pagination.py` | `iter_all()` is lazy, walks multiple pages, and raises `SimproProtocolError` on bad pagination metadata |
+| `test_pagination.py` | `iter_all()` is lazy, walks multiple pages, and raises `SimproProtocolError` on bad pagination metadata; `/companies/` is fetched in one unpaged request that needs only `Result-Count` |
 | `test_rate_limiter.py` | `TokenBucket` burst, refill and wait; lock released before sleeping |
 | `test_retries.py` | `Retry-After` forms and backoff fallback, independent 401 and 429 budgets, one limiter shared by client and auth, retry exhaustion and typed errors, GET-only retry of 502/503/504 and timeouts/network errors, one budget shared with 429, failed refresh after a 401 raises `SimproAuthRefreshError`, a failed first token fetch raises `SimproAuthError` carrying the request context, a second 401 after refresh raises `SimproClientError` |
 | `test_route_contract.py` | The read-only route inventory matches the committed contract; `item_key` names a placeholder its `detail_path` actually has; `EXPECTED_ROUTES` covers every exported endpoint class; and an endpoint with no detail route upstream must override `get()` |
 | `test_spec_conformance.py` | Every client model validates payloads generated from the vendored contract `docs/contracts/simpro-openapi-v1-get-subset.json`, in both a `full` shape (every documented property) and a `minimal` shape (required properties only, nullables set to `null`). Known-nonconforming combinations are listed in `tests/spec_conformance_baseline.json` and enforced in both directions: a combination outside the file must conform, and one inside it that starts conforming fails until its entry is deleted (ADR-013). **That file is now empty and every check passes**, so `MAX_BASELINE_ENTRIES` is 0 and adding an entry is a regression rather than a way to land a change |
 
-All tests except those marked `integration` run fully offline. All HTTP traffic is intercepted with `respx`; no network or live service is required. Run the offline suite with:
+All tests except those marked `integration` or `live` run fully offline (`live` tests skip unless opted in; see §3). All HTTP traffic is intercepted with `respx`; no network or live service is required. Run the offline suite with:
 
 ```bash
 uv run pytest -q -m "not integration"
@@ -45,6 +45,13 @@ Two files exercise the running `simpro-mock` container over real HTTP. Both are 
 docker compose up -d --build simpro-mock
 uv run pytest -m integration -v
 ```
+
+**Live Simpro (opt-in).** `tests/test_live_contract.py` is marked `live` and
+skips unless `SIMPRO_LIVE_TESTS=1` is set, so live credentials in `.env` alone
+never make a run contact Simpro. It makes GET requests (plus the token
+request) to CVC's live build, in companies <company-id> and <company-id> only, and reports names,
+counts and pass/fail, never values. Run it only when Alex asks; the command and
+what it covers are in `docs/simpro/simpro-api-findings.md` §2.1.
 
 ## 4. Manual Diagnostic Script
 

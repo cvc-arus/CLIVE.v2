@@ -42,6 +42,21 @@ the shared sandbox.
 - Mock stays: fast, offline, deterministic tests and local development.
 - Live adds: opt-in contract tests proving `simpro_client` models match the
   real API (W1 T3, run in T5). They are skipped by default.
+  `tests/test_live_contract.py` covers `/companies/` (unpaginated, both
+  companies present), the `Result-*` headers and model validation on
+  customers, sites, jobs, quotes and employees in companies <company-id> and <company-id>, a job
+  detail (empty dates), a projection without `ID`, and token reuse across two
+  clients (`mock-vs-public-api.md` §5 items 1, 2, 4, 13, 15, 17). Run only when
+  Alex asks, with the live settings in `.env`
+  (`SIMPRO_COMPANY_ID_SERVICE=<company-id>`, `SIMPRO_COMPANY_ID_PROJECTS=<company-id>`, or the
+  tests skip):
+
+  ```bash
+  SIMPRO_LIVE_TESTS=1 uv run pytest -m live -v --tb=no -rN
+  ```
+
+  `--tb=no -rN` keeps tracebacks and the short summary out of the output,
+  since Pydantic and exception messages can echo values or the build host.
 - **Read-only:** only `GET` requests and the OAuth2 token request; nothing is
   ever written to Simpro (root `CLAUDE.md` §3).
 - **No client data reaches Claude Code:** live checks print status codes,

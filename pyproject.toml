@@ -43,5 +43,6 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 markers = [
     "integration: requires the running simpro-mock service",
+    "live: read-only tests against live Simpro; skipped unless SIMPRO_LIVE_TESTS=1",
 ]
 

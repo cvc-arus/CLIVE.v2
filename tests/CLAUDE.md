@@ -2,7 +2,8 @@
 
 Complements the root `CLAUDE.md`. All tests here target `simpro_client`, or
 the running mock over HTTP. Configuration lives in root `pyproject.toml`
-(`testpaths = ["tests"]`, `pythonpath = ["src"]`, marker `integration`).
+(`testpaths = ["tests"]`, `pythonpath = ["src"]`, markers `integration` and
+`live`).
 
 ## 1. Test layers
 
@@ -12,7 +13,7 @@ the running mock over HTTP. Configuration lives in root `pyproject.toml`
 | Mock integration | modules marked `pytest.mark.integration` (`test_simpro_mock_v2.py`, `test_client_mock_drift.py`) | only when `simpro-mock` is up on `localhost:8100` | real HTTP to the local mock only |
 | Contract conformance | `test_spec_conformance.py` | always | none: payloads are generated from the vendored spec |
 | Manual diagnostic | `scripts/verify-simpro-mock.py` | by hand | local mock |
-| Live Simpro | **does not exist yet**; planned as opt-in read-only contract tests (course correction W1 T3) | never by default | — |
+| Live Simpro | `test_live_contract.py`, marked `pytest.mark.live` (course correction W1 T3) | only with `SIMPRO_LIVE_TESTS=1`, and only when Alex asks | GET requests and the token request to CVC's live build |
 
 Rules:
 - New tests are offline unit tests unless the behaviour can only be proven
@@ -23,8 +24,11 @@ Rules:
 - No test in the default run may contact real Simpro (`*.simprosuite.com`)
   or any external host. Live access exists since 2026-10-16 (root `CLAUDE.md`
   §1); the only live tests allowed are the opt-in, skipped-by-default,
-  GET-only contract tests planned in W1 T3. They must print no client data
-  (root `CLAUDE.md` §9) and run only when Alex asks.
+  GET-only contract tests in `test_live_contract.py` (W1 T3). They must print
+  no client data (root `CLAUDE.md` §9) and run only when Alex asks, with
+  `SIMPRO_LIVE_TESTS=1 uv run pytest -m live -v --tb=no -rN`. Without the
+  variable they skip at runtime, so live credentials in `.env` alone never
+  make a run contact Simpro.
 - Tests never connect to PostgreSQL directly and never import `simpro_mock`.
   The mock is exercised only through its HTTP API.
 - `test_spec_conformance.py` is the authority on model field names, types and
@@ -58,7 +62,9 @@ the mock is up, and 90 passed, 2 skipped when it is not. Either takes about
   `conftest.py`, and construct clients as `SimproClient(settings=...)`.
 - Never call `get_settings()` in tests and never depend on `.env`.
   `get_settings()` reads `.env` and is `lru_cache`d, so state leaks across
-  tests.
+  tests. **One exception:** `test_live_contract.py` builds `SimproSettings()`
+  from the environment and `.env`, because the live credentials live there;
+  it does so only after the `SIMPRO_LIVE_TESTS=1` opt-in check.
 - Build respx routes from `mock_settings.base_url` / `mock_settings.token_url`
   rather than retyping URLs. (`conftest.py` uses `/oauth/token`, not the real
   `/oauth2/token`; this is harmless because routes are built from the
