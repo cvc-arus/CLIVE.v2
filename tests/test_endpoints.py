@@ -227,7 +227,9 @@ def test_columns_are_sent_as_csv_on_collections(mock_settings):
     with SimproClient(settings=mock_settings) as client:
         client.jobs.fetch_page(company_id=2, columns=["ID", "Name", "Status"])
 
-    assert route.calls.last.request.url.params["columns"] == "ID,Name,Status"
+    # Caller's order first, then the model's missing required fields (ADR-016).
+    expected = "ID,Name,Status,Description,Total"
+    assert route.calls.last.request.url.params["columns"] == expected
 
 
 @respx.mock
@@ -242,6 +244,26 @@ def test_columns_are_sent_on_detail_routes_too(mock_settings):
         client.companies.get(1, columns=["ID", "Name"])
 
     assert detail.calls.last.request.url.params["columns"] == "ID,Name"
+
+
+@respx.mock
+def test_columns_add_missing_required_fields_once(mock_settings):
+    """Simpro returns only the columns asked for, so the client asks for ``ID``.
+
+    Live Simpro does not add ``ID`` (or any required field) to a projection
+    (``docs/simpro/mock-vs-public-api.md`` §6, item 1), so the client appends
+    the model's missing required fields, without duplicating any (ADR-016).
+    """
+    mock_token(mock_settings)
+    detail = respx.get(f"{mock_settings.base_url}/companies/1").mock(
+        return_value=Response(200, json={"ID": 1, "Name": "CVC"})
+    )
+
+    with SimproClient(settings=mock_settings) as client:
+        company = client.companies.get(1, columns=["Name", "Name"])
+
+    assert detail.calls.last.request.url.params["columns"] == "Name,ID"
+    assert company.id == 1
 
 
 @respx.mock

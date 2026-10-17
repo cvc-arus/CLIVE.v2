@@ -103,7 +103,8 @@ matching client change, updated tests, and Alex's approval:
   `pageSize` is camelCase on purpose. Do not rename it to satisfy ruff `N803`.
 - **`columns` is implemented**, on detail routes as well as collections. It
   selects top-level keys only, and a selected key yields its whole nested
-  block. `ID` is always included. Unknown column names are ignored, because a
+  block. Nothing is added: not even `ID` unless requested, as live Simpro
+  behaves (ADR-016, Proposed). Unknown column names are ignored, because a
   caller may legitimately ask for a documented field this mock does not serve.
 - **An unknown filter parameter is a 400**, naming the fields that would have
   worked. Silently ignoring it meant a caller got unfiltered data and believed
@@ -142,9 +143,6 @@ Known fidelity gaps (documented in `adr-mock-simpro-api.md` and
   2026-10-17 the mock matches (`projection.unpaginated_response()`); `orderby`,
   which the contract *does* document there, is honoured. The client's
   `CompaniesEndpoint` makes one unpaged request.
-- Whether real Simpro always includes `ID` in a projected response is
-  **unverified** — the mock does (`projection.ALWAYS_INCLUDED`). Re-check on
-  first live access, and do not let callers depend on it meanwhile.
 - `FILTER_MAPS` covers only scalar columns. A nested wire object such as
   `Job.Total` or `Job.Status` is composed by `serializers.py` and is not a
   column, so it cannot be filtered on; asking to is a 400, not a silent

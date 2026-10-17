@@ -271,12 +271,14 @@ failures. (Missing route parameters currently raise `ValueError` from
   projection without it (jobs and quotes return only `ID`, `Description`
   and `Total`), and it is accepted on detail routes too. The mock now
   honours it (ADR-013 S6).
-- **A `columns=` list must keep every field the model marks required**, or
-  `model_validate` raises. `Job` requires `ID`, `Description` and `Total`, so
-  `columns=["Description"]` returns a body the model legitimately rejects.
-  This is not a mock quirk — real Simpro returns the same narrow body — so a
-  caller building a projection owns that constraint.
-  `tests/test_client_mock_drift.py` pins both directions.
+- **The client adds the model's required fields to every `columns` list**
+  (ADR-016, Proposed). Simpro returns exactly the columns asked for — not even
+  `ID` unless requested — so `_columns_param()` appends the model's missing
+  required wire names (from `model_fields`, after the caller's own, without
+  duplicates). `columns=["Stage"]` on jobs sends `Stage,ID,Description,Total`.
+  Models stay contract-governed (§7); do not make fields optional to suit a
+  projection. `tests/test_endpoints.py` and `tests/test_client_mock_drift.py`
+  pin it.
 - `get()` takes `item_id: int | str`, because `Attachment.ID` is a string
   upstream. It raises `NotImplementedError` on `CustomersEndpoint`, which has
   no detail route.

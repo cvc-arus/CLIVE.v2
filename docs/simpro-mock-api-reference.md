@@ -110,7 +110,7 @@ Numeric operators (`gt`, `lt`, `ge`, `le`, `between`) attempt `int` then `float`
 
 `columns` is a csv list and is accepted on **detail routes as well as collections**, matching the contract. It selects **top-level keys only**, and a selected key yields its whole nested block — `columns=Status` on a job returns the entire `{ID, Name, Color}` object.
 
-- `ID` is always included, even when not requested. **Unverified against live Simpro**; re-check on first live access.
+- Only the requested keys are returned; `ID` is **not** added unless asked for, matching live Simpro (`simpro/mock-vs-public-api.md` §6, item 1; ADR-016, Proposed). The typed client adds each model's required fields itself.
 - Unknown column names are ignored rather than rejected, because a caller may legitimately ask for a field the contract documents but this mock does not serve (such as `Totals`). Unlike an ignored filter, a missing column is visible in the response.
 - `?columns=` with an empty value behaves as if omitted.
 - A projected response still carries `Result-Total`, `Result-Count` and `Result-Pages`.

@@ -18,8 +18,9 @@
 | 013 | Re-shape `simpro_mock` and `simpro_client` to Simpro's published API spec (supersedes `adr-mock-simpro-api.md` "Capabilities & Coverage") | 3 | Accepted 2026-10-07; **implemented** 2026-10-08 (all 7 sprints; conformance baseline empty, 50/50) |
 | 014 | Simpro Data Access Control Model (`adr-014-simpro-access-control-model.md`) | 3B | Proposed (2026-10-09). `clive_gateway` storage on the Phase 2 Postgres vs root `CLAUDE.md` §3: resolved by Alex 2026-10-15 (narrow exception in §3) |
 | 015 | Conversational Access Approach for Simpro Data (`adr-015-conversational-access-approach.md`) | 3B | Proposed (2026-10-09) |
+| 016 | `columns` projections: the server adds nothing, the client asks for the required fields (`adr-016-columns-projection-required-fields.md`; if accepted, supersedes "`ID` is always included" in ADR-013 §5) | 3 | Proposed (2026-10-17); implemented on `fix/w1-live-api-differences` for review |
 
-**Next free number:** ADR-016
+**Next free number:** ADR-017
 
 ## Naming convention
 

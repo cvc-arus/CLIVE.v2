@@ -159,9 +159,15 @@ class ResourceEndpoint[ModelT: BaseModel]:
                 return
             page += 1
 
-    @staticmethod
-    def _columns_param(columns: Sequence[str] | None) -> dict[str, str]:
+    @classmethod
+    def _columns_param(cls, columns: Sequence[str] | None) -> dict[str, str]:
         """Render a ``columns`` projection as Simpro's csv query parameter.
+
+        Simpro returns exactly the columns asked for, not even ``ID`` unless
+        requested (``docs/simpro/mock-vs-public-api.md`` §6, item 1). So the
+        model's required fields are appended to the caller's list, in model
+        order, whenever one is missing; otherwise a projection that leaves
+        one out would always fail validation (ADR-016).
 
         Args:
             columns: Wire-name column list, or ``None`` for the server default.
@@ -171,7 +177,18 @@ class ResourceEndpoint[ModelT: BaseModel]:
         """
         if not columns:
             return {}
-        return {"columns": ",".join(columns)}
+        wanted = list(dict.fromkeys(columns))
+        wanted += [name for name in cls._required_columns() if name not in wanted]
+        return {"columns": ",".join(wanted)}
+
+    @classmethod
+    def _required_columns(cls) -> list[str]:
+        """The wire names of the model's required fields, in model order."""
+        return [
+            field.alias or name
+            for name, field in cls.model.model_fields.items()
+            if field.is_required()
+        ]
 
     @classmethod
     def _page_params(

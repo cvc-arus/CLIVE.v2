@@ -149,7 +149,11 @@ def test_job_detail_validates(client: SimproClient, company_id: int):
 
 
 def test_projection_does_not_add_id(client: SimproClient):
-    """Item 1: ``columns`` without ``ID`` returns only what was asked for."""
+    """Item 1: ``columns`` without ``ID`` returns only what was asked for.
+
+    A raw request, so the client's own column additions (ADR-016) do not
+    hide what the server does.
+    """
     company_id = min(LIVE_COMPANY_IDS)
     response = client._get_response(
         f"/companies/{company_id}/jobs/",
@@ -159,6 +163,22 @@ def test_projection_does_not_add_id(client: SimproClient):
     assert response.status_code == 200
     for row in response.json():
         assert set(row) == {"Description"}, f"projected keys {sorted(row)}"
+
+
+@pytest.mark.parametrize("resource", COMPANY_COLLECTIONS)
+def test_client_projection_validates(client: SimproClient, resource: str):
+    """ADR-016: the client adds the model's required fields to ``columns``.
+
+    Asks for ``ID`` alone, so every other required field is the client's
+    addition. For customers this includes ``_href``: whether Simpro accepts
+    it as a column (rather than a 422) is unverified, and this settles it.
+    """
+    endpoint = getattr(client, resource)
+    page = endpoint.fetch_page(
+        company_id=min(LIVE_COMPANY_IDS), page_size=1, columns=["ID"]
+    )
+
+    assert page.count == len(page.items)
 
 
 def test_token_survives_a_second_client(live_settings: SimproSettings):

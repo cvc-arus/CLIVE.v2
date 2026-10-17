@@ -23,13 +23,21 @@ see it. To fix in W1 T4.
 `Result-Count`. The mock's `/companies/` returns every company with
 `Result-Count` alone, so the integration suite now exercises the live shape.
 
-## Simpro does not add `ID` to a `columns` projection; the mock does
+## RESOLVED 2026-10-17 — Simpro does not add `ID` to a `columns` projection; the mock did
 
 Found 2026-10-17 (`docs/simpro/mock-vs-public-api.md` §6, item 1). Live
 `columns=CompanyName` returns only `CompanyName`. The mock always adds `ID`
 (`services/simpro_mock/simpro_mock/projection.py`, `ALWAYS_INCLUDED`), and every
 client model requires `ID`, so a caller that omits `ID` from `columns` passes
 against the mock and fails against Simpro. To fix in W1 T4.
+
+**Resolved 2026-10-17** (W1 T4) under ADR-016 (Proposed; the branch is for
+review). The mock's projection returns only the requested keys
+(`ALWAYS_INCLUDED` removed), and `ResourceEndpoint._columns_param()`
+(`src/simpro_client/endpoints/base.py`) adds the model's missing required
+fields to every `columns` list, so any projection validates without making
+model fields optional. Still to confirm live (W1 T5): that Simpro accepts
+`_href`, required on the customers list model, as a column.
 
 ## RESOLVED 2026-10-17 — Simpro sends `""` for empty dates the spec declares nullable
 

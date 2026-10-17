@@ -183,8 +183,8 @@ def test_columns_narrows_a_collection_and_keeps_pagination_headers(token: str):
     rows = response.json()
     assert rows, "the mock returned an empty first page"
     for row in rows:
-        # ID is always included, even though only Description was asked for.
-        assert set(row) == {"ID", "Description"}, f"unexpected keys {sorted(row)}"
+        # Only what was asked for: live Simpro does not add ID (ADR-016).
+        assert set(row) == {"Description"}, f"unexpected keys {sorted(row)}"
 
     assert response.headers["Result-Count"] == str(len(rows))
     assert int(response.headers["Result-Total"]) >= len(rows)
@@ -205,7 +205,7 @@ def test_columns_selects_whole_nested_blocks_on_a_detail_route(token: str):
         f"{BASE}/api/v1.0/companies/1/jobs/1?columns=Name,Status", headers=headers
     ).json()
 
-    assert set(projected) == {"ID", "Name", "Status"}
+    assert set(projected) == {"Name", "Status"}  # no ID added (ADR-016)
     # The nested Status object arrives intact, not flattened or truncated.
     assert projected["Status"] == full["Status"]
     assert set(projected["Status"]) == {"ID", "Name", "Color"}

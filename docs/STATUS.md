@@ -64,3 +64,4 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 |---|---|---|
 | ADR-014 | Simpro data access control model | Proposed. Storage conflict with root `CLAUDE.md` §3 resolved by Alex 2026-10-15 (narrow exception in §3) |
 | ADR-015 | Conversational access approach | Proposed |
+| ADR-016 | `columns` projections and required fields (W1 T4, `ID` item) | Proposed 2026-10-17; implemented on `fix/w1-live-api-differences`, so accepting it is the merge decision |
