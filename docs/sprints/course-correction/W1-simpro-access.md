@@ -100,6 +100,6 @@ pass/fail and the settled unknowns in `docs/simpro/mock-vs-public-api.md` and
 - [x] Support cases raised and logged — not needed (Alex, 2026-10-16)
 - [x] Mock vs public API report complete
 - [x] Live read-only smoke check run (2026-10-17, `mock-vs-public-api.md` §6)
-- [ ] "Breaks client" differences fixed (T4)
+- [x] "Breaks client" differences fixed (T4; 2026-10-17, `ID` item under ADR-016, Proposed)
 - [x] Live read-only contract tests ready and skipped by default (2026-10-17)
 - [ ] `STATUS.md` updated

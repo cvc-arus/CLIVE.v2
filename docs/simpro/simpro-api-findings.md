@@ -85,8 +85,9 @@ Simpro applies them.
 The mock uses `company_id=1` (Service) and `2` (Projects). CVC's real IDs are
 **<company-id> (Service)** and **<company-id> (Projects)** (Alex, 2026-10-16), set in configuration
 (`SIMPRO_COMPANY_ID_SERVICE`, `SIMPRO_COMPANY_ID_PROJECTS`). Live `/companies/`
-also returns 0 and <company-id>; **only <company-id> and <company-id> are ever used** (Alex, 2026-10-17), so
-code must not iterate `/companies/` to discover companies. Nothing may assume
+also returns 0 and <company-id>; **only <company-id> and <company-id> are ever used** (Alex, 2026-10-17).
+Listing `/companies/` is allowed, but no request is sent to a route scoped to
+0 or <company-id>, so code must not iterate `/companies/` to discover companies. Nothing may assume
 1 and 2.
 
 Customers and sites are build-wide: both companies report the same totals

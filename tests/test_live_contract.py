@@ -13,7 +13,8 @@ settings from the environment and ``.env`` (the one exception to
   hostname does not appear either. Run with ``--tb=no``.
 * **Only companies <company-id> and <company-id>** (root ``CLAUDE.md`` §3), taken from
   ``SIMPRO_COMPANY_ID_SERVICE`` / ``SIMPRO_COMPANY_ID_PROJECTS``; anything
-  else skips.
+  else skips. Listing ``/companies/`` is allowed, and the request hook fails
+  any request scoped to another company before it is sent.
 
 Run only when Alex asks::
 
@@ -28,6 +29,7 @@ The expectations pin what the 2026-10-17 smoke check observed
 
 import logging
 import os
+import re
 from collections.abc import Iterator
 
 import httpx
@@ -49,9 +51,12 @@ PAGE_HEADERS = {"Result-Total", "Result-Count", "Result-Pages"}
 
 
 def reject_non_get(request: httpx.Request) -> None:
-    """Request hook: fail before anything but a GET leaves for Simpro."""
+    """Request hook: only GETs, and only companies <company-id> and <company-id>, reach Simpro."""
     if request.method != "GET":
         pytest.fail(f"non-GET request blocked: {request.method}", pytrace=False)
+    scope = re.search(r"/companies/(\d+)", request.url.path)
+    if scope and int(scope.group(1)) not in LIVE_COMPANY_IDS:
+        pytest.fail("request to an unused company blocked", pytrace=False)
 
 
 @pytest.fixture(scope="module")
