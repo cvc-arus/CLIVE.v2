@@ -142,6 +142,7 @@ Where to find current state:
 | 014 | Simpro data access control model | **Proposed** 2026-10-09. Stores `clive_gateway` on the Phase 2 Postgres; the §3 conflict was resolved by Alex on 2026-10-15 with a narrow exception in §3 |
 | 015 | Conversational access approach (tool calling over a fixed query catalogue) | **Proposed** 2026-10-09 |
 | 016 | `columns` projections: server adds nothing, client asks for the model's required fields (supersedes "`ID` is always included" in ADR-013 §5) | **Accepted** 2026-10-19 (Alex), implemented |
+| 017 | Public repository, private build facts (untracked private store, guard script, rewritten history in a new repository) | **Proposed** 2026-10-19 |
 
 Re-verify this table before relying on it; it is a snapshot.
 
