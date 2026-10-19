@@ -32,13 +32,13 @@ needed to choose the next phase order.
 
 Full Simpro detail: `docs/simpro/simpro-api-findings.md`.
 
-**Amendment 2026-10-16 (Alex): <ENVIRONMENT_TYPE>.** Live API access to CVC's production
+**Amendment 2026-10-16 (Alex): live build, not the sandbox.** Live API access to CVC's own
 build arrived (OAuth2 Client Credentials, free). CLIVE works against it
 **read-only**: `GET` requests and the token request only, nothing written to
 Simpro, and no client data reaching Claude Code (root `CLAUDE.md` §3 and §9).
 The sandbox row above and the sandbox wording in §4 and §7 are superseded
-by this; W1 T1 (Support cases) is not needed. The API application
-has <APP_PERMISSION_LEVEL> access in Simpro rather than a dedicated read-only security group
+by this; W1 T1 (Support cases) is not needed. There is no dedicated
+read-only security group for the API application
 (`simpro-api-findings.md` §2.2; open risk in `docs/STATUS.md`).
 
 ## 3. Workstreams

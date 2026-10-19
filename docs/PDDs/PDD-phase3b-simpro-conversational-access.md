@@ -278,7 +278,7 @@ parameterised, and returns a compact summary rather than raw records.
 | Latency | Gateway p95 under 2 s per query against the mock (excluding LLM time) |
 | Logging | JSON logs with correlation IDs, propagated from the tool to Simpro calls |
 | Availability | Restart policy `unless-stopped`; health check on `/healthz` |
-| Testing | Unit and integration tests run offline against `simpro-mock`, which stays the fast, deterministic default. Opt-in, read-only contract tests against CVC's live Simpro build (the environment type is in the private build notes; Alex, 2026-10-16) prove `simpro_client` models match the real API; differences found there are fixed in the mock. They are skipped by default, send only `GET`s and the token request, and print no client data (root `CLAUDE.md` §3 and §9; `docs/simpro/simpro-api-findings.md` §2.1) |
+| Testing | Unit and integration tests run offline against `simpro-mock`, which stays the fast, deterministic default. Opt-in, read-only contract tests against CVC's live Simpro build (Simpro's sandbox is not used; Alex, 2026-10-16) prove `simpro_client` models match the real API; differences found there are fixed in the mock. They are skipped by default, send only `GET`s and the token request, and print no client data (root `CLAUDE.md` §3 and §9; `docs/simpro/simpro-api-findings.md` §2.1) |
 | Backups | `clive_gateway` database included in the backup script (`scripts/backup.sh` currently dumps only the Phase 2 `POSTGRES_DB`, so this needs a change; see W5) |
 
 ## 12. Sprint plan

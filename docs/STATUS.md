@@ -29,11 +29,11 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 
 | Workstream | Status | Notes |
 |---|---|---|
-| W1 Simpro access and live API checks | 🔶 In progress | Live API access arrived 2026-10-16; <ENVIRONMENT_TYPE>; read-only use (root `CLAUDE.md` §3, §9); only companies <company-id> and <company-id>. T1 not needed (Alex). T2: `docs/simpro/mock-vs-public-api.md`. Live smoke check 2026-10-17 (§6): 3 differences broke the client. T4: all three fixed — `/companies/` paging, `""` dates, and `ID` in projections under ADR-016 (accepted by Alex 2026-10-19); merged to `main` 2026-10-19 (PRs #86, #87). T3: opt-in live tests merged, skipped by default (`SIMPRO_LIVE_TESTS=1`), not yet run. T5 remains |
+| W1 Simpro access and live API checks | 🔶 In progress | Live API access arrived 2026-10-16; read-only use (root `CLAUDE.md` §3, §9); only the two configured companies. T1 not needed (Alex). T2: `docs/simpro/mock-vs-public-api.md`. Live smoke check 2026-10-17 (§6): 3 differences broke the client. T4: all three fixed — `/companies/` paging, `""` dates, and `ID` in projections under ADR-016 (accepted by Alex 2026-10-19); merged to `main` 2026-10-19 (PRs #86, #87). T3: opt-in live tests merged, skipped by default (`SIMPRO_LIVE_TESTS=1`), not yet run. T5 remains |
 | W2 Doc generation value check | 🔶 In progress | T1 [HUMAN] interviews under way (Alex, 2026-10-16) |
 | W3 Knowledge base audit | ⏳ Not started | Bulk ingestion paused until complete |
 | W4 Evaluation set | ⏳ Not started | |
-| W5 Backups and restore drill | ✅ Complete 2026-10-16 | Closed by Alex with T7 recorded as an accepted risk (Open risks). T1: all data on sdb1; target `<home>/clive-backups/` (sda2). T2: inventory agreed. T3: `scripts/backup.sh` backs up the full inventory except `.env` (GPG key deferred). T4: daily systemd timer at 02:30 installed. T5: `smartd` monitoring both disks; both are past their rated write endurance (recovery plan §9). T6: restore drill passed, about 68 s of commands from checksums to a working Open WebUI (recovery plan §10). T7 (off-machine copy) not done: accepted risk. See `docs/recovery-plan.md` |
+| W5 Backups and restore drill | ✅ Complete 2026-10-16 | Closed by Alex with T7 recorded as an accepted risk (Open risks). T1: all data on sdb1; target `BACKUP_DIR` (sda2). T2: inventory agreed. T3: `scripts/backup.sh` backs up the full inventory except `.env` (GPG key deferred). T4: daily systemd timer at 02:30 installed. T5: `smartd` monitoring both disks; both are past their rated write endurance (recovery plan §9). T6: restore drill passed, about 68 s of commands from checksums to a working Open WebUI (recovery plan §10). T7 (off-machine copy) not done: accepted risk. See `docs/recovery-plan.md` |
 | W6 Docs consolidation | ✅ Complete 2026-10-15 | Accepted by Alex. `STATUS.md` owns status; Phase 3 evidence in `phase3/phase3-signoff.md`; ADR index conventions merged; Simpro findings applied to Phase 3B; root `CLAUDE.md` additions merged and `/sprint-task`, `/status-update` confirmed; `PDD-phase3.md` revised and closed; `docs/reviews/` created. Security documentation deferred to Phase 3B Sprint 2 |
 
 **Next task:** public-release T1 (draft ADR-017). Course correction resumes afterwards with W1 T5 (run the live tests, on Alex's request; settles `_href` as a column, ADR-016); W3 T1 (unblocked by W5).
@@ -43,9 +43,9 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 
 | Item | Status |
 |---|---|
-| <ENVIRONMENT_TYPE> API access | ✅ Granted 2026-10-16, free. OAuth2 Client Credentials; credentials in `.env` (Alex); application checked with Postman (Alex). Read-only use only. Live read-only smoke check run 2026-10-17 (`docs/simpro/mock-vs-public-api.md` §6) |
+| Live API access | ✅ Granted 2026-10-16, free. OAuth2 Client Credentials; credentials in `.env` (Alex); application checked with Postman (Alex). Read-only use only. Live read-only smoke check run 2026-10-17 (`docs/simpro/mock-vs-public-api.md` §6) |
 | Shared sandbox | Not used (Alex, 2026-10-16) |
-| Company IDs (Service, Projects) | <company-id>, <company-id> (Alex, 2026-10-16). The build also lists <company-id> and <company-id>: listing `/companies/` is allowed, but no request is sent to <company-id> or <company-id>, which are not used (Alex, 2026-10-17) |
+| Company IDs (Service, Projects) | Recorded (Alex, 2026-10-16) in `.env` and the private build notes (ADR-017). The build lists other companies too: listing `/companies/` is allowed, but no request is sent to any other company (Alex, 2026-10-17) |
 
 ## Open risks
 
@@ -54,7 +54,7 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 | No off-machine backup — accepted until the off-machine copy is in place (Alex, 2026-10-16; no end date set) | Open — W5 closed without T7; target not yet chosen. Cross-disk backups do not cover theft, fire, `rm` or ransomware (`docs/recovery-plan.md` §11) |
 | Both SSDs are past their rated write endurance (129 % and 116 %), from the same batch, so both could fail close together | Open — replace both, `sdb` first; firmware update to be looked into (Alex, 2026-10-14). See `docs/recovery-plan.md` §9 |
 | Knowledge base may not meet metadata/versioning/access requirements | Under audit (W3) |
-| Simpro's API application has <APP_PERMISSION_LEVEL> access (no dedicated read-only security group): Simpro does not stop CLIVE writing, and a leaked client secret has <APP_PERMISSION_LEVEL> reach | Open (Alex, 2026-10-16). Guards are the read-only rule (root `CLAUDE.md` §3) and the GET-only client. See `docs/simpro/simpro-api-findings.md` §2.2 |
+| Simpro's API application has no dedicated read-only security group: Simpro does not stop CLIVE writing, and a leaked client secret could write (detail in the private build notes, ADR-017) | Open (Alex, 2026-10-16). Guards are the read-only rule (root `CLAUDE.md` §3) and the GET-only client. See `docs/simpro/simpro-api-findings.md` §2.2 |
 | Simpro rate limits and token lifetime not confirmed | Open — public docs give 10 req/s per build and 3600 s tokens (`docs/simpro/mock-vs-public-api.md`); conservative defaults kept (ADR-010, ADR-012); to confirm live (W1 T5) |
 | `.env` is not backed up until the GPG key pair exists | Open — GPG key deferred (Alex, 2026-10-14) |
 | Open WebUI's signing key (`WEBUI_SECRET_KEY`) is generated inside the container, not backed up: a restore or container rebuild logs everyone out | Open — fix needs `WEBUI_SECRET_KEY` in `.env` and Compose (live change, not decided). See `docs/recovery-plan.md` §10 |

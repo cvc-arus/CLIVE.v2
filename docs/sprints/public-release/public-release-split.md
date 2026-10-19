@@ -194,6 +194,15 @@ way the published copy holds no values.
 
 **Stop point:** zero tracked hits outside T7 files.
 
+**Applied 2026-10-19:** the rename to Alex (D4) was applied in place to every
+file, historical ones included. For build and host values, two historical
+files still had hits: `docs/phase3/sprints/phase3-sprint4-preflight-audit.md`
+(home paths) and
+`docs/sprints/course-correction/merge-inputs/CLAUDE-root-additions.md` (one
+environment phrase). They are left as they are and handled by T10's
+replacement rules ("replace in history only"), so the published copy has no
+values. Alex may still choose to edit them in place instead.
+
 ### T7 — Business-context review (Claude proposes, Alex decides)
 
 Claude reads the documents that describe CVC's business rather than the code,

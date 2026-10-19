@@ -217,4 +217,5 @@ redesign.
 
 ## Ownership
 
-CLIVE is an internal CVC project.
+CLIVE is an internal CVC project. Copyright CVC, all rights reserved: no
+licence is granted to use, copy, modify or distribute it (see `LICENSE`).
