@@ -34,7 +34,13 @@ def token() -> str:
     return response.json()["access_token"]
 
 
-def test_companies_list_uses_pascal_case_and_pagination_headers(token: str):
+def test_companies_list_is_pascal_case_and_unpaginated(token: str):
+    """``/companies/`` is not paginated upstream: ``Result-Count`` only.
+
+    Live Simpro sends no ``Result-Total`` or ``Result-Pages`` here
+    (``docs/simpro/mock-vs-public-api.md`` §6, item 4), and the mock must not
+    either, or the client's handling of it goes untested.
+    """
     headers = {"Authorization": f"Bearer {token}"}
     response = httpx.get(f"{BASE}/api/v1.0/companies/", headers=headers)
 
@@ -42,9 +48,9 @@ def test_companies_list_uses_pascal_case_and_pagination_headers(token: str):
     data = response.json()
     assert data
     assert "ID" in data[0]
-    assert "Result-Total" in response.headers
-    assert "Result-Pages" in response.headers
-    assert "Result-Count" in response.headers
+    assert response.headers["Result-Count"] == str(len(data))
+    assert "Result-Total" not in response.headers
+    assert "Result-Pages" not in response.headers
 
 
 def test_unauthenticated_request_returns_401():
@@ -177,8 +183,8 @@ def test_columns_narrows_a_collection_and_keeps_pagination_headers(token: str):
     rows = response.json()
     assert rows, "the mock returned an empty first page"
     for row in rows:
-        # ID is always included, even though only Description was asked for.
-        assert set(row) == {"ID", "Description"}, f"unexpected keys {sorted(row)}"
+        # Only what was asked for: live Simpro does not add ID (ADR-016).
+        assert set(row) == {"Description"}, f"unexpected keys {sorted(row)}"
 
     assert response.headers["Result-Count"] == str(len(rows))
     assert int(response.headers["Result-Total"]) >= len(rows)
@@ -199,7 +205,7 @@ def test_columns_selects_whole_nested_blocks_on_a_detail_route(token: str):
         f"{BASE}/api/v1.0/companies/1/jobs/1?columns=Name,Status", headers=headers
     ).json()
 
-    assert set(projected) == {"ID", "Name", "Status"}
+    assert set(projected) == {"Name", "Status"}  # no ID added (ADR-016)
     # The nested Status object arrives intact, not flattened or truncated.
     assert projected["Status"] == full["Status"]
     assert set(projected["Status"]) == {"ID", "Name", "Color"}

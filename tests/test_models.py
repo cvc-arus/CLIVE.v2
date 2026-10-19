@@ -440,6 +440,35 @@ def test_temporal_fields_use_python_types():
     )
 
 
+def test_empty_date_strings_read_as_none():
+    """Live Simpro sends ``""`` for empty nullable dates (mock-vs-public-api §6).
+
+    A live job detail carried ``CustomerContract.StartDate`` and ``EndDate``
+    as ``""`` where the contract declares nullable ``date``; that made
+    ``client.jobs.get()`` raise. Timestamps are covered by the same rule.
+    """
+    contract = {"ID": 1, "StartDate": "", "EndDate": ""}
+    job = Job.model_validate(
+        {**PAYLOADS[Job], "DateIssued": "", "CustomerContract": contract}
+    )
+
+    assert job.date_issued is None
+    assert job.customer_contract is not None
+    assert job.customer_contract.start_date is None
+    assert job.customer_contract.end_date is None
+    assert (
+        JobNote.model_validate({**PAYLOADS[JobNote], "DateCreated": ""}).date_created
+        is None
+    )
+
+
+def test_empty_strings_are_kept_on_non_date_fields():
+    """Only date and timestamp fields map ``""`` to ``None``."""
+    job = Job.model_validate({**PAYLOADS[Job], "Description": ""})
+
+    assert job.description == ""
+
+
 def test_money_fields_are_decimal_not_float():
     """Money parses to ``Decimal``, from a JSON number as well as a string.
 

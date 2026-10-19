@@ -32,7 +32,8 @@ everywhere; and the pre-existing lint debt, which was cleared on 2026-10-12
 (PR #47).
 
 Four mock behaviours were **unverifiable without live credentials**; live
-access arrived on 2026-10-16 and they are the first things to check (W1): whether Simpro returns `ID` in a
+access arrived on 2026-10-16, and the 2026-10-17 read-only smoke check settled
+three of them (`docs/simpro/mock-vs-public-api.md` §6; `limit` is still open): whether Simpro returns `ID` in a
 `columns` projection that did not ask for it, whether the `Result-Total` /
 `Result-Count` / `Result-Pages` headers exist (they are real and documented but
 absent from the published spec), `limit`'s exact semantics, and `/companies/`

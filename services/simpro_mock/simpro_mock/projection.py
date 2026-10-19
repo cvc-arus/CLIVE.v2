@@ -29,16 +29,6 @@ from starlette.responses import JSONResponse
 
 from simpro_mock.middleware import pagination_headers, set_pagination_headers
 
-#: Always present in a projected response, even when not asked for. A row
-#: without its id cannot be followed to the detail route, and Simpro's own
-#: documented example (``columns=ID,Name``) leads with it.
-#:
-#: **Unverified against live Simpro.** If the real API omits ``ID`` when it is
-#: not requested, this is a convenience the mock invents, and callers must not
-#: come to depend on it (``services/simpro_mock/CLAUDE.md`` §1). Re-check on
-#: first live access.
-ALWAYS_INCLUDED = "ID"
-
 
 def parse_columns(columns: str | None) -> list[str] | None:
     """Parse the csv ``columns`` parameter.
@@ -72,11 +62,13 @@ def project(payload: dict[str, Any], columns: list[str] | None) -> dict[str, Any
         columns: Requested field names, or ``None`` to pass the dict through.
 
     Returns:
-        The payload, or a copy holding only the requested keys plus ``ID``.
+        The payload, or a copy holding only the requested keys. ``ID`` is
+        **not** added: live Simpro returns only what was asked for
+        (``docs/simpro/mock-vs-public-api.md`` §6, item 1; ADR-016).
     """
     if columns is None:
         return payload
-    wanted = {ALWAYS_INCLUDED, *columns}
+    wanted = set(columns)
     return {key: value for key, value in payload.items() if key in wanted}
 
 
@@ -108,6 +100,37 @@ def collection_response(
     return JSONResponse(
         content=[project(row, requested) for row in rows],
         headers=pagination_headers(total, len(rows), total_pages),
+    )
+
+
+def unpaginated_response(
+    response: Response,
+    rows: list[dict[str, Any]],
+    columns: str | None,
+) -> Any:
+    """Return an unpaginated collection body, projected when asked.
+
+    For ``/companies/``, which Simpro does not paginate: live it sends
+    ``Result-Count`` and no ``Result-Total`` or ``Result-Pages``
+    (``docs/simpro/mock-vs-public-api.md`` §6, item 4).
+
+    Args:
+        response: The injected response, used to carry the header on the
+            unprojected path.
+        rows: Serializer output, one dict per record.
+        columns: The raw ``columns`` parameter.
+
+    Returns:
+        The list of dicts, so the route's ``response_model`` validates it, or
+        a ``JSONResponse`` carrying the projected rows and the same header.
+    """
+    headers = {"Result-Count": str(len(rows))}
+    requested = parse_columns(columns)
+    if requested is None:
+        response.headers.update(headers)
+        return rows
+    return JSONResponse(
+        content=[project(row, requested) for row in rows], headers=headers
     )
 
 

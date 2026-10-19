@@ -2,7 +2,9 @@
 
 ## Status
 
-**Accepted** — 2026-10-07, by Alex.
+**Accepted** — 2026-10-07, by Alex. Decision §5's sentence "`ID` is always
+included." is **superseded by ADR-016** (accepted 2026-10-19): the mock adds
+nothing to a `columns` projection, and the client asks for the required fields.
 
 Supersedes the "Capabilities & Coverage" list of `adr-mock-simpro-api.md`
 (that ADR's Decision to build a containerised FastAPI + PostgreSQL mock

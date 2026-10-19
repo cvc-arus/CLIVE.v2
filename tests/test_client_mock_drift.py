@@ -22,7 +22,6 @@ from collections.abc import Iterator
 
 import httpx
 import pytest
-from pydantic import ValidationError
 
 from simpro_client import SimproClient, SimproSettings
 from simpro_client.endpoints.base import ResourceEndpoint
@@ -185,9 +184,9 @@ def test_columns_round_trips_through_the_client(
     """A ``columns`` projection survives the client's validation.
 
     The client has sent ``columns`` since S2 but the mock ignored it until S6,
-    so nothing proved the two agreed on the projection. ``Company`` is used
-    because its required fields are just ``ID`` and ``Name``: see the caveat
-    below.
+    so nothing proved the two agreed on the projection. Asking for ``Name``
+    alone works because the client adds the model's other required field,
+    ``ID``, which the mock (like live Simpro) no longer adds itself (ADR-016).
     """
     page = client.companies.fetch_page(page_size=2, columns=["Name"])
 
@@ -199,18 +198,20 @@ def test_columns_round_trips_through_the_client(
     assert page.total >= len(page.items)
 
 
-def test_projecting_away_a_required_field_fails_validation(
+def test_projection_keeps_the_model_required_fields(
     client: SimproClient, scope_ids: dict[str, int]
 ) -> None:
-    """Narrowing past a model's required fields raises, and that is correct.
+    """A projection narrower than the model's required fields still validates.
 
     A model's required fields are the ones the contract marks required on
     *both* legs — for ``Job`` that is ``ID``, ``Description`` and ``Total``.
-    Asking for fewer returns a body the model legitimately rejects. This is
-    not a mock quirk: real Simpro would behave the same way, so Phase 4 has
-    to keep every required field in any ``columns`` list it builds.
+    The server returns only the columns asked for, so the client adds the
+    missing required ones to ``columns`` (ADR-016) rather than letting every
+    caller rediscover the rule at runtime.
     """
-    with pytest.raises(ValidationError):
-        client.jobs.fetch_page(
-            company_id=scope_ids["company_id"], page_size=1, columns=["Description"]
-        )
+    page = client.jobs.fetch_page(
+        company_id=scope_ids["company_id"], page_size=1, columns=["Stage"]
+    )
+
+    assert page.items, "the mock returned an empty first page"
+    assert all(item.id and item.description is not None for item in page.items)

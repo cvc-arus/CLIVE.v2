@@ -134,3 +134,56 @@ def test_pagination_protocol_error_on_bad_metadata(
         "Result-Pages" in str(exc_info.value)
         or "pagination" in str(exc_info.value).lower()
     )
+
+
+# 5. /companies/ is not paginated upstream (mock-vs-public-api.md §6, item 4)
+def mock_companies(respx_mock, client: SimproClient, headers: dict):
+    """Serve two companies with the given headers, as live Simpro does."""
+    return respx_mock.get(f"{client._settings.base_url}/companies/").mock(
+        return_value=Response(
+            200,
+            json=[{"ID": <company-id>, "Name": "Service"}, {"ID": <company-id>, "Name": "Projects"}],
+            headers=headers,
+        )
+    )
+
+
+def test_companies_fetch_page_needs_only_result_count(respx_mock, client: SimproClient):
+    """Live ``/companies/`` sends ``Result-Count`` alone; that must be enough."""
+    route = mock_companies(respx_mock, client, {"Result-Count": "2"})
+
+    page = client.companies.fetch_page(columns=["ID", "Name"])
+
+    params = route.calls.last.request.url.params
+    assert "page" not in params
+    assert "pageSize" not in params
+    assert params["columns"] == "ID,Name"
+    assert [company.id for company in page.items] == [<company-id>, <company-id>]
+    assert (page.page, page.pages, page.total, page.count) == (1, 1, 2, 2)
+
+
+def test_companies_iter_all_makes_one_request(respx_mock, client: SimproClient):
+    route = mock_companies(respx_mock, client, {"Result-Count": "2"})
+
+    ids = [company.id for company in client.companies.iter_all()]
+
+    assert ids == [<company-id>, <company-id>]
+    assert route.call_count == 1
+
+
+def test_companies_rejects_a_page_past_the_first(respx_mock, client: SimproClient):
+    route = mock_companies(respx_mock, client, {"Result-Count": "2"})
+
+    with pytest.raises(ValueError, match="not paginated"):
+        client.companies.fetch_page(page=2)
+
+    assert not route.called
+
+
+def test_companies_missing_result_count_is_a_protocol_error(
+    respx_mock, client: SimproClient
+):
+    mock_companies(respx_mock, client, {})
+
+    with pytest.raises(SimproProtocolError, match="Result-Count"):
+        client.companies.fetch_page()

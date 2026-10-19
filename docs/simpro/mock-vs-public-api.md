@@ -73,6 +73,10 @@ works, so they are recorded here.
 
 ## 5. Count by severity
 
+> **Superseded by §6.2** (2026-10-17). This count predates the live check, and
+> the "sandbox" wording in §1–§5 predates Alex's 2026-10-16 decision: there is
+> <ENVIRONMENT_TYPE>, and live checks run read-only against CVC's <ENVIRONMENT_TYPE> build.
+
 | Severity | Count | Items |
 |---|---|---|
 | Breaks client | **0** | — |
