@@ -1,8 +1,8 @@
 # ADR-017: Public repository, private build facts
 
-- **Status:** **Proposed** — 2026-10-19. Drafted by Claude for the
+- **Status:** **Accepted** — 2026-10-19 (Alex). Drafted by Claude for the
   public-release sprint (`docs/sprints/public-release/public-release-split.md`
-  T1). Only Alex accepts it.
+  T1); proposed and accepted the same day.
 - **Date:** 2026-10-19
 - **Deciders:** Alex
 - **Related:** root `CLAUDE.md` §2, §3 and §9; ADR-006 (no CLIVE specifics in
@@ -46,7 +46,7 @@ Three constraints shape the decision:
 | D. As C, but publish a single squashed commit | Simplest guarantee of a clean history | Fallback if C's checks can't reach zero; loses the history that `CHANGELOG.md` and verification evidence cite |
 | E. As C, but rewrite in place and make the existing repository public | Keeps the URL and PRs | Rejected: publishes 89 PR descriptions and comments unchanged, and old commits stay reachable through PR refs |
 
-## Decision (proposed)
+## Decision
 
 1. **No build- or host-specific values in tracked files.** That covers Simpro
    company IDs, the other companies in the build, the API application's

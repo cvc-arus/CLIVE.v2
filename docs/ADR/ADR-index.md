@@ -19,7 +19,7 @@
 | 014 | Simpro Data Access Control Model (`adr-014-simpro-access-control-model.md`) | 3B | Proposed (2026-10-09; updated 2026-10-17 for live access: no Simpro security group boundary, the two configured companies only, customers and sites build-wide). `clive_gateway` storage on the Phase 2 Postgres vs root `CLAUDE.md` §3: resolved by Alex 2026-10-15 (narrow exception in §3) |
 | 015 | Conversational Access Approach for Simpro Data (`adr-015-conversational-access-approach.md`) | 3B | Proposed (2026-10-09) |
 | 016 | `columns` projections: the server adds nothing, the client asks for the required fields (`adr-016-columns-projection-required-fields.md`; supersedes "`ID` is always included" in ADR-013 §5) | 3 | **Accepted** 2026-10-19 (Alex), implemented |
-| 017 | Public repository, private build facts (`adr-017-public-repository-private-build-facts.md`) | — | Proposed (2026-10-19) |
+| 017 | Public repository, private build facts (`adr-017-public-repository-private-build-facts.md`) | — | **Accepted** 2026-10-19 (Alex) |
 
 **Next free number:** ADR-018
 

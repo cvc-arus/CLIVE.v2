@@ -16,7 +16,7 @@ Phase list and scope: `docs/roadmap.md`.
 | 2 | Production RAG | ✅ Complete (knowledge base audit planned — W3) |
 | 3 | Simpro API Integration | ✅ Closed 2026-10-09 (Alex). Evidence: `docs/phase3/phase3-signoff.md` |
 | — | Course correction sprint | ⏸ Paused 2026-10-19 (Alex) for the public-release sprint |
-| — | Public-release sprint | 🔶 In progress — plan approved 2026-10-19 (Alex): `docs/sprints/public-release/public-release-split.md`. T1–T5 done on `chore/public-release-split` (ADR-017 Proposed); T6 left to the history rewrite; T7 proposal awaiting Alex |
+| — | Public-release sprint | 🔶 In progress — plan approved 2026-10-19 (Alex): `docs/sprints/public-release/public-release-split.md`. T1–T5 done on `chore/public-release-split` (ADR-017 accepted by Alex 2026-10-19); T6 left to the history rewrite; T7 proposal awaiting Alex |
 | 3B | Simpro Conversational Access | 📝 Planned — PDD drafted; order set at decision point |
 | 4 | Document Generation (4A / 4B split pending W2) | ⏳ Not started; no longer blocked (ADR-009 decided) |
 | 5 | Security & Reverse Proxy (minimum slice moves into 3B) | ⏳ Not started |
