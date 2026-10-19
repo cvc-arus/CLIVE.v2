@@ -198,7 +198,10 @@ failures. (Missing route parameters currently raise `ValueError` from
   (Before ADR-013 this rule pointed at the mock's schemas and
   `docs/phase3/sprints/phase3-sprint4-contract.md`. That sprint report is a
   historical record and is no longer normative; do not rewrite it.)
-- Dates are `datetime.date`; timestamps are `datetime.datetime`. Money is
+- Dates are `datetime.date`; timestamps are `datetime.datetime`. Live
+  Simpro sends `""` for an empty date the contract declares nullable, so
+  `SimproBaseModel` reads `""` as `None` on every `date`/`datetime` field
+  (`models/base.py`); other fields keep `""`. Money is
   `Decimal`, because the spec constrains money to two decimal places. Money
   arrives as a nested `Money` object (`{ExTax, Tax, IncTax}`), not a bare
   number, and the mock sends JSON numbers, which `Decimal` accepts.
@@ -250,6 +253,10 @@ failures. (Missing route parameters currently raise `ValueError` from
 - `fetch_page()` makes one request and returns `Page` (`items`, `page`,
   `page_size`, `total`, `count`, `pages`) from the `Result-Total`,
   `Result-Count` and `Result-Pages` headers.
+- **`/companies/` is unpaginated upstream** (live: `Result-Count` only).
+  `CompaniesEndpoint` overrides `fetch_page()` and `iter_all()` to make one
+  request without `page`/`pageSize`; `page` must be 1 and the `Page` reports
+  `pages=1` and `total=count`.
 - `iter_all()` is a lazy generator: no request until first iteration, one
   request per page, one page held in memory. It raises `SimproProtocolError`
   on a missing or invalid `Result-Pages` value, on a page past the last page,
@@ -264,12 +271,14 @@ failures. (Missing route parameters currently raise `ValueError` from
   projection without it (jobs and quotes return only `ID`, `Description`
   and `Total`), and it is accepted on detail routes too. The mock now
   honours it (ADR-013 S6).
-- **A `columns=` list must keep every field the model marks required**, or
-  `model_validate` raises. `Job` requires `ID`, `Description` and `Total`, so
-  `columns=["Description"]` returns a body the model legitimately rejects.
-  This is not a mock quirk — real Simpro returns the same narrow body — so a
-  caller building a projection owns that constraint.
-  `tests/test_client_mock_drift.py` pins both directions.
+- **The client adds the model's required fields to every `columns` list**
+  (ADR-016). Simpro returns exactly the columns asked for — not even
+  `ID` unless requested — so `_columns_param()` appends the model's missing
+  required wire names (from `model_fields`, after the caller's own, without
+  duplicates). `columns=["Stage"]` on jobs sends `Stage,ID,Description,Total`.
+  Models stay contract-governed (§7); do not make fields optional to suit a
+  projection. `tests/test_endpoints.py` and `tests/test_client_mock_drift.py`
+  pin it.
 - `get()` takes `item_id: int | str`, because `Attachment.ID` is a string
   upstream. It raises `NotImplementedError` on `CustomersEndpoint`, which has
   no detail route.

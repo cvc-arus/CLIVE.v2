@@ -31,8 +31,9 @@ the approver for every sprint and architectural decision.
     `docs/contracts/simpro-openapi-v1-get-subset.json` (ADR-013), and
     `tests/test_spec_conformance.py` proves it without API access.
   - Closed does not mean frozen: `docs/known-issues.md` still lists the
-    `pip install -e ".[dev]"` pitfall, and four mock behaviours were
-    unverifiable before live access; checking them is course correction W1.
+    `pip install -e ".[dev]"` pitfall, and the 2026-10-17 live
+    smoke check found three differences that break the client
+    (`docs/simpro/mock-vs-public-api.md` §6); fixing them is course correction W1.
     (The lint debt carried past the close was cleared on 2026-10-12, PR #47.)
 - Phase 4 (not started, **no longer blocked**): document generation. ADR-009's
   decision is recorded, so scoping can begin. Its entry criteria now include
@@ -109,8 +110,10 @@ Where to find current state:
   approved external API, read-only as above.
 - **Simpro company IDs are configuration.** CVC's are Service <company-id> and Projects
   <company-id> (Alex, 2026-10-16). **Only <company-id> and <company-id> are ever used** (Alex, 2026-10-17): the
-  build also lists companies <company-id> and <company-id>, which CLIVE never queries, lists or
-  includes. Never assume 1 and 2 outside the mock.
+  build also has companies <company-id> and <company-id>, which CLIVE does not use. Listing
+  `/companies/` (which returns them) is allowed, but no request is ever sent
+  to a route scoped to company <company-id> or <company-id>, and they are never included in
+  CLIVE's results. Never assume 1 and 2 outside the mock.
 - **Rate limiter budget is per `SimproClient` instance** (ADR-010;
   `src/simpro_client/CLAUDE.md` §10), not per process or per Simpro build.
   Services calling Simpro run a single worker with one client.
@@ -135,9 +138,10 @@ Where to find current state:
 | 010 | Resilience: token bucket, 401/429 budgets, error hierarchy | Approved; implemented with deviations (see `src/simpro_client/CLAUDE.md`). §2.5 superseded by ADR-011 |
 | 011 | Exception hierarchy and `SimproAuthError` context (supersedes ADR-010 §2.5) | Accepted 2026-10-06, implemented |
 | 012 | Retry delay ceiling (`SIMPRO_MAX_RETRY_DELAY`) and token-refresh concurrency | Accepted 2026-10-06 (supersedes ADR-010 §2.3, extends §2.1) |
-| 013 | Re-shape mock and client to Simpro's published OpenAPI spec | Accepted 2026-10-07, **implemented 2026-10-08** (all 7 sprints). **All 50 conformance checks pass and `tests/spec_conformance_baseline.json` is empty**, so every client model validates payloads generated from Simpro's published contract. Field names, types and optionality are governed by `docs/contracts/simpro-openapi-v1-get-subset.json`. The mock honours `columns` on all 25 routes, `orderby` and `limit` on all 13 collection routes, and returns a 400 on an unknown filter or an unorderable `orderby` field |
+| 013 | Re-shape mock and client to Simpro's published OpenAPI spec | Accepted 2026-10-07, **implemented 2026-10-08** (all 7 sprints). **All 50 conformance checks pass and `tests/spec_conformance_baseline.json` is empty**, so every client model validates payloads generated from Simpro's published contract. Field names, types and optionality are governed by `docs/contracts/simpro-openapi-v1-get-subset.json`. The mock honours `columns` on all 25 routes, `orderby` and `limit` on all 13 collection routes, and returns a 400 on an unknown filter or an unorderable `orderby` field. "`ID` is always included" in §5 is superseded by ADR-016 |
 | 014 | Simpro data access control model | **Proposed** 2026-10-09. Stores `clive_gateway` on the Phase 2 Postgres; the §3 conflict was resolved by Alex on 2026-10-15 with a narrow exception in §3 |
 | 015 | Conversational access approach (tool calling over a fixed query catalogue) | **Proposed** 2026-10-09 |
+| 016 | `columns` projections: server adds nothing, client asks for the model's required fields (supersedes "`ID` is always included" in ADR-013 §5) | **Accepted** 2026-10-19 (Alex), implemented |
 
 Re-verify this table before relying on it; it is a snapshot.
 

@@ -7,7 +7,7 @@ Found by reading the actual codebase and running the test suite, per the project
 
 The root `pyproject.toml` defines dev dependencies under `[dependency-groups]` (PEP 735 style) rather than `[project.optional-dependencies]`. `pip install -e ".[dev]"` prints `WARNING: simpro-client 0.1.0 does not provide the extra 'dev'` and installs only the base package — `pytest`, `respx`, `ruff`, and `pytest-cov` are not installed by that command. `uv sync` (or explicit `pip install pytest respx ruff pytest-cov`) is required instead.
 
-## `/companies/` is not paginated upstream; the client and mock assume it is
+## RESOLVED 2026-10-17 — `/companies/` is not paginated upstream; the client and mock assumed it was
 
 Found 2026-10-17 by the first live read-only check
 (`docs/simpro/mock-vs-public-api.md` §6, item 4). Live `GET /companies/`
@@ -17,7 +17,13 @@ require all three headers and raise `SimproProtocolError`. The mock paginates
 `/companies/` and sends all three, so the offline and integration suites do not
 see it. To fix in W1 T4.
 
-## Simpro does not add `ID` to a `columns` projection; the mock does
+**Resolved 2026-10-17** (W1 T4). `CompaniesEndpoint`
+(`src/simpro_client/endpoints/company.py`) overrides `fetch_page()` and
+`iter_all()` to make one request without `page`/`pageSize` and to need only
+`Result-Count`. The mock's `/companies/` returns every company with
+`Result-Count` alone, so the integration suite now exercises the live shape.
+
+## RESOLVED 2026-10-17 — Simpro does not add `ID` to a `columns` projection; the mock did
 
 Found 2026-10-17 (`docs/simpro/mock-vs-public-api.md` §6, item 1). Live
 `columns=CompanyName` returns only `CompanyName`. The mock always adds `ID`
@@ -25,7 +31,15 @@ Found 2026-10-17 (`docs/simpro/mock-vs-public-api.md` §6, item 1). Live
 client model requires `ID`, so a caller that omits `ID` from `columns` passes
 against the mock and fails against Simpro. To fix in W1 T4.
 
-## Simpro sends `""` for empty dates the spec declares nullable
+**Resolved 2026-10-17** (W1 T4) under ADR-016 (accepted by Alex
+2026-10-19). The mock's projection returns only the requested keys
+(`ALWAYS_INCLUDED` removed), and `ResourceEndpoint._columns_param()`
+(`src/simpro_client/endpoints/base.py`) adds the model's missing required
+fields to every `columns` list, so any projection validates without making
+model fields optional. Still to confirm live (W1 T5): that Simpro accepts
+`_href`, required on the customers list model, as a column.
+
+## RESOLVED 2026-10-17 — Simpro sends `""` for empty dates the spec declares nullable
 
 Found 2026-10-17 (`docs/simpro/mock-vs-public-api.md` §6, item 17). A live job
 detail returned `CustomerContract.StartDate` and `EndDate` as the empty string;
@@ -35,6 +49,14 @@ and `client.jobs.get()` raises for such a job. `ContractRef` is also used by
 `Quote` and `Asset`, and other date fields may behave the same way. The mock
 never sends `""`. This is a case where the published spec is wrong and the code
 is wrong with it (see the ADR-013 entry below). To fix in W1 T4.
+
+**Resolved 2026-10-17** (W1 T4) in the client. `SimproBaseModel`
+(`src/simpro_client/models/base.py`) has one `mode="before"` validator that
+reads `""` as `None` on every field annotated `date` or `datetime`, nullable
+or not, so all date and timestamp fields in every model are covered, not only
+`ContractRef`. An empty string on any other field is kept. The mock still
+never sends `""`; that is left as a known mock difference (mock scope is
+frozen), and `tests/test_models.py` covers the live shape offline.
 
 ## RESOLVED 2026-10-08 — unused mock settings `SIMPRO_MOCK_MOCK_CLIENT_ID` and `SIMPRO_MOCK_MOCK_CLIENT_SECRET`
 
@@ -145,7 +167,9 @@ Two caveats remain, both deliberate and documented in
 - Three behaviours cannot be verified without live access: whether Simpro
   always returns `ID` in a `columns` projection, whether the `Result-*`
   pagination headers exist (they are real but absent from the spec), and the
-  exact default projection of routes the mock narrows by hand.
+  exact default projection of routes the mock narrows by hand. *(2026-10-17:
+  the live smoke check settled the first two — `ID` is not added, the headers
+  exist — see `docs/simpro/mock-vs-public-api.md` §6.)*
 
 ## RESOLVED 2026-10-12 — existing lint debt
 
