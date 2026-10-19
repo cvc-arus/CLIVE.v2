@@ -116,6 +116,7 @@ Implemented with deviations from ADR-010; see `src/simpro_client/CLAUDE.md`.
 - 2026-10-17: ADR-014 (still Proposed) updated for live access: the API application has <APP_PERMISSION_LEVEL> access, so there is no Simpro security-group boundary and `clive-gateway` is the only one; only companies <company-id> and <company-id>; customers and sites are build-wide, so company scope cannot restrict them. Documentation only
 - 2026-10-17: company rule clarified (Alex): listing `/companies/` is allowed, but no request is sent to a route scoped to company <company-id> or <company-id>. Root `CLAUDE.md` §3, `STATUS.md` and `simpro-api-findings.md` §2.3 updated; the live tests' request hook blocks any other company
 - 2026-10-19: ADR-016 **accepted** by Alex. Its Status line, ADR-013's Status line ("`ID` is always included" in §5 superseded), `ADR-index.md`, root `CLAUDE.md` §4, `STATUS.md` (removed from ADRs awaiting a decision) and the docs citing ADR-016 as Proposed updated. Documentation only
+- 2026-10-19: W1 T3/T4 merged — `fix/w1-live-api-differences` to `develop` (PR #86), then `develop` to `main` (PR #87). `STATUS.md`: W1 row and next task (W1 T5). Documentation only
 
 ## Not Yet Started
 
