@@ -221,6 +221,26 @@ history in T10.
 
 **Stop point:** a list in this file, with no values in it.
 
+**Proposal (Claude, 2026-10-19; awaiting Alex's decision).** None of these
+documents contains client data, credentials or build values (checked by
+reading them and by the guard). What they do contain is CVC's product plans
+and internal usage figures, so the question for each is commercial, not
+technical:
+
+| Document(s) | What it reveals | Proposal |
+|---|---|---|
+| `docs/scope/master-project-document.md`, `clive-scope.md` | Product vision and roadmap (sales agent, tender agent, customer intelligence), the original working brief, hardware | **Public**; make it private only if the product roadmap is commercially sensitive |
+| `docs/scope/scope-rev2.md`, `scope-rev3.md`, `docs/roadmap.md` | Technical phase plans | **Public** |
+| `docs/PDDs/` (all five) | Phase designs; Phase 3B's planned security model (LAN-only, reverse proxy, roles) | **Public**: it describes controls, not gaps, and every service binds to localhost |
+| `docs/course-correction-plan.md` | Workstreams and decisions | **Public** |
+| `docs/sprints/course-correction/W2-docgen-value-check.md` | The interview plan (public), but T2 would write interview figures (document volumes and hours per type) to `docs/reviews/` | **Public after edits:** W2 T2's results go to `docs/simpro/private/` (or a new private store for business figures), not `docs/reviews/` |
+| `docs/sprints/course-correction/W3-kb-audit.md` | Audit plan; the planned report holds KB counts and could name documents | **Public after edits:** the report may hold counts and pass/fail only; anything naming a document or customer goes to the private store |
+| `docs/sprints/course-correction/W4-evaluation.md` | Plan for `evaluation/eval-set.yaml` and results, which would hold questions and expected answers taken from real documents | **Public after edits:** `eval-set.yaml` and `evaluation/results/` are client content, so they must be git-ignored (or kept in a private store); only the runner, the format and value-free summaries are tracked |
+| `docs/recovery-plan.md` drill reports, `docs/STATUS.md` open risks | KB size and usage counts, disk wear, accepted operational risks | **Public** (low sensitivity; nothing is reachable from outside the host). Optional: replace the drill's usage counts with `<n>` |
+
+The edits to W2–W4 change where future outputs are written. They take effect
+before those tasks run, and there is nothing to remove from history today.
+
 ### T8 — Commit the HEAD changes
 
 Commit T1–T7's changes on the branch (§13), as one commit per logical change.
