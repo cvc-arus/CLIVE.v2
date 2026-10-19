@@ -272,7 +272,7 @@ failures. (Missing route parameters currently raise `ValueError` from
   and `Total`), and it is accepted on detail routes too. The mock now
   honours it (ADR-013 S6).
 - **The client adds the model's required fields to every `columns` list**
-  (ADR-016, Proposed). Simpro returns exactly the columns asked for — not even
+  (ADR-016). Simpro returns exactly the columns asked for — not even
   `ID` unless requested — so `_columns_param()` appends the model's missing
   required wire names (from `model_fields`, after the caller's own, without
   duplicates). `columns=["Stage"]` on jobs sends `Stage,ID,Description,Total`.

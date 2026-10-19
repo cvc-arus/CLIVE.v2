@@ -28,14 +28,14 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 
 | Workstream | Status | Notes |
 |---|---|---|
-| W1 Simpro access and live API checks | 🔶 In progress | Live API access arrived 2026-10-16; <ENVIRONMENT_TYPE>; read-only use (root `CLAUDE.md` §3, §9); only companies <company-id> and <company-id>. T1 not needed (Alex). T2: `docs/simpro/mock-vs-public-api.md`. Live smoke check 2026-10-17 (§6): 3 differences broke the client. T4: all three fixed on `fix/w1-live-api-differences` (2026-10-17) — `/companies/` paging, `""` dates, and `ID` in projections under ADR-016 (Proposed; Alex to accept). T3: opt-in live tests written and skipped by default (`SIMPRO_LIVE_TESTS=1`), not yet run |
+| W1 Simpro access and live API checks | 🔶 In progress | Live API access arrived 2026-10-16; <ENVIRONMENT_TYPE>; read-only use (root `CLAUDE.md` §3, §9); only companies <company-id> and <company-id>. T1 not needed (Alex). T2: `docs/simpro/mock-vs-public-api.md`. Live smoke check 2026-10-17 (§6): 3 differences broke the client. T4: all three fixed on `fix/w1-live-api-differences` (2026-10-17) — `/companies/` paging, `""` dates, and `ID` in projections under ADR-016 (accepted by Alex 2026-10-19). T3: opt-in live tests written and skipped by default (`SIMPRO_LIVE_TESTS=1`), not yet run |
 | W2 Doc generation value check | 🔶 In progress | T1 [HUMAN] interviews under way (Alex, 2026-10-16) |
 | W3 Knowledge base audit | ⏳ Not started | Bulk ingestion paused until complete |
 | W4 Evaluation set | ⏳ Not started | |
 | W5 Backups and restore drill | ✅ Complete 2026-10-16 | Closed by Alex with T7 recorded as an accepted risk (Open risks). T1: all data on sdb1; target `<home>/clive-backups/` (sda2). T2: inventory agreed. T3: `scripts/backup.sh` backs up the full inventory except `.env` (GPG key deferred). T4: daily systemd timer at 02:30 installed. T5: `smartd` monitoring both disks; both are past their rated write endurance (recovery plan §9). T6: restore drill passed, about 68 s of commands from checksums to a working Open WebUI (recovery plan §10). T7 (off-machine copy) not done: accepted risk. See `docs/recovery-plan.md` |
 | W6 Docs consolidation | ✅ Complete 2026-10-15 | Accepted by Alex. `STATUS.md` owns status; Phase 3 evidence in `phase3/phase3-signoff.md`; ADR index conventions merged; Simpro findings applied to Phase 3B; root `CLAUDE.md` additions merged and `/sprint-task`, `/status-update` confirmed; `PDD-phase3.md` revised and closed; `docs/reviews/` created. Security documentation deferred to Phase 3B Sprint 2 |
 
-**Next task:** Alex reviews the branch and decides on ADR-016; W1 T5 (run the live tests, on Alex's request); W3 T1 (unblocked by W5).
+**Next task:** merge `fix/w1-live-api-differences` (pushed 2026-10-19; PRs to `develop`, then `main`); W1 T5 (run the live tests, on Alex's request); W3 T1 (unblocked by W5).
 **Next decision:** phase order, at end of sprint.
 
 ## Simpro access
@@ -64,4 +64,3 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 |---|---|---|
 | ADR-014 | Simpro data access control model | Proposed. Storage conflict with root `CLAUDE.md` §3 resolved by Alex 2026-10-15 (narrow exception in §3) |
 | ADR-015 | Conversational access approach | Proposed |
-| ADR-016 | `columns` projections and required fields (W1 T4, `ID` item) | Proposed 2026-10-17; implemented on `fix/w1-live-api-differences`, so accepting it is the merge decision |

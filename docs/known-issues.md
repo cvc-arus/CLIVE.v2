@@ -31,8 +31,8 @@ Found 2026-10-17 (`docs/simpro/mock-vs-public-api.md` §6, item 1). Live
 client model requires `ID`, so a caller that omits `ID` from `columns` passes
 against the mock and fails against Simpro. To fix in W1 T4.
 
-**Resolved 2026-10-17** (W1 T4) under ADR-016 (Proposed; the branch is for
-review). The mock's projection returns only the requested keys
+**Resolved 2026-10-17** (W1 T4) under ADR-016 (accepted by Alex
+2026-10-19). The mock's projection returns only the requested keys
 (`ALWAYS_INCLUDED` removed), and `ResourceEndpoint._columns_param()`
 (`src/simpro_client/endpoints/base.py`) adds the model's missing required
 fields to every `columns` list, so any projection validates without making

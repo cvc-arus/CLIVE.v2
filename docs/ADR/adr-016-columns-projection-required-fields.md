@@ -1,8 +1,8 @@
 # ADR-016: `columns` projections — the server adds nothing, the client asks for the required fields
 
-- **Status:** Proposed (2026-10-17). Drafted by Claude at Alex's request ("research
-  and choose the best option"); implemented on branch
-  `fix/w1-live-api-differences` for review. If accepted, supersedes the
+- **Status:** **Accepted** — 2026-10-19, by Alex. Drafted by Claude at Alex's
+  request ("research and choose the best option"), Proposed 2026-10-17;
+  implemented on branch `fix/w1-live-api-differences`. Supersedes the
   sentence "`ID` is always included." in ADR-013 Decision §5.
 - **Date:** 2026-10-17
 - **Deciders:** Alex
@@ -76,7 +76,7 @@ to maintain by hand.
 
 ## Decision
 
-**Option 4** (recommended; Proposed until Alex accepts).
+**Option 4** (accepted by Alex, 2026-10-19).
 
 1. The mock adds nothing to a projection: `projection.project()` returns only
    the requested keys. This supersedes "`ID` is always included" in ADR-013 §5.

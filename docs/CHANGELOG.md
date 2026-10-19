@@ -115,6 +115,7 @@ Implemented with deviations from ADR-010; see `src/simpro_client/CLAUDE.md`.
 - 2026-10-17: W1 T4 third item — `ID` in projections, under ADR-016 (**Proposed**; drafted at Alex's request with four options). The mock's `columns` projection returns only the requested keys (`ALWAYS_INCLUDED` removed), and `ResourceEndpoint._columns_param()` appends the model's missing required fields, so any projection validates while models stay contract-governed. If accepted, it supersedes "`ID` is always included" in ADR-013 §5. Mock and drift tests updated; a live test checks that Simpro accepts `_href` as a column
 - 2026-10-17: ADR-014 (still Proposed) updated for live access: the API application has <APP_PERMISSION_LEVEL> access, so there is no Simpro security-group boundary and `clive-gateway` is the only one; only companies <company-id> and <company-id>; customers and sites are build-wide, so company scope cannot restrict them. Documentation only
 - 2026-10-17: company rule clarified (Alex): listing `/companies/` is allowed, but no request is sent to a route scoped to company <company-id> or <company-id>. Root `CLAUDE.md` §3, `STATUS.md` and `simpro-api-findings.md` §2.3 updated; the live tests' request hook blocks any other company
+- 2026-10-19: ADR-016 **accepted** by Alex. Its Status line, ADR-013's Status line ("`ID` is always included" in §5 superseded), `ADR-index.md`, root `CLAUDE.md` §4, `STATUS.md` (removed from ADRs awaiting a decision) and the docs citing ADR-016 as Proposed updated. Documentation only
 
 ## Not Yet Started
 
