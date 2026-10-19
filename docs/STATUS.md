@@ -15,7 +15,8 @@ Phase list and scope: `docs/roadmap.md`.
 | 1 | Local AI Platform | ✅ Complete |
 | 2 | Production RAG | ✅ Complete (knowledge base audit planned — W3) |
 | 3 | Simpro API Integration | ✅ Closed 2026-10-09 (Alex). Evidence: `docs/phase3/phase3-signoff.md` |
-| — | Course correction sprint | 🔶 In progress |
+| — | Course correction sprint | ⏸ Paused 2026-10-19 (Alex) for the public-release sprint |
+| — | Public-release sprint | 🔶 In progress — plan approved 2026-10-19 (Alex): `docs/sprints/public-release/public-release-split.md` |
 | 3B | Simpro Conversational Access | 📝 Planned — PDD drafted; order set at decision point |
 | 4 | Document Generation (4A / 4B split pending W2) | ⏳ Not started; no longer blocked (ADR-009 decided) |
 | 5 | Security & Reverse Proxy (minimum slice moves into 3B) | ⏳ Not started |
@@ -35,7 +36,7 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 | W5 Backups and restore drill | ✅ Complete 2026-10-16 | Closed by Alex with T7 recorded as an accepted risk (Open risks). T1: all data on sdb1; target `<home>/clive-backups/` (sda2). T2: inventory agreed. T3: `scripts/backup.sh` backs up the full inventory except `.env` (GPG key deferred). T4: daily systemd timer at 02:30 installed. T5: `smartd` monitoring both disks; both are past their rated write endurance (recovery plan §9). T6: restore drill passed, about 68 s of commands from checksums to a working Open WebUI (recovery plan §10). T7 (off-machine copy) not done: accepted risk. See `docs/recovery-plan.md` |
 | W6 Docs consolidation | ✅ Complete 2026-10-15 | Accepted by Alex. `STATUS.md` owns status; Phase 3 evidence in `phase3/phase3-signoff.md`; ADR index conventions merged; Simpro findings applied to Phase 3B; root `CLAUDE.md` additions merged and `/sprint-task`, `/status-update` confirmed; `PDD-phase3.md` revised and closed; `docs/reviews/` created. Security documentation deferred to Phase 3B Sprint 2 |
 
-**Next task:** W1 T5 (run the live tests, on Alex's request; settles `_href` as a column, ADR-016); W3 T1 (unblocked by W5).
+**Next task:** public-release T1 (draft ADR-017). Course correction resumes afterwards with W1 T5 (run the live tests, on Alex's request; settles `_href` as a column, ADR-016); W3 T1 (unblocked by W5).
 **Next decision:** phase order, at end of sprint.
 
 ## Simpro access
