@@ -29,6 +29,15 @@ install -d -m 700 docs/simpro/private
    backup target).
 6. **Publication tooling:** the files below.
 
+## Business figures and names from course-correction tasks
+
+Created by the tasks that need them (public-release sprint T7):
+
+- `docs/simpro/private/doc-generation-value-check.md`: W2's interview figures
+  per document type.
+- `docs/simpro/private/kb-audit-2026-10-private.md`: W3's file and document
+  names, mapped to the neutral labels the tracked report uses.
+
 ## `docs/simpro/private/public-deny-list.txt`
 
 One pattern per line, `<id><TAB><Python regex>`, `#` for comments. It covers

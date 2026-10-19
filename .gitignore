@@ -73,3 +73,8 @@ uploads/
 chroma/
 vectorstore/
 .ipynb_checkpoints/
+
+# Evaluation questions and results come from CVC documents (ADR-017; W4).
+# The runner, README, example set and value-free summaries stay tracked.
+evaluation/eval-set.yaml
+evaluation/results/

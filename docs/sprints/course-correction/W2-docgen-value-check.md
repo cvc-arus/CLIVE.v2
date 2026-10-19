@@ -29,7 +29,10 @@ method statements and technical documents. For each document type ask:
 6. Who reviews or signs it off?
 
 ### T2 — Record results
-Add `docs/reviews/doc-generation-value-check.md` (created by this task; `docs/reviews/` is new) with one row per document type:
+Interview figures are CVC business data and stay out of the public
+repository (ADR-017; public-release sprint T7, Alex 2026-10-19). Record them
+in the untracked private store, `docs/simpro/private/doc-generation-value-check.md`
+(created by this task), with one row per document type:
 
 | Document type | Per month | Hours each | Hours if drafted | Est. hours saved/month | Needs Simpro data? | Notes |
 |---|---|---|---|---|---|---|
@@ -40,7 +43,10 @@ invent figures.
 
 ### T3 — [HUMAN] Ranking
 Rank document types by hours saved per month. Mark the proposed 4A candidates
-(no Simpro dependency) and 4B candidates.
+(no Simpro dependency) and 4B candidates. The tracked review
+`docs/reviews/doc-generation-value-check.md` (created by this task) holds the
+document types, their rank and the 4A/4B marks only, with no volumes, hours or
+names, and links to the private notes for the figures.
 
 ## Verification
 Every row has figures from at least one interview, or is marked "estimate".

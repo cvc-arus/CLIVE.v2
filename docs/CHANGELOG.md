@@ -118,6 +118,7 @@ Implemented with deviations from ADR-010; see `src/simpro_client/CLAUDE.md`.
 - 2026-10-19: ADR-016 **accepted** by Alex. Its Status line, ADR-013's Status line ("`ID` is always included" in §5 superseded), `ADR-index.md`, root `CLAUDE.md` §4, `STATUS.md` (removed from ADRs awaiting a decision) and the docs citing ADR-016 as Proposed updated. Documentation only
 - 2026-10-19: W1 T3/T4 merged — `fix/w1-live-api-differences` to `develop` (PR #86), then `develop` to `main` (PR #87). `STATUS.md`: W1 row and next task (W1 T5). Documentation only
 - 2026-10-19: ADR-017 (public repository, private build facts) **accepted** by Alex. Its Status line and Decision heading, `ADR-index.md`, root `CLAUDE.md` §4 and `STATUS.md` updated. Documentation only
+- 2026-10-19: public-release T7 — Alex accepted the business-context proposal: no document is private. W2 records interview figures in the private store and tracks only the ranking; W3's report uses neutral labels for files; W4's `evaluation/eval-set.yaml` and `evaluation/results/` are git-ignored (added to `.gitignore`) and backed up, with only value-free summaries tracked. `docs/reviews/README.md` states that reviews are public
 
 ## Not Yet Started
 

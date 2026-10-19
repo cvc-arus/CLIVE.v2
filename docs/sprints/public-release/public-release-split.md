@@ -221,7 +221,9 @@ history in T10.
 
 **Stop point:** a list in this file, with no values in it.
 
-**Proposal (Claude, 2026-10-19; awaiting Alex's decision).** None of these
+**Decision (Alex, 2026-10-19): proposal accepted as written.** The scope documents, PDDs, roadmap, course-correction plan, recovery plan and STATUS stay public unchanged. W2–W4 were edited to redirect their outputs (W2 figures and W3 names to `docs/simpro/private/`; W4's `evaluation/eval-set.yaml` and `evaluation/results/` git-ignored), `docs/reviews/README.md` states that reviews are public, and `.gitignore` gained the two evaluation entries. No file is private, so T10 removes no paths for T7.
+
+**Proposal (Claude, 2026-10-19).** None of these
 documents contains client data, credentials or build values (checked by
 reading them and by the guard). What they do contain is CVC's product plans
 and internal usage figures, so the question for each is commercial, not

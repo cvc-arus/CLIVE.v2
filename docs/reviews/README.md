@@ -23,5 +23,10 @@ Course correction tasks that will write here (`docs/sprints/course-correction/`)
 
 | File | Written by |
 |---|---|
-| `doc-generation-value-check.md` | W2 T2 |
+| `doc-generation-value-check.md` | W2 T3 (ranking only; the figures are in the private store) |
 | `kb-audit-2026-10.md` | W3 T1 (section 1) and T4 |
+
+Reviews here are public (ADR-017). They hold no client data, interview
+figures, or names of documents, customers or people; those go to the untracked
+private store `docs/simpro/private/`, and the review links to it or uses
+neutral labels.
