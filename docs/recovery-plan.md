@@ -133,6 +133,7 @@ Agreed 2026-10-14 (W5 T2). Facts checked on 2026-10-14 against commit
 | 5 | `.env` | small | **Deferred (2026-10-14, Alex):** key not created yet, so `.env` is not backed up (§8). Planned: encrypted with a GPG **key pair**: the public key on the host, the private key and its passphrase kept off the machine (decision 2026-10-14, Alex) | A scheduled job cannot type a passphrase, so symmetric encryption with an off-machine passphrase is not possible. The host has no GPG key yet |
 | 6 | Ollama model list | — | `ollama list` output saved to a text file | Models (`nomic-embed-text`, `qwen2.5-coder:7b`, `llama3.2`) are re-pulled, not backed up |
 | 7 | Image versions | — | Each running image's digest saved to a text file | `open-webui:main` and `ollama/ollama` are unpinned tags, so a restore could pull a newer Open WebUI that migrates `webui.db`. Running: Open WebUI 0.11.0 |
+| 8 | Private build notes (`docs/simpro/private/`, ADR-017; added 2026-10-19) | small | `tar` into `private-notes.tar.gz`; encrypted to `BACKUP_GPG_RECIPIENT` as `private-notes.tar.gz.gpg` once that is set | Untracked, so git does not hold them. Until the GPG key exists they are a plain copy protected by the backup folder's 0700 mode (decision 2026-10-19, Alex). Restore: extract into `docs/simpro/private/` with mode 0700 (`docs/simpro/private-notes.template.md`) |
 
 Not backed up:
 

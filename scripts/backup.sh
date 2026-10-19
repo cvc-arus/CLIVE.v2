@@ -8,6 +8,9 @@
 #   - the six /data directories no container mounts
 #   - .env, encrypted to a GPG public key (skipped with a warning until
 #     BACKUP_GPG_RECIPIENT is set)
+#   - the private build notes (docs/simpro/private/, ADR-017), encrypted to the
+#     same key, or a plain copy in this 0700 folder until BACKUP_GPG_RECIPIENT
+#     is set
 #   - the Ollama model list and the running image digests
 # and writes a SHA-256 MANIFEST.txt, verified before the backup is accepted.
 #
@@ -24,6 +27,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ENV_FILE="${REPO_DIR}/.env"
+PRIVATE_DIR="${REPO_DIR}/docs/simpro/private"
 
 # Load only BACKUP_* settings from .env; values already in the environment win.
 # Whitespace (including a CR from Windows line endings) around keys and values
@@ -140,7 +144,7 @@ log "Writing to ${PARTIAL}"
 
 # --- 1. Phase 2 Postgres -------------------------------------------------
 STEP="postgres dump"
-log "[1/7] Dumping the Phase 2 database and roles"
+log "[1/8] Dumping the Phase 2 database and roles"
 docker exec "${PG_CONTAINER}" sh -c 'pg_dump -U "$POSTGRES_USER" -Fc "$POSTGRES_DB"' >"${PARTIAL}/pgvector.dump"
 docker exec "${PG_CONTAINER}" sh -c 'pg_dumpall -U "$POSTGRES_USER" --globals-only' >"${PARTIAL}/postgres-globals.sql"
 
@@ -172,7 +176,7 @@ docker exec "${PG_CONTAINER}" sh -c 'dropdb -U "$POSTGRES_USER" "$1"' sh "${TEST
 
 # --- 2. Open WebUI database ------------------------------------------------
 STEP="webui.db online backup"
-log "[2/7] Online backup of Open WebUI's webui.db"
+log "[2/8] Online backup of Open WebUI's webui.db"
 docker exec "${WEBUI_CONTAINER}" python3 -c '
 import sqlite3, sys
 src = sqlite3.connect("file:/app/backend/data/webui.db?mode=ro", uri=True)
@@ -197,11 +201,11 @@ log "      integrity_check: ok"
 
 # --- 3. Open WebUI files ---------------------------------------------------
 STEP="openwebui_data archive"
-log "[3/7] Archiving ${DATA_ROOT}/openwebui_data (without the live webui.db)"
+log "[3/8] Archiving ${DATA_ROOT}/openwebui_data (without the live webui.db)"
 archive_dir "${DATA_ROOT}/openwebui_data" "openwebui_data" --exclude=./webui.db --exclude='./webui.db-*'
 
 # --- 4. Unmounted directories ---------------------------------------------
-log "[4/7] Archiving the unmounted ${DATA_ROOT} directories"
+log "[4/8] Archiving the unmounted ${DATA_ROOT} directories"
 for dir in "${UNMOUNTED_DIRS[@]}"; do
     STEP="archive ${dir}"
     if [[ ! -d "${DATA_ROOT}/${dir}" ]]; then
@@ -214,7 +218,7 @@ done
 
 # --- 5. .env ----------------------------------------------------------------
 STEP="encrypt .env"
-log "[5/7] .env"
+log "[5/8] .env"
 if [[ -n "${GPG_RECIPIENT}" ]]; then
     gpg --batch --yes --quiet --trust-model always --encrypt \
         --recipient "${GPG_RECIPIENT}" --output "${PARTIAL}/env.gpg" "${ENV_FILE}"
@@ -224,9 +228,26 @@ else
     echo ".env not backed up: BACKUP_GPG_RECIPIENT not set" >>"${PARTIAL}/NOTES.txt"
 fi
 
-# --- 6. Model list and image versions -------------------------------------
+# --- 6. Private build notes --------------------------------------------------
+STEP="private build notes"
+log "[6/8] Private build notes"
+if [[ ! -d "${PRIVATE_DIR}" ]]; then
+    log "      WARNING: ${PRIVATE_DIR} not found; private build notes NOT backed up (ADR-017)"
+    echo "private build notes not backed up: ${PRIVATE_DIR} not found" >>"${PARTIAL}/NOTES.txt"
+elif [[ -n "${GPG_RECIPIENT}" ]]; then
+    tar czf - -C "${PRIVATE_DIR}" . | gpg --batch --yes --quiet --trust-model always --encrypt \
+        --recipient "${GPG_RECIPIENT}" --output "${PARTIAL}/private-notes.tar.gz.gpg"
+    log "      encrypted to private-notes.tar.gz.gpg"
+else
+    tar czf "${PARTIAL}/private-notes.tar.gz" -C "${PRIVATE_DIR}" .
+    gzip -t "${PARTIAL}/private-notes.tar.gz"
+    log "      WARNING: plain copy (BACKUP_GPG_RECIPIENT is not set); protected only by this folder's 0700 mode"
+    echo "private build notes stored unencrypted: BACKUP_GPG_RECIPIENT not set" >>"${PARTIAL}/NOTES.txt"
+fi
+
+# --- 7. Model list and image versions -------------------------------------
 STEP="model list and images"
-log "[6/7] Ollama model list and image digests"
+log "[7/8] Ollama model list and image digests"
 docker exec "${OLLAMA_CONTAINER}" ollama list >"${PARTIAL}/ollama-models.txt"
 {
     for container in $(docker ps --format '{{.Names}}' | sort); do
@@ -235,9 +256,9 @@ docker exec "${OLLAMA_CONTAINER}" ollama list >"${PARTIAL}/ollama-models.txt"
     done
 } >"${PARTIAL}/images.txt"
 
-# --- 7. Manifest -------------------------------------------------------------
+# --- 8. Manifest -------------------------------------------------------------
 STEP="manifest"
-log "[7/7] Writing and verifying MANIFEST.txt"
+log "[8/8] Writing and verifying MANIFEST.txt"
 cd "${PARTIAL}"
 mapfile -t files < <(find . -type f -printf '%P\n' | sort)
 stat -c '%s  %n' "${files[@]}" >SIZES.txt
