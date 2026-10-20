@@ -31,6 +31,13 @@ sensitive documents. Re-ingesting everything later is far more expensive.
 4. Which metadata is currently stored per document and per chunk.
 **Stop point:** findings written to `docs/reviews/kb-audit-2026-10.md` (created by this task) section 1.
 
+The report is tracked and will be public (ADR-017; public-release sprint T7,
+Alex 2026-10-19). It may hold versions, setting names and values, schema and
+column names, counts and pass/fail only. Anything that names a document, a
+file, a customer or a person goes to the untracked private store
+(`docs/simpro/private/kb-audit-2026-10-private.md`), and the report refers to
+it by a neutral label (for example `F1`).
+
 ### T2 — Requirement tests
 Test in a **scratch collection** (create and later delete with Alex's approval):
 1. **Metadata:** can a document carry custom metadata (type, customer, date,
@@ -47,7 +54,9 @@ Alex selects ~10 representative files: tender PDF with tables, RAMS, contract,
 scanned certificate, equipment datasheet, drawing. Claude Code runs them
 through Tika (the existing container), and records extracted text quality:
 tables intact, headings kept, scanned text present, drawings readable.
-**Stop point:** quality table per file.
+**Stop point:** quality table per file, with each file identified by a
+neutral label and its type (for example `F3`, scanned certificate); the
+label-to-file mapping is kept in the private store only.
 
 ### T4 — Gap report and options
 Complete `docs/reviews/kb-audit-2026-10.md` with:

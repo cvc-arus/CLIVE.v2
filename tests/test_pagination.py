@@ -142,7 +142,7 @@ def mock_companies(respx_mock, client: SimproClient, headers: dict):
     return respx_mock.get(f"{client._settings.base_url}/companies/").mock(
         return_value=Response(
             200,
-            json=[{"ID": <company-id>, "Name": "Service"}, {"ID": <company-id>, "Name": "Projects"}],
+            json=[{"ID": 11, "Name": "Service"}, {"ID": 12, "Name": "Projects"}],
             headers=headers,
         )
     )
@@ -158,7 +158,7 @@ def test_companies_fetch_page_needs_only_result_count(respx_mock, client: Simpro
     assert "page" not in params
     assert "pageSize" not in params
     assert params["columns"] == "ID,Name"
-    assert [company.id for company in page.items] == [<company-id>, <company-id>]
+    assert [company.id for company in page.items] == [11, 12]
     assert (page.page, page.pages, page.total, page.count) == (1, 1, 2, 2)
 
 
@@ -167,7 +167,7 @@ def test_companies_iter_all_makes_one_request(respx_mock, client: SimproClient):
 
     ids = [company.id for company in client.companies.iter_all()]
 
-    assert ids == [<company-id>, <company-id>]
+    assert ids == [11, 12]
     assert route.call_count == 1
 
 

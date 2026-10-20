@@ -13,8 +13,8 @@ Get CLIVE onto the real Simpro API as early as possible, so `simpro_client` is
 checked against real responses. The mock stays for fast offline tests, with its
 scope frozen.
 
-**Amended 2026-10-16 (Alex):** the environment type is in the private build notes. Live API access to CVC's
-<ENVIRONMENT_TYPE> build arrived (OAuth2 Client Credentials, credentials in `.env`), and
+**Amended 2026-10-16 (Alex):** Simpro's sandbox is not used. Live API access to
+CVC's own build arrived (OAuth2 Client Credentials, credentials in `.env`), and
 the checks run against it **read-only**: `GET` requests and the token request
 only, nothing written to Simpro, and no client data reaching Claude Code (root
 `CLAUDE.md` §3 and §9). The tasks below are rewritten from "sandbox" to "live,
@@ -57,7 +57,7 @@ Only the `integration` marker is registered today (root `pyproject.toml`).
    record that exception to `tests/CLAUDE.md`'s "never depend on `.env`" rule
    in that file.
 2. Write read-only contract tests: authenticate; list and fetch each resource
-   used by Phase 3B in both companies (Service <company-id>, Projects <company-id>); validate
+   used by Phase 3B in both configured companies (Service, Projects); validate
    responses with the existing Pydantic models; check pagination headers.
    First checks, from `docs/simpro/mock-vs-public-api.md` §5: token request
    encoding (item 13), token invalidation across instances (item 15),
@@ -79,7 +79,7 @@ at a time, with tests. Skip if T2 finds none.
 
 ### T5 — Run live contract tests (only when Alex asks)
 Credentials are already in `.env` (Alex). Alex approved a read-only smoke check
-against <ENVIRONMENT_TYPE> on 2026-10-16; it was run on 2026-10-17 at `68da1bc` as a
+against the live build on 2026-10-16; it was run on 2026-10-17 at `68da1bc` as a
 scratch script ahead of T3, with results in `docs/simpro/mock-vs-public-api.md`
 §6. T5 proper is the run of the T3 tests. Run the T3 tests with the opt-in set, record
 pass/fail and the settled unknowns in `docs/simpro/mock-vs-public-api.md` and

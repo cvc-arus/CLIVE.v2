@@ -22,9 +22,9 @@ the approver for every sprint and architectural decision.
 - Phases 1–2 (complete, rarely touched): Ollama + Open WebUI; RAG via
   PostgreSQL/PGVector + Apache Tika.
 - Phase 3 (**closed 2026-10-09**, Alex): Simpro integration. **Live Simpro API
-  access arrived 2026-10-16** (OAuth2 Client Credentials on CVC's production
-  build; the environment type is in the private build notes). It is used read-only, under the rules in §3 and
-  §9; nothing in the code points at it yet.
+  access arrived 2026-10-16** (OAuth2 Client Credentials on CVC's own build;
+  Simpro's sandbox is not used). It is used read-only, under the rules in §3
+  and §9; nothing in the code points at it yet.
   - `src/simpro_client/` — reusable, typed, synchronous Python client library.
   - `services/simpro_mock/` — FastAPI + PostgreSQL mock of the Simpro REST API.
   - Both are shaped to Simpro's **published** OpenAPI contract, vendored at
@@ -67,7 +67,10 @@ Where to find current state:
 - **Historical documents:** listed in `docs/README.md` §6 (`docs/scope/`,
   `docs/phase*/` sprint records, `docs/doc-audit.md`). Read-only; factual errors
   get a dated correction note only when Alex asks.
-- **Simpro facts:** `docs/simpro/simpro-api-findings.md`.
+- **Simpro facts:** `docs/simpro/simpro-api-findings.md` (Simpro's API
+  behaviour); CVC's build-specific values (company IDs, the API application's
+  permissions, live record counts) are in the untracked, backed-up
+  `docs/simpro/private/cvc-simpro-build.md` (ADR-017).
 
 ## 3. Architecture constraints (hard rules)
 
@@ -89,12 +92,13 @@ Where to find current state:
   GET-only (the mock's only POST is `/oauth2/token`). Do not add write
   operations without an approved scope change.
 - **Live Simpro is read-only (Alex, 2026-10-16).** CLIVE works against CVC's live
-  Simpro build; the environment type is in the private build notes. The only requests allowed to
+  Simpro build, which holds real data. The only requests allowed to
   `*.simprosuite.com` are `GET`s and the OAuth2 token `POST`. Nothing is ever
   written to Simpro: no `POST`, `PUT`, `PATCH` or `DELETE` on any resource,
-  whatever an endpoint or task appears to need. The API application has <APP_PERMISSION_LEVEL>
-  rights in Simpro (no dedicated read-only security group), so this rule and the
-  GET-only client are the only guard against writes.
+  whatever an endpoint or task appears to need. Simpro itself does not stop a
+  write (the API application's permissions are in the private build notes,
+  ADR-017), so this rule and the GET-only client are the only guard against
+  writes.
 - **Two isolated Postgres instances.** `postgres` (port 5432, Phase 2
   PGVector knowledge base) must never be used by Phase 3 code or tests, with
   one exception (ADR-014; resolved by Alex 2026-10-15): `clive-gateway` keeps
@@ -108,12 +112,13 @@ Where to find current state:
 - **Self-hosted.** No cloud AI providers or external SaaS calls unless Alex
   explicitly approves. CVC's own Simpro build (`*.simprosuite.com`) is the one
   approved external API, read-only as above.
-- **Simpro company IDs are configuration.** CVC's are Service <company-id> and Projects
-  <company-id> (Alex, 2026-10-16). **Only <company-id> and <company-id> are ever used** (Alex, 2026-10-17): the
-  build also has companies <company-id> and <company-id>, which CLIVE does not use. Listing
-  `/companies/` (which returns them) is allowed, but no request is ever sent
-  to a route scoped to company <company-id> or <company-id>, and they are never included in
-  CLIVE's results. Never assume 1 and 2 outside the mock.
+- **Simpro company IDs are configuration.** CVC's two are in
+  `SIMPRO_COMPANY_ID_SERVICE` and `SIMPRO_COMPANY_ID_PROJECTS`; the values are
+  in `docs/simpro/private/cvc-simpro-build.md` (ADR-017). **Only those two are
+  ever used** (Alex, 2026-10-17): the build has other companies, which CLIVE
+  does not use. Listing `/companies/` (which returns them) is allowed, but no
+  request is ever sent to a route scoped to any other company, and they are
+  never included in CLIVE's results. Never assume 1 and 2 outside the mock.
 - **Rate limiter budget is per `SimproClient` instance** (ADR-010;
   `src/simpro_client/CLAUDE.md` §10), not per process or per Simpro build.
   Services calling Simpro run a single worker with one client.
@@ -142,6 +147,7 @@ Where to find current state:
 | 014 | Simpro data access control model | **Proposed** 2026-10-09. Stores `clive_gateway` on the Phase 2 Postgres; the §3 conflict was resolved by Alex on 2026-10-15 with a narrow exception in §3 |
 | 015 | Conversational access approach (tool calling over a fixed query catalogue) | **Proposed** 2026-10-09 |
 | 016 | `columns` projections: server adds nothing, client asks for the model's required fields (supersedes "`ID` is always included" in ADR-013 §5) | **Accepted** 2026-10-19 (Alex), implemented |
+| 017 | Public repository, private build facts (untracked private store, guard script, rewritten history in a new repository) | **Accepted** 2026-10-19 (Alex) |
 
 Re-verify this table before relying on it; it is a snapshot.
 
@@ -263,6 +269,12 @@ cleared on 2026-10-12 (PR #47). Therefore:
   `.claude/settings.json`). Use `.env.example` to learn variable names.
 - Never hardcode secrets or log tokens, client secrets, or API keys.
 - Never print, log or commit secrets. Refer to `.env` variables by name only.
+- **Build and host facts stay private (ADR-017).** Never copy a value from
+  `docs/simpro/private/` into a tracked file, commit message or PR text: name
+  the `.env` variable or link to the private notes. Claude Code may read the
+  private notes (they are not `.env`). Before every commit, run
+  `python3 scripts/check-public-safe.py`; it must exit 0 on the files you
+  changed. It prints pattern IDs only, never the matched text.
 - The mock's static bearer token (a default in its `config.py`) is
   development-only. Do not copy that pattern into new services or into
   `simpro_client`. Mock DB credentials come from `.env`

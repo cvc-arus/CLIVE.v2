@@ -2,6 +2,9 @@
 # clive-backup.timer; see docs/installation.md section 9 and
 # docs/recovery-plan.md section 8.
 #
+# Template (ADR-017): the repository-path and user placeholders are filled in
+# at install time by the sed command in docs/installation.md section 9.
+#
 # Runs scripts/backup.sh from the repository working tree, so the script on the
 # checked-out branch is the one that runs. A failed backup exits non-zero and
 # leaves this unit failed: `systemctl status clive-backup.service`,

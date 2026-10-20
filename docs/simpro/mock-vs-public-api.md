@@ -74,8 +74,8 @@ works, so they are recorded here.
 ## 5. Count by severity
 
 > **Superseded by §6.2** (2026-10-17). This count predates the live check, and
-> the "sandbox" wording in §1–§5 predates Alex's 2026-10-16 decision: there is
-> <ENVIRONMENT_TYPE>, and live checks run read-only against CVC's <ENVIRONMENT_TYPE> build.
+> the "sandbox" wording in §1–§5 predates Alex's 2026-10-16 decision not to
+> use Simpro's sandbox: live checks run read-only against CVC's own build.
 
 | Severity | Count | Items |
 |---|---|---|
@@ -106,29 +106,30 @@ the client's models, and printed only status codes, counts, header names,
 field names and validation error locations, never values. `simpro_client`
 logging was disabled so the build hostname did not appear in the output.
 
-Output, trimmed (company <company-id> matches company <company-id> except where shown):
+Output, trimmed, with CVC's company IDs and record totals replaced by `<n>`
+(ADR-017; the values are in the private build notes). The Projects company
+matched the Service company except where shown:
 
 ```text
-/companies/                        HTTP 200  rows=4   total=-      headers=['Result-Count']
+/companies/                        HTTP 200  rows=<n>  total=-      headers=['Result-Count']
                                    fields=['ID', 'Name']
-                                   model: 4/4 valid
-                                   company IDs returned: [0, <company-id>, <company-id>, <company-id>]
-== company <company-id> ==
-customers                          HTTP 200  rows=5   total=<COUNT>   headers=['Result-Total', 'Result-Count', 'Result-Pages']
+                                   model: <n>/<n> valid
+== Service company ==
+customers                          HTTP 200  rows=5   total=<n>    headers=['Result-Total', 'Result-Count', 'Result-Pages']
                                    fields=['CompanyName', 'FamilyName', 'GivenName', 'ID', 'Type', '_href']
                                    model: 5/5 valid
-customers/companies                HTTP 200  rows=5   total=<COUNT>   headers=['Result-Total', 'Result-Count', 'Result-Pages']
-sites                              HTTP 200  rows=5   total=<COUNT>   headers=['Result-Total', 'Result-Count', 'Result-Pages']
-jobs                               HTTP 200  rows=5   total=<COUNT>  headers=['Result-Total', 'Result-Count', 'Result-Pages']
-quotes                             HTTP 200  rows=5   total=<COUNT>   headers=['Result-Total', 'Result-Count', 'Result-Pages']
-employees                          HTTP 200  rows=5   total=<COUNT>     headers=['Result-Total', 'Result-Count', 'Result-Pages']
+customers/companies                HTTP 200  rows=5   total=<n>    headers=['Result-Total', 'Result-Count', 'Result-Pages']
+sites                              HTTP 200  rows=5   total=<n>    headers=['Result-Total', 'Result-Count', 'Result-Pages']
+jobs                               HTTP 200  rows=5   total=<n>    headers=['Result-Total', 'Result-Count', 'Result-Pages']
+quotes                             HTTP 200  rows=5   total=<n>    headers=['Result-Total', 'Result-Count', 'Result-Pages']
+employees                          HTTP 200  rows=5   total=<n>    headers=['Result-Total', 'Result-Count', 'Result-Pages']
 columns=Name (ID requested? no)    FAILED  SimproClientError (HTTP 422)
 job detail (first job)             HTTP 200  object
                                    model: 1/1 valid
-== company <company-id> ==
-jobs                               HTTP 200  rows=5   total=<COUNT>    ...
-quotes                             HTTP 200  rows=5   total=<COUNT>   ...
-employees                          HTTP 200  rows=5   total=<COUNT>     ...
+== Projects company ==
+jobs                               HTTP 200  rows=5   total=<n>    ...
+quotes                             HTTP 200  rows=5   total=<n>    ...
+employees                          HTTP 200  rows=5   total=<n>    ...
 job detail (first job)             HTTP 200  object
                                    model: 0/1 valid | failing fields: CustomerContract.EndDate:date_from_datetime_parsing, CustomerContract.StartDate:date_from_datetime_parsing
 ```
@@ -156,7 +157,7 @@ shape, not the value).
 | 13 | Token request encoding | The client's form-encoded request was accepted | Match |
 | 17 | *New:* empty date strings | Simpro sent `""` for `CustomerContract.StartDate` and `EndDate` on a job detail; the published spec declares them nullable `date` | **Breaks client:** `Job` validation fails, so `client.jobs.get()` raises for such a job. The same `ContractRef` is used by `Quote` and `Asset`; other date fields may do the same. Mock never sends `""` |
 | 18 | *New:* unknown field in `columns` | HTTP 422 | Cosmetic: the mock returns 400; the client raises `SimproClientError` for both |
-| 19 | *New:* companies and shared records | `/companies/` returns 0, <company-id>, <company-id> and <company-id>. Customers (<COUNT>) and sites (<COUNT>) have identical totals in <company-id> and <company-id>, so they are build-wide rather than per company. Jobs, quotes and employees differ | Cosmetic for the client. For CLIVE: only <company-id> and <company-id> are ever used (Alex, 2026-10-17; root `CLAUDE.md` §3), and customer or site counts must not be added across companies. The mock seeds separate customers per company |
+| 19 | *New:* companies and shared records | `/companies/` returns more companies than the two CLIVE uses. Customers and sites have identical totals in both, so they are build-wide rather than per company. Jobs, quotes and employees differ | Cosmetic for the client. For CLIVE: only the two configured companies are ever used (Alex, 2026-10-17; root `CLAUDE.md` §3), and customer or site counts must not be added across companies. The mock seeds separate customers per company |
 
 Still unknown: 6, 7, 9, 10, 11, 15 (error bodies and statuses, the `403` from a
 security group, rate limiting, and token invalidation across instances); 14

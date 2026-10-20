@@ -46,3 +46,35 @@ build/
 
 # Generated documentation (if any)
 docs/_build/
+# Environment variants (the template stays tracked)
+.env.*
+!.env.example
+
+# Private build and host facts (ADR-017). Backed up by scripts/backup.sh;
+# docs/simpro/private-notes.template.md lists what belongs here.
+docs/simpro/private/
+
+# Host copies of tracked templates, holding real values (ADR-017)
+deploy/**/*.local
+
+# Data artefacts that must never be committed
+*.csv
+*.xlsx
+*.xls
+*.parquet
+*.pkl
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+exports/
+dumps/
+uploads/
+chroma/
+vectorstore/
+.ipynb_checkpoints/
+
+# Evaluation questions and results come from CVC documents (ADR-017; W4).
+# The runner, README, example set and value-free summaries stay tracked.
+evaluation/eval-set.yaml
+evaluation/results/
