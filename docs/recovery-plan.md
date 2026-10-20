@@ -19,7 +19,7 @@ needs an off-machine copy (W5 T7, not yet in place).
 | Disk | Partition | Mount | Size | Holds |
 |---|---|---|---|---|
 | `sda` | `sda1` | `/boot/efi` | 1G | EFI boot |
-| `sda` | `sda2` | `/` | 228G (160G free) | OS, the repository (`<repo-dir>`), **backups** |
+| `sda` | `sda2` | `/` | 228G (160G free) | OS, the repository (`~/projects/CLIVE-I`), **backups** |
 | `sdb` | `sdb1` | `/data` | 229G (204G free) | **All live CLIVE data**, including Docker's root directory |
 
 Docker's root directory is not the default `/var/lib/docker`; it is
@@ -89,7 +89,7 @@ appear to be left over from an earlier setup.
 
 ## 5. Backup target
 
-**`<home>/clive-backups/`**, on `sda2` (decided 2026-10-14, Alex).
+**`~/clive-backups/`**, on `sda2` (decided 2026-10-14, Alex).
 
 - **Other disk:** all live data is on `sdb1`. If `sdb` fails, the backups on
   `sda` survive. If `sda` fails, the data on `sdb` survives, and the
@@ -133,6 +133,7 @@ Agreed 2026-10-14 (W5 T2). Facts checked on 2026-10-14 against commit
 | 5 | `.env` | small | **Deferred (2026-10-14, Alex):** key not created yet, so `.env` is not backed up (§8). Planned: encrypted with a GPG **key pair**: the public key on the host, the private key and its passphrase kept off the machine (decision 2026-10-14, Alex) | A scheduled job cannot type a passphrase, so symmetric encryption with an off-machine passphrase is not possible. The host has no GPG key yet |
 | 6 | Ollama model list | — | `ollama list` output saved to a text file | Models (`nomic-embed-text`, `qwen2.5-coder:7b`, `llama3.2`) are re-pulled, not backed up |
 | 7 | Image versions | — | Each running image's digest saved to a text file | `open-webui:main` and `ollama/ollama` are unpinned tags, so a restore could pull a newer Open WebUI that migrates `webui.db`. Running: Open WebUI 0.11.0 |
+| 8 | Private build notes (`docs/simpro/private/`, ADR-017; added 2026-10-19) | small | `tar` into `private-notes.tar.gz`; encrypted to `BACKUP_GPG_RECIPIENT` as `private-notes.tar.gz.gpg` once that is set | Untracked, so git does not hold them. Until the GPG key exists they are a plain copy protected by the backup folder's 0700 mode (decision 2026-10-19, Alex). Restore: extract into `docs/simpro/private/` with mode 0700 (`docs/simpro/private-notes.template.md`) |
 
 Not backed up:
 
@@ -192,7 +193,7 @@ come from the containers' own environment. Whitespace around keys and values
 - Create the GPG key pair and set `BACKUP_GPG_RECIPIENT` (deferred, 2026-10-14):
 
   ```bash
-  gpg --quick-generate-key "CLIVE backup <<email>>" rsa4096 encr never
+  gpg --quick-generate-key "CLIVE backup <you@example.com>" rsa4096 encr never
   gpg --list-keys --with-colons "CLIVE backup" | awk -F: '/^fpr/{print $10; exit}'
   gpg --export-secret-keys --armor <FPR> > <off-machine media>/clive-backup-private.asc
   gpg --delete-secret-keys <FPR>
@@ -230,10 +231,10 @@ Thu 2026-10-15 02:30:00 BST  13h -         - clive-backup.timer clive-backup.ser
 
 $ journalctl -u clive-backup -n 25 --no-pager
 ... backup.sh[1690448]: [2026-10-14 12:52:54] === CLIVE backup 2026-10-14_1252 ===
-... backup.sh[1690448]: [2026-10-14 12:52:54] Writing to <home>/clive-backups/2026-10-14_1252.partial
+... backup.sh[1690448]: [2026-10-14 12:52:54] Writing to ~/clive-backups/2026-10-14_1252.partial
 ... backup.sh[1690448]: [2026-10-14 12:52:55]       public.document_chunk: 365 rows (matches live)
 ...
-... backup.sh[1690448]: [2026-10-14 12:53:52] Backup complete: <home>/clive-backups/2026-10-14_1252 (830M)
+... backup.sh[1690448]: [2026-10-14 12:53:52] Backup complete: ~/clive-backups/2026-10-14_1252 (830M)
 ... backup.sh[1690448]: [2026-10-14 12:53:52] Retention: kept 1, deleted 1 (7 daily, 4 weekly)
 ... systemd[1]: Finished clive-backup.service - CLIVE cross-disk backup (scripts/backup.sh).
 
@@ -258,7 +259,7 @@ yet recorded.
 ...
 [2026-10-14 11:42:30]       WARNING: .env NOT backed up: BACKUP_GPG_RECIPIENT is not set (GPG key pair to be created later; docs/recovery-plan.md section 7)
 ...
-[2026-10-14 11:42:34] Backup complete: <home>/clive-backups/2026-10-14_1141 (830M)
+[2026-10-14 11:42:34] Backup complete: ~/clive-backups/2026-10-14_1141 (830M)
 [2026-10-14 11:42:34] Retention: kept 1, deleted 0 (7 daily, 4 weekly)
 ```
 
@@ -292,11 +293,11 @@ so the run below replaced it.
 
 ```text
 [2026-10-14 12:35:22] === CLIVE backup 2026-10-14_1235 ===
-[2026-10-14 12:35:22] Writing to <home>/clive-backups/2026-10-14_1235.partial
+[2026-10-14 12:35:22] Writing to ~/clive-backups/2026-10-14_1235.partial
 ...
 [2026-10-14 12:35:23]       public.document_chunk: 365 rows (matches live)
 ...
-[2026-10-14 12:36:20] Backup complete: <home>/clive-backups/2026-10-14_1235 (830M)
+[2026-10-14 12:36:20] Backup complete: ~/clive-backups/2026-10-14_1235 (830M)
 [2026-10-14 12:36:20] Retention: kept 1, deleted 1 (7 daily, 4 weekly)
 ```
 
@@ -408,7 +409,7 @@ Run from the repository root. `B` is the backup folder; the Open WebUI image is
 pinned to the one in the backup's `images.txt` and never pulled.
 
 ```bash
-B=<home>/clive-backups/<YYYY-MM-DD_HHMM>
+B=~/clive-backups/<YYYY-MM-DD_HHMM>
 export DRILL_WEBUI_IMAGE=$(awk '$1=="clive-webui"{print $3}' "$B/images.txt")
 DC="docker compose -p clive-drill --env-file .env -f deploy/restore-drill/compose.yml"
 
@@ -498,7 +499,7 @@ Everything on `/data` is lost, including Docker's root directory
 
 Run on 2026-10-14 from branch `feat/restore-drill` (based on `2cc7a6c`), by
 Claude with Alex doing the browser checks. Backup restored:
-`<home>/clive-backups/2026-10-14_1252` (made by `clive-backup.service`).
+`~/clive-backups/2026-10-14_1252` (made by `clive-backup.service`).
 
 | Step | Started (BST) | Took | Result |
 |---|---|---|---|
@@ -547,7 +548,7 @@ running.
 Browser session on the drill (from `docker logs clive-drill-webui`, 13:23–13:26
 UTC): `POST /api/v1/auths/signin` 400 then 200, the knowledge base and its
 files opened, 3 `POST /api/chat/completions`. Ollama received 13 `/api/embed`
-and 11 `/api/chat` calls from the drill's address (`<drill-container-ip>`), so the
+and 11 `/api/chat` calls from the drill's address (the drill container's Docker address), so the
 questions were embedded and searched against the restored knowledge base.
 
 **Findings:**

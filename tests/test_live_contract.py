@@ -2,7 +2,8 @@
 
 Skipped unless ``SIMPRO_LIVE_TESTS=1``. When enabled they read the live
 settings from the environment and ``.env`` (the one exception to
-``tests/CLAUDE.md`` §3), and talk to CVC's <ENVIRONMENT_TYPE> build, so:
+``tests/CLAUDE.md`` §3), and talk to CVC's own build, which holds real data,
+so:
 
 * **GET only.** Every API request goes through the client's GET methods, and
   a request hook fails the test on any other method. The token request is
@@ -11,10 +12,12 @@ settings from the environment and ``.env`` (the one exception to
   status codes, counts, field names, header names and validation error
   locations, never values. ``simpro_client`` logging is disabled, so the build
   hostname does not appear either. Run with ``--tb=no``.
-* **Only companies <company-id> and <company-id>** (root ``CLAUDE.md`` §3), taken from
-  ``SIMPRO_COMPANY_ID_SERVICE`` / ``SIMPRO_COMPANY_ID_PROJECTS``; anything
-  else skips. Listing ``/companies/`` is allowed, and the request hook fails
-  any request scoped to another company before it is sent.
+* **Only the two configured companies** (root ``CLAUDE.md`` §3).
+  ``SIMPRO_LIVE_COMPANY_IDS`` (the allow-list, comma-separated) must equal
+  ``SIMPRO_COMPANY_ID_SERVICE`` and ``SIMPRO_COMPANY_ID_PROJECTS``, or every
+  test skips; the values live only in ``.env`` (ADR-017). Listing
+  ``/companies/`` is allowed, and the request hook fails any request scoped
+  to a company outside the allow-list before it is sent.
 
 Run only when Alex asks::
 
@@ -30,19 +33,21 @@ The expectations pin what the 2026-10-17 smoke check observed
 import logging
 import os
 import re
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 
 import httpx
 import pytest
 from pydantic import BaseModel, ValidationError
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from simpro_client.client import SimproClient
 from simpro_client.config import SimproSettings
 
 pytestmark = pytest.mark.live
 
-#: The only company IDs CLIVE uses (Alex, 2026-10-17).
-LIVE_COMPANY_IDS = {<company-id>, <company-id>}
+#: The two companies CLIVE uses, by role (root ``CLAUDE.md`` §3). Tests are
+#: parametrized by role so collection never depends on ``.env``.
+COMPANY_ROLES = ["service", "projects"]
 
 #: Collections Phase 3B reads per company, by client attribute.
 COMPANY_COLLECTIONS = ["customers", "sites", "jobs", "quotes", "employees"]
@@ -50,13 +55,36 @@ COMPANY_COLLECTIONS = ["customers", "sites", "jobs", "quotes", "employees"]
 PAGE_HEADERS = {"Result-Total", "Result-Count", "Result-Pages"}
 
 
-def reject_non_get(request: httpx.Request) -> None:
-    """Request hook: only GETs, and only companies <company-id> and <company-id>, reach Simpro."""
-    if request.method != "GET":
-        pytest.fail(f"non-GET request blocked: {request.method}", pytrace=False)
-    scope = re.search(r"/companies/(\d+)", request.url.path)
-    if scope and int(scope.group(1)) not in LIVE_COMPANY_IDS:
-        pytest.fail("request to an unused company blocked", pytrace=False)
+class LiveTestSettings(BaseSettings):
+    """The live tests' own company allow-list (ADR-017).
+
+    Kept here rather than in ``SimproSettings``, because ``simpro_client``
+    holds no CLIVE specifics (ADR-006).
+    """
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    simpro_live_company_ids: str = ""
+
+    def company_ids(self) -> frozenset[int]:
+        """The allow-list as integers; empty when unset or not all integers."""
+        parts = [part.strip() for part in self.simpro_live_company_ids.split(",")]
+        if not all(part.isdigit() for part in parts):
+            return frozenset()
+        return frozenset(int(part) for part in parts)
+
+
+def request_guard(allowed: frozenset[int]) -> Callable[[httpx.Request], None]:
+    """Build the request hook: only GETs, and only allowed companies."""
+
+    def reject(request: httpx.Request) -> None:
+        if request.method != "GET":
+            pytest.fail(f"non-GET request blocked: {request.method}", pytrace=False)
+        scope = re.search(r"/companies/(\d+)", request.url.path)
+        if scope and int(scope.group(1)) not in allowed:
+            pytest.fail("request to an unused company blocked", pytrace=False)
+
+    return reject
 
 
 @pytest.fixture(scope="module")
@@ -65,17 +93,27 @@ def live_settings() -> SimproSettings:
     if os.environ.get("SIMPRO_LIVE_TESTS") != "1":
         pytest.skip("live Simpro tests are opt-in: set SIMPRO_LIVE_TESTS=1")
     settings = SimproSettings()
+    allowed = LiveTestSettings().company_ids()
     configured = {settings.company_id_service, settings.company_id_projects}
-    if configured != LIVE_COMPANY_IDS:
-        pytest.skip("SIMPRO_COMPANY_ID_SERVICE/PROJECTS must be <company-id> and <company-id>")
+    if len(allowed) != 2 or configured != allowed:
+        pytest.skip(
+            "SIMPRO_LIVE_COMPANY_IDS must list exactly the two IDs in "
+            "SIMPRO_COMPANY_ID_SERVICE/PROJECTS"
+        )
     return settings
+
+
+def company_id_for(settings: SimproSettings, role: str) -> int:
+    """The configured company ID for a role in ``COMPANY_ROLES``."""
+    return getattr(settings, f"company_id_{role}")
 
 
 def open_client(settings: SimproSettings) -> SimproClient:
     """A client whose API traffic is GET-only and whose logging is silent."""
+    allowed = frozenset({settings.company_id_service, settings.company_id_projects})
     client = SimproClient(settings=settings)
     client._logger.disabled = True
-    client._http.event_hooks["request"].append(reject_non_get)
+    client._http.event_hooks["request"].append(request_guard(allowed))
     return client
 
 
@@ -85,6 +123,29 @@ def client(live_settings: SimproSettings) -> Iterator[SimproClient]:
     with open_client(live_settings) as live_client:
         yield live_client
     logging.getLogger("simpro_client").disabled = False
+
+
+# Offline checks of the guards themselves: no network, no fixture, so they
+# also run in the default suite.
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [("11,12", {11, 12}), (" 11 , 12 ", {11, 12}), ("", set()), ("11,x", set())],
+)
+def test_allow_list_parsing(monkeypatch: pytest.MonkeyPatch, raw: str, expected):
+    """The allow-list is all integers or nothing; a bad entry disables it."""
+    monkeypatch.setenv("SIMPRO_LIVE_COMPANY_IDS", raw)
+    assert LiveTestSettings(_env_file=None).company_ids() == expected
+
+
+def test_request_guard_allows_only_gets_to_allowed_companies():
+    guard = request_guard(frozenset({11, 12}))
+    base = "https://simpro.invalid/api/v1.0"
+    guard(httpx.Request("GET", f"{base}/companies/"))
+    guard(httpx.Request("GET", f"{base}/companies/11/jobs/"))
+    with pytest.raises(pytest.fail.Exception):
+        guard(httpx.Request("GET", f"{base}/companies/13/jobs/"))
+    with pytest.raises(pytest.fail.Exception):
+        guard(httpx.Request("POST", f"{base}/companies/11/jobs/"))
 
 
 def validation_failures(model: type[BaseModel], rows: list[dict]) -> list[str]:
@@ -102,7 +163,7 @@ def validation_failures(model: type[BaseModel], rows: list[dict]) -> list[str]:
 
 
 def test_companies_list_is_unpaginated_and_holds_both_companies(
-    client: SimproClient,
+    client: SimproClient, live_settings: SimproSettings
 ):
     """Items 4 and 13: the token request works, ``/companies/`` sends no paging."""
     response = client._get_response("/companies/")
@@ -111,21 +172,23 @@ def test_companies_list_is_unpaginated_and_holds_both_companies(
     assert "Result-Count" in response.headers
     paging = (PAGE_HEADERS - {"Result-Count"}) & set(response.headers)
     assert not paging, f"/companies/ now pages: headers {sorted(paging)}"
-    # A bool, so a failure cannot echo the other company IDs (root §3).
-    has_both = {row.get("ID") for row in response.json()} >= LIVE_COMPANY_IDS
-    assert has_both, "company <company-id> or <company-id> missing from /companies/"
+    # A bool, so a failure cannot echo any company ID (root §3, ADR-017).
+    wanted = {company_id_for(live_settings, role) for role in COMPANY_ROLES}
+    has_both = {row.get("ID") for row in response.json()} >= wanted
+    assert has_both, "a configured company is missing from /companies/"
 
     page = client.companies.fetch_page()
     assert page.pages == 1
     assert page.count == len(page.items)
 
 
-@pytest.mark.parametrize("company_id", sorted(LIVE_COMPANY_IDS))
+@pytest.mark.parametrize("role", COMPANY_ROLES)
 @pytest.mark.parametrize("resource", COMPANY_COLLECTIONS)
 def test_collection_pages_and_rows_validate(
-    client: SimproClient, resource: str, company_id: int
+    client: SimproClient, live_settings: SimproSettings, resource: str, role: str
 ):
     """Item 2: collections send the ``Result-*`` headers; rows fit the models."""
+    company_id = company_id_for(live_settings, role)
     endpoint = getattr(client, resource)
     path = endpoint.collection_path.format(company_id=company_id)
     response = client._get_response(path, params={"page": 1, "pageSize": 5})
@@ -139,12 +202,15 @@ def test_collection_pages_and_rows_validate(
     assert not failures, f"{resource}: {failures}"
 
 
-@pytest.mark.parametrize("company_id", sorted(LIVE_COMPANY_IDS))
-def test_job_detail_validates(client: SimproClient, company_id: int):
+@pytest.mark.parametrize("role", COMPANY_ROLES)
+def test_job_detail_validates(
+    client: SimproClient, live_settings: SimproSettings, role: str
+):
     """Item 17: a job detail validates, including ``""`` for empty dates."""
+    company_id = company_id_for(live_settings, role)
     first = client.jobs.fetch_page(company_id=company_id, page_size=1).items
     if not first:
-        pytest.skip(f"company {company_id} has no jobs")
+        pytest.skip(f"the {role} company has no jobs")
     path = client.jobs.detail_path.format(company_id=company_id, job_id=first[0].id)
     response = client._get_response(path)
 
@@ -153,13 +219,15 @@ def test_job_detail_validates(client: SimproClient, company_id: int):
     assert not failures, f"job detail: {failures}"
 
 
-def test_projection_does_not_add_id(client: SimproClient):
+def test_projection_does_not_add_id(
+    client: SimproClient, live_settings: SimproSettings
+):
     """Item 1: ``columns`` without ``ID`` returns only what was asked for.
 
     A raw request, so the client's own column additions (ADR-016) do not
     hide what the server does.
     """
-    company_id = min(LIVE_COMPANY_IDS)
+    company_id = live_settings.company_id_service
     response = client._get_response(
         f"/companies/{company_id}/jobs/",
         params={"page": 1, "pageSize": 1, "columns": "Description"},
@@ -171,7 +239,9 @@ def test_projection_does_not_add_id(client: SimproClient):
 
 
 @pytest.mark.parametrize("resource", COMPANY_COLLECTIONS)
-def test_client_projection_validates(client: SimproClient, resource: str):
+def test_client_projection_validates(
+    client: SimproClient, live_settings: SimproSettings, resource: str
+):
     """ADR-016: the client adds the model's required fields to ``columns``.
 
     Asks for ``ID`` alone, so every other required field is the client's
@@ -180,7 +250,7 @@ def test_client_projection_validates(client: SimproClient, resource: str):
     """
     endpoint = getattr(client, resource)
     page = endpoint.fetch_page(
-        company_id=min(LIVE_COMPANY_IDS), page_size=1, columns=["ID"]
+        company_id=live_settings.company_id_service, page_size=1, columns=["ID"]
     )
 
     assert page.count == len(page.items)
@@ -194,7 +264,7 @@ def test_token_survives_a_second_client(live_settings: SimproSettings):
     invalidating each other. The client recovers from a 401 by refreshing, so
     the check is that the first client's token is unchanged afterwards.
     """
-    path = f"/companies/{min(LIVE_COMPANY_IDS)}/employees/"
+    path = f"/companies/{live_settings.company_id_service}/employees/"
     params = {"page": 1, "pageSize": 1}
     with open_client(live_settings) as first, open_client(live_settings) as second:
         first_token = first._auth.get_token()

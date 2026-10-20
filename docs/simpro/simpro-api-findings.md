@@ -5,7 +5,9 @@ with Alex's answers after live API access arrived
 **Source:** written answer from the Simpro representative to CVC's questions,
 and Alex's own setup of the API application (2026-10-16).
 Items marked *unverified* are confirmed by read-only checks against the live
-API (course correction W1 T5). the environment type is in the private build notes.
+API (course correction W1 T5), read-only. CVC-specific values (company IDs,
+the API application's permission level, record counts) are in the private
+build notes, not here (ADR-017).
 
 ## 1. Summary of what Simpro told us
 
@@ -15,9 +17,9 @@ API (course correction W1 T5). the environment type is in the private build note
 | Registration | Applications created in Simpro Premium: System > Setup > System Setup > API > Applications. Name, description, Redirect URI, authentication method (API Key or OAuth2) | Done: CVC's application exists and works (Alex checked it with Postman, 2026-10-16) |
 | Admin permissions | Managing API applications needs the *Company Management* and *API Applications* security group permissions | Started; Alex has not found where these are set |
 | Provisioning lead time | Not specified | Moot: access arrived 2026-10-16 |
-| Access scoping | API credentials operate within the Security Group boundaries of the authenticating user/application | Stated. CVC's application has **<APP_PERMISSION_LEVEL> access** (§2.2); application-level read-only scoping *unverified* |
+| Access scoping | API credentials operate within the Security Group boundaries of the authenticating user/application | Stated. CVC's application's permission level is in the private build notes (§2.2); application-level read-only scoping *unverified* |
 | Field restrictions | Custom fields can be set Read Only or locked via the API | Stated |
-| Multi-company | Company IDs listed under System > Setup > Company; single-company builds use 0 | CVC: **Service <company-id>, Projects <company-id>**. The build also lists 0 and <company-id> (live check 2026-10-17); **only <company-id> and <company-id> are ever used** (Alex, 2026-10-17) |
+| Multi-company | Company IDs listed under System > Setup > Company; single-company builds use 0 | CVC uses two companies, Service and Projects (§2.3). The build lists others too (live check 2026-10-17); **only the two configured companies are ever used** (Alex, 2026-10-17) |
 | Cross-company calls with one credential | One credential calls both companies; the company is selected by the company ID in the path | Answered by Alex |
 | Sandbox | Free shared sandbox (no live data) offered via Support case | **Not used** (Alex, 2026-10-16): CLIVE works against the live build, read-only |
 | UAT build | Dedicated UAT build via Operations: minimum one user licence per month, possible migration fees | Stated; not used |
@@ -32,7 +34,7 @@ API (course correction W1 T5). the environment type is in the private build note
 
 ## 2. Implications for CLIVE
 
-### 2.1 Live, read-only testing (<ENVIRONMENT_TYPE>)
+### 2.1 Live, read-only testing
 
 The mock was built because there was no way to test against real Simpro. Live
 access to CVC's own build removes that gap, for response shape and behaviour
@@ -44,12 +46,12 @@ the shared sandbox.
   real API (W1 T3, run in T5). They are skipped by default.
   `tests/test_live_contract.py` covers `/companies/` (unpaginated, both
   companies present), the `Result-*` headers and model validation on
-  customers, sites, jobs, quotes and employees in companies <company-id> and <company-id>, a job
+  customers, sites, jobs, quotes and employees in both configured companies, a job
   detail (empty dates), a projection without `ID`, and token reuse across two
   clients (`mock-vs-public-api.md` §5 items 1, 2, 4, 13, 15, 17). Run only when
   Alex asks, with the live settings in `.env`
-  (`SIMPRO_COMPANY_ID_SERVICE=<company-id>`, `SIMPRO_COMPANY_ID_PROJECTS=<company-id>`, or the
-  tests skip):
+  (`SIMPRO_COMPANY_ID_SERVICE`, `SIMPRO_COMPANY_ID_PROJECTS` and the matching
+  allow-list `SIMPRO_LIVE_COMPANY_IDS`, or the tests skip):
 
   ```bash
   SIMPRO_LIVE_TESTS=1 uv run pytest -m live -v --tb=no -rN
@@ -63,18 +65,19 @@ the shared sandbox.
   counts, field and header names, and pass/fail only (root `CLAUDE.md` §9).
 - Mock scope is frozen; differences found against live Simpro are fixed in the mock.
 
-### 2.2 Security groups: the application has <APP_PERMISSION_LEVEL> access
+### 2.2 Security groups and CLIVE's own guards
 
 The plan was a dedicated Simpro security group for CLIVE's API application,
-read-only and limited to the resources CLIVE needs. Alex found this not needed:
-the API application has <APP_PERMISSION_LEVEL> access, and the documentation on security groups
-pointed the wrong way (2026-10-16).
+read-only and limited to the resources CLIVE needs. It was not set up
+(Alex, 2026-10-16); what the application can do in Simpro is recorded in the
+private build notes (ADR-017).
 
-Consequence: Simpro does not stop CLIVE writing or reading anything. The only
-guards against a write are the read-only rule (root `CLAUDE.md` §3) and
-`simpro_client`'s GET-only endpoints; the only guard on which data CLIVE sees is
-CLIVE's own access control (ADR-014). A leaked client secret has <APP_PERMISSION_LEVEL> reach.
-This is recorded as an open risk in `docs/STATUS.md`.
+Consequence: CLIVE does not rely on Simpro to stop a write or to limit what it
+reads. The only guards against a write are the read-only rule (root
+`CLAUDE.md` §3) and `simpro_client`'s GET-only endpoints; the only guard on
+which data CLIVE sees is CLIVE's own access control (ADR-014). Treat a leaked
+client secret as able to write. This is recorded as an open risk in
+`docs/STATUS.md`.
 
 ADR-014 Option 2 (per-user Simpro login) relies on Simpro applying security
 groups per user. Keep Option 1 for now; revisit once live checks show how
@@ -83,16 +86,16 @@ Simpro applies them.
 ### 2.3 Company IDs are configuration
 
 The mock uses `company_id=1` (Service) and `2` (Projects). CVC's real IDs are
-**<company-id> (Service)** and **<company-id> (Projects)** (Alex, 2026-10-16), set in configuration
-(`SIMPRO_COMPANY_ID_SERVICE`, `SIMPRO_COMPANY_ID_PROJECTS`). Live `/companies/`
-also returns 0 and <company-id>; **only <company-id> and <company-id> are ever used** (Alex, 2026-10-17).
-Listing `/companies/` is allowed, but no request is sent to a route scoped to
-0 or <company-id>, so code must not iterate `/companies/` to discover companies. Nothing may assume
-1 and 2.
+set in configuration (`SIMPRO_COMPANY_ID_SERVICE`, `SIMPRO_COMPANY_ID_PROJECTS`;
+values in `.env` and the private build notes). Live `/companies/` also lists
+other companies; **only the two configured companies are ever used** (Alex,
+2026-10-17). Listing `/companies/` is allowed, but no request is sent to a
+route scoped to any other company, so code must not iterate `/companies/` to
+discover companies. Nothing may assume 1 and 2.
 
 Customers and sites are build-wide: both companies report the same totals
-(<COUNT> customers, <COUNT> sites on 2026-10-17), while jobs, quotes and employees
-differ. Counts of customers or sites must not be added across companies
+(2026-10-17), while jobs, quotes and employees differ. Counts of customers or
+sites must not be added across companies
 (`docs/simpro/mock-vs-public-api.md` §6, item 19).
 
 ### 2.4 Custom fields need classification
@@ -119,10 +122,10 @@ W1 T1 (raise the cases) is **not needed** (Alex, 2026-10-16). Answers as known:
 
 | # | Question | Why | Answer |
 |---|---|---|---|
-| 1 | Access to the shared API sandbox | Contract-test `simpro_client` against the real API | Not needed: live access, <ENVIRONMENT_TYPE> |
+| 1 | Access to the shared API sandbox | Contract-test `simpro_client` against the real API | Not needed: live read-only access |
 | 2 | Build-specific OpenAPI/Swagger export for CVC's build | Validate models against CVC's configuration, including custom fields. The generic published spec is already vendored (`docs/contracts/simpro-openapi-v1-get-subset.json`, ADR-013) | Not requested |
 | 3 | Can one OAuth2 Client Credentials application call both companies, and how is company context selected? | Gateway design for two companies | Yes, by the company ID in the path (Alex) |
-| 4 | Can an API application be restricted to read-only, per resource, at application level? | Least-privilege setup (2.2) | Not known (Alex); CVC's application has <APP_PERMISSION_LEVEL> access |
+| 4 | Can an API application be restricted to read-only, per resource, at application level? | Least-privilege setup (2.2) | Not known (Alex); see §2.2 |
 | 5 | Rate limits per build, `Retry-After` behaviour, access token lifetime | Tune ADR-010 settings | Partly documented (§1); to measure live |
 
 ## 4. Support case log
@@ -132,12 +135,12 @@ No cases raised (§3).
 ## 5. Production setup checklist
 
 - [x] Confirm the subscription includes API Applications — API access enabled (Alex)
-- [ ] ~~Create a dedicated security group for CLIVE, read-only, minimum resources~~ — not done: the application has <APP_PERMISSION_LEVEL> access (§2.2)
+- [ ] ~~Create a dedicated security group for CLIVE, read-only, minimum resources~~ — not done (§2.2)
 - [x] Create the API application (OAuth2, Client Credentials) — works, checked with Postman (Alex)
 - [x] Store client ID and secret in `.env` only — done (Alex)
-- [x] Record Company IDs for CVC Service and CVC Projects — <company-id> and <company-id> (Alex)
+- [x] Record Company IDs for CVC Service and CVC Projects — in `.env` and the private build notes (Alex)
 - [ ] List custom fields and classify them (ADR-014)
-- [x] Run a read-only smoke check against <ENVIRONMENT_TYPE> — approved by Alex 2026-10-16, run 2026-10-17: authentication and every GET probed worked; three differences break the client (`docs/simpro/mock-vs-public-api.md` §6)
+- [x] Run a read-only smoke check against the live build — approved by Alex 2026-10-16, run 2026-10-17: authentication and every GET probed worked; three differences break the client (`docs/simpro/mock-vs-public-api.md` §6)
 - [ ] Switch `SIMPRO_BASE_URL` and `SIMPRO_TOKEN_URL` — live values are in `.env` (Alex); no code or test reads them by default (§6)
 
 ## 6. Credentials as delivered vs CLIVE configuration
@@ -164,7 +167,7 @@ prefix `SIMPRO_`; names as in `.env.example`):
 | client_secret | `SIMPRO_CLIENT_SECRET` | as delivered |
 | Type: Client Credentials | `SIMPRO_AUTH_MODE` | `client_credentials` |
 | grant_type | — | not configurable: `src/simpro_client/auth.py` always sends `client_credentials` |
-| — | `SIMPRO_COMPANY_ID_SERVICE`, `SIMPRO_COMPANY_ID_PROJECTS` | `<company-id>`, `<company-id>` (§2.3) |
+| — | `SIMPRO_COMPANY_ID_SERVICE`, `SIMPRO_COMPANY_ID_PROJECTS` | CVC's two company IDs (§2.3) |
 
 Two differences from Simpro's documented token request (`docs/simpro/mock-vs-public-api.md` items 13 and 15):
 

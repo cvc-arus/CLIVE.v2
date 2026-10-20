@@ -49,7 +49,7 @@ uv run pytest -m integration -v
 **Live Simpro (opt-in).** `tests/test_live_contract.py` is marked `live` and
 skips unless `SIMPRO_LIVE_TESTS=1` is set, so live credentials in `.env` alone
 never make a run contact Simpro. It makes GET requests (plus the token
-request) to CVC's live build, in companies <company-id> and <company-id> only, and reports names,
+request) to CVC's live build, in the two configured companies only, and reports names,
 counts and pass/fail, never values. Run it only when Alex asks; the command and
 what it covers are in `docs/simpro/simpro-api-findings.md` §2.1.
 
