@@ -315,6 +315,14 @@ Never run this in the working repository.
   merged, so the published history includes them. The local-only tag
   `phase2-complete` is not carried over.
 
+**Re-run, as published (checked by Claude 2026-10-21 on a fresh mirror of
+`CLIVE.v2`):** 213 commits, branches `main` and `develop`, no tags; `main`
+includes PR #92 and the `develop` → `main` merge (PR #93).
+`check-public-safe.py --history --repo <mirror>`: 0 matches in 1568 history
+objects, exit 0. `gitleaks git --redact`: 117 commits scanned, no leaks,
+exit 0. Against the old repository's `develop`, only the two T6 historical
+files differ.
+
 ### T11 — [HUMAN] Create the new GitHub repository (D1)
 
 Alex creates an **empty, private** repository on GitHub (no README, no
@@ -324,6 +332,9 @@ licence). Claude then pushes `main`, `develop` and tags from `public.git`
 it exits 0.
 
 **Stop point:** Alex has flipped it to public.
+
+**Done 2026-10-21 (Alex):** `cvc-arus/CLIVE.v2` created, pushed and switched
+to **public**. The fresh-clone history check is the T10 re-run record above.
 
 ### T12 — Switch the working copy to the new history
 
@@ -337,6 +348,23 @@ it exits 0.
 5. Run one manual `scripts/backup.sh`.
 
 **Stop point:** tests and the backup pass from the new clone.
+
+**Done 2026-10-21 (Claude, Alex's go-ahead):**
+- Old working directory renamed to `CLIVE-I.pre-public`; `CLIVE.v2` cloned to
+  the original path with `develop` checked out.
+- Copied with `cp -a`: `docs/simpro/private/` (mode 0700 kept),
+  `deploy/smartd/smartd.conf.local`, `.vscode/`. `.env` is denied to Claude
+  Code, so Alex copied it. Its `SIMPRO_TIMEOUT` line carried a stray `>`,
+  which broke settings loading in the integration suite; Alex fixed it.
+- Running containers were not touched: the Compose project name stays
+  `clive-i`, and the only bind mount inside the repository is the tracked
+  `configs/postgres/init-pgvector.sql`.
+- From the new clone: `check-public-safe.py` 0 matches in 174 tracked files,
+  exit 0 (T8's 5 matches are gone); offline suite 193 passed, 20 skipped,
+  60 deselected; mock integration suite 59 passed, 1 skipped; `ruff check` and
+  `ruff format --check` pass; `scripts/backup.sh` exit 0, `MANIFEST.txt` lists
+  the private build notes (plain copy, D6). The installed systemd unit already
+  points at the same path.
 
 ### T13 — [HUMAN] Retire the old GitHub copies (D2) — deferred
 
@@ -367,6 +395,12 @@ confirmation.
   - add a note that SHAs cited in documents written before the rewrite refer
     to the pre-publication history (map in the private store).
 - `structure.txt`: regenerate it.
+
+**Done 2026-10-21 (Claude):** `STATUS.md`, `CHANGELOG.md` and `docs/README.md`
+updated. ADR-017 and `docs/simpro/private-notes.template.md` already had index
+rows (T1, T2). `docs/README.md` indexes only documents, so the guard script
+and the pre-rewrite SHA note are rules in its §2 rather than rows.
+`structure.txt` regenerated.
 
 ## 4. Implementation
 
@@ -558,14 +592,14 @@ and remote.
 
 ## 14. Acceptance criteria
 
-- [ ] `check-public-safe.py --history` exits 0 on a fresh clone of the published repository
-- [ ] gitleaks reports 0 findings on the published history
-- [ ] No tracked file contains a value listed in the private deny-list
-- [ ] `docs/simpro/private/` is ignored, backed up, and listed in the recovery plan
-- [ ] `.env.example` holds placeholders for every value moved to `.env`
+- [x] `check-public-safe.py --history` exits 0 on a fresh clone of the published repository
+- [x] gitleaks reports 0 findings on the published history
+- [x] No tracked file contains a value listed in the private deny-list
+- [x] `docs/simpro/private/` is ignored, backed up, and listed in the recovery plan
+- [x] `.env.example` holds placeholders for every value moved to `.env`
 - [ ] The live test refuses to run unless both company-ID variables agree, and blocks every other company route
-- [ ] Offline suite, mock integration suite and whole-repo ruff pass from the new clone
+- [x] Offline suite, mock integration suite and whole-repo ruff pass from the new clone
 - [ ] The old GitHub repository is deleted or archived per D2, and the pre-public bundle is verified in backup
-- [ ] A proprietary `LICENSE` approved by Alex is in the published repository, and both `pyproject.toml` files declare it
-- [ ] No tracked file or commit message in the published history refers to the owner by the earlier short form
-- [ ] ADR-017 accepted by Alex; STATUS, CHANGELOG and README updated
+- [x] A proprietary `LICENSE` approved by Alex is in the published repository, and both `pyproject.toml` files declare it
+- [x] No tracked file or commit message in the published history refers to the owner by the earlier short form
+- [x] ADR-017 accepted by Alex; STATUS, CHANGELOG and README updated
