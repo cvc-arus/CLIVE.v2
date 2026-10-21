@@ -249,11 +249,20 @@ Commit T1–T7's changes on the branch (§13), as one commit per logical change.
 Use the normal two-hop PR flow (feature → `develop` → `main`). **Stop point:**
 both PRs merged, and `check-public-safe.py` exits 0 on `main` and `develop`.
 
+**Accepted (Alex, 2026-10-20):** PRs #90 and #91 merged; `main` and `develop`
+have identical content. `check-public-safe.py` exits 1 with 5 matches, all in
+the two historical files T6 left to T10 ("replace in history only"), so the
+exit-0 condition moves to T10's `--history` check on the rewritten mirror.
+
 ### T9 — Install gitleaks [needs approval: host package]
 
 Install a pinned gitleaks release and run it on current HEAD
 (`gitleaks dir . --redact`) as a second, independent ruleset. **Stop point:**
 zero findings, or each finding classified in the private store.
+
+**Run 2026-10-21 (Claude):** gitleaks 8.30.1 was already installed in the
+user's `~/.local/bin`, so no host package was added. `gitleaks dir . --redact`
+on the working tree: 0 findings, exit 0.
 
 ### T10 — Rewrite history in a mirror clone [destructive to SHAs; needs approval]
 
@@ -277,6 +286,34 @@ Never run this in the working repository.
 4. Keep `.git/filter-repo/commit-map` (old SHA → new SHA) in the private store.
 
 **Stop point:** all three checks pass; report counts only.
+
+**Run 2026-10-20 (Claude, Alex's go-ahead), in the session scratchpad:**
+- Backup: mirror of `origin` (3 branches, 91 `refs/pull`, 234 commits) and a
+  verified bundle of all refs. The bundle is still in the scratchpad: Alex
+  copies it to `BACKUP_DIR` (only `.env` holds the path).
+- `public.git`: `refs/pull/*` dropped (GitHub's refs, not pushable to a new
+  repository). Rewrite with `--invert-paths` on `.venv/`, `backups/`,
+  `*/__pycache__/*` and `*.egg-info/*`; `--mailmap`; and blob and message
+  callbacks calling the private `filter_repo_scrub.py`, which applies
+  `filter-repo-replacements.txt` plus company-ID replacement inside the
+  deny-list's company patterns. Deviations from step 2: callbacks instead of
+  `--replace-text`/`--replace-message`, and `backups/`, which the plan did not
+  list: history held one knowledge-base dump, added in the first commit and
+  absent at HEAD. `refs/replace/*` (old hashes) deleted after the run.
+- Result: 210 commits (92 merges), 3 branches. At `main` only the two T6
+  historical files differ from the original; 174 files in both.
+- `check-public-safe.py --history`: 0 matches in 1555 history objects, exit 0.
+- `gitleaks git --redact`: 116 commits scanned, no leaks, exit 0.
+- Offline suite on a checkout of rewritten `main`: 193 passed, 20 skipped,
+  60 deselected, the same as the working repository. `ruff check` and
+  `ruff format --check` pass.
+- Commit map and ref map saved in the private store.
+- Bundle copied to `BACKUP_DIR`; `git bundle verify` passes (Alex,
+  2026-10-21).
+- To be re-run (Alex, 2026-10-21) after this record and the clone-URL fixes
+  in `README.md` and `docs/installation.md` (new repository `CLIVE.v2`) are
+  merged, so the published history includes them. The local-only tag
+  `phase2-complete` is not carried over.
 
 ### T11 — [HUMAN] Create the new GitHub repository (D1)
 
@@ -373,7 +410,7 @@ After T4 it uses two separate variables (`SIMPRO_COMPANY_ID_*` and
 | D1 | How to publish | **New repository** with the rewritten full history; fallback: a single squashed commit |
 | D2 | Old private repository after T12 | **Keep** (archived, private) until everything works from the new one; deletion decided later (T13) |
 | D3 | Commit author identity | **Rewrite** the human author's name to **Alex** and email to Alex's GitHub `noreply` address via mailmap |
-| D4 | Project and owner names | **Keep "CVC"**; refer to the owner as **"Alex"** instead of "Alex" |
+| D4 | Project and owner names | **Keep "CVC"**; refer to the owner as **"Alex"** instead of the earlier short form |
 | D5 | Business-context documents | Reviewed in T7: Claude proposes, Alex decides |
 | D6 | Private notes in backup before GPG is set up | **Plain copy** in the 0700 backup folder for now |
 | D7 | Licence | **Proprietary notice, all rights reserved** (option 1), copyright holder **CVC**; in place before T11 |
@@ -530,5 +567,5 @@ and remote.
 - [ ] Offline suite, mock integration suite and whole-repo ruff pass from the new clone
 - [ ] The old GitHub repository is deleted or archived per D2, and the pre-public bundle is verified in backup
 - [ ] A proprietary `LICENSE` approved by Alex is in the published repository, and both `pyproject.toml` files declare it
-- [ ] No tracked file or commit message in the published history refers to the owner as "Alex"
+- [ ] No tracked file or commit message in the published history refers to the owner by the earlier short form
 - [ ] ADR-017 accepted by Alex; STATUS, CHANGELOG and README updated
