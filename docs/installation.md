@@ -13,7 +13,7 @@ Target environment: Ubuntu Desktop 24.04 LTS, Python 3.12.3, Docker + Docker Com
 ## 2. Clone the Repository
 
 ```bash
-git clone git@github.com:cvc-arus/CLIVE-I.git
+git clone git@github.com:cvc-arus/CLIVE.v2.git CLIVE-I
 cd CLIVE-I
 git checkout develop
 ```

@@ -120,7 +120,7 @@ NVIDIA Container Toolkit. The full list is in
 [`docs/installation.md`](docs/installation.md) §1.
 
 ```bash
-git clone https://github.com/cvc-arus/CLIVE-I.git
+git clone https://github.com/cvc-arus/CLIVE.v2.git CLIVE-I
 cd CLIVE-I
 ```
 
