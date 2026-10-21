@@ -39,6 +39,8 @@
 │   │   ├── adr-013-reshape-to-published-simpro-spec.md
 │   │   ├── adr-014-simpro-access-control-model.md
 │   │   ├── adr-015-conversational-access-approach.md
+│   │   ├── adr-016-columns-projection-required-fields.md
+│   │   ├── adr-017-public-repository-private-build-facts.md
 │   │   ├── ADR-index.md
 │   │   └── adr-mock-simpro-api.md
 │   ├── architecture.md
@@ -85,20 +87,23 @@
 │   │   └── scope-rev3.md
 │   ├── simpro
 │   │   ├── mock-vs-public-api.md
+│   │   ├── private-notes.template.md
 │   │   └── simpro-api-findings.md
 │   ├── simpro-mock-api-reference.md
 │   ├── sprints
-│   │   └── course-correction
-│   │       ├── merge-inputs
-│   │       │   ├── ADR-index-additions.md
-│   │       │   └── CLAUDE-root-additions.md
-│   │       ├── README.md
-│   │       ├── W1-simpro-access.md
-│   │       ├── W2-docgen-value-check.md
-│   │       ├── W3-kb-audit.md
-│   │       ├── W4-evaluation.md
-│   │       ├── W5-backups.md
-│   │       └── W6-docs-consolidation.md
+│   │   ├── course-correction
+│   │   │   ├── merge-inputs
+│   │   │   │   ├── ADR-index-additions.md
+│   │   │   │   └── CLAUDE-root-additions.md
+│   │   │   ├── README.md
+│   │   │   ├── W1-simpro-access.md
+│   │   │   ├── W2-docgen-value-check.md
+│   │   │   ├── W3-kb-audit.md
+│   │   │   ├── W4-evaluation.md
+│   │   │   ├── W5-backups.md
+│   │   │   └── W6-docs-consolidation.md
+│   │   └── public-release
+│   │       └── public-release-split.md
 │   ├── STATUS.md
 │   ├── templates
 │   │   ├── sprint-full.md
@@ -106,10 +111,12 @@
 │   └── testing.md
 ├── .env.example
 ├── .gitignore
+├── LICENSE
 ├── pyproject.toml
 ├── README.md
 ├── scripts
 │   ├── backup.sh
+│   ├── check-public-safe.py
 │   ├── prune-simpro-spec.py
 │   ├── verify.sh
 │   └── verify-simpro-mock.py
@@ -194,6 +201,7 @@
 │   ├── test_client.py
 │   ├── test_config.py
 │   ├── test_endpoints.py
+│   ├── test_live_contract.py
 │   ├── test_logging.py
 │   ├── test_manual_logging.py
 │   ├── test_models.py
@@ -205,4 +213,4 @@
 │   └── test_spec_conformance.py
 └── uv.lock
 
-38 directories, 167 files
+39 directories, 174 files
