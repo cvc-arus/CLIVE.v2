@@ -15,8 +15,8 @@ Phase list and scope: `docs/roadmap.md`.
 | 1 | Local AI Platform | ✅ Complete |
 | 2 | Production RAG | ✅ Complete (knowledge base audit planned — W3) |
 | 3 | Simpro API Integration | ✅ Closed 2026-10-09 (Alex). Evidence: `docs/phase3/phase3-signoff.md` |
-| — | Course correction sprint | ⏸ Paused 2026-10-19 (Alex) for the public-release sprint |
-| — | Public-release sprint | 🔶 In progress — plan approved 2026-10-19 (Alex): `docs/sprints/public-release/public-release-split.md`. T1–T12 and T14 done: the rewritten history is published as the **public** repository `cvc-arus/CLIVE.v2` (Alex, 2026-10-21); `check-public-safe.py --history` and gitleaks are clean on it; the working copy is a fresh clone of it, and tests and a manual backup pass there. T13 remains: the old private repository `cvc-arus/CLIVE-I` is not yet archived, and stays until Alex decides to delete it (D2) |
+| — | Course correction sprint | 🔶 In progress — resumed 2026-10-21 (Alex) after the public-release sprint |
+| — | Public-release sprint | ✅ Complete 2026-10-21 (Alex): `docs/sprints/public-release/public-release-split.md`. The rewritten history is the **public** repository `cvc-arus/CLIVE.v2`; `check-public-safe.py --history` and gitleaks are clean on it; the working copy is a clone of it. The old `cvc-arus/CLIVE-I` is archived and private; deleting it is Alex's later decision (D2) |
 | 3B | Simpro Conversational Access | 📝 Planned — PDD drafted; order set at decision point |
 | 4 | Document Generation (4A / 4B split pending W2) | ⏳ Not started; no longer blocked (ADR-009 decided) |
 | 5 | Security & Reverse Proxy (minimum slice moves into 3B) | ⏳ Not started |
@@ -31,12 +31,12 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 |---|---|---|
 | W1 Simpro access and live API checks | 🔶 In progress | Live API access arrived 2026-10-16; read-only use (root `CLAUDE.md` §3, §9); only the two configured companies. T1 not needed (Alex). T2: `docs/simpro/mock-vs-public-api.md`. Live smoke check 2026-10-17 (§6): 3 differences broke the client. T4: all three fixed — `/companies/` paging, `""` dates, and `ID` in projections under ADR-016 (accepted by Alex 2026-10-19); merged to `main` 2026-10-19 (PRs #86, #87). T3: opt-in live tests merged, skipped by default (`SIMPRO_LIVE_TESTS=1`), not yet run. T5 remains |
 | W2 Doc generation value check | 🔶 In progress | T1 [HUMAN] interviews under way (Alex, 2026-10-16) |
-| W3 Knowledge base audit | ⏳ Not started | Bulk ingestion paused until complete |
+| W3 Knowledge base audit | 🔶 In progress | Bulk ingestion paused until complete. T1 done 2026-10-21: `docs/reviews/kb-audit-2026-10.md` §1. Open WebUI 0.11.0 on the unpinned `main` tag; 1 collection, 5 files, 365 chunks (each chunk stored twice: per file and per collection); no type, customer, date, author or version metadata; no access grants or groups. Discrepancy: the docs say CrossEncoder reranking, but no reranking model is configured. T2 (scratch-collection tests) next |
 | W4 Evaluation set | ⏳ Not started | |
 | W5 Backups and restore drill | ✅ Complete 2026-10-16 | Closed by Alex with T7 recorded as an accepted risk (Open risks). T1: all data on sdb1; target `BACKUP_DIR` (sda2). T2: inventory agreed. T3: `scripts/backup.sh` backs up the full inventory except `.env` (GPG key deferred). T4: daily systemd timer at 02:30 installed. T5: `smartd` monitoring both disks; both are past their rated write endurance (recovery plan §9). T6: restore drill passed, about 68 s of commands from checksums to a working Open WebUI (recovery plan §10). T7 (off-machine copy) not done: accepted risk. See `docs/recovery-plan.md` |
 | W6 Docs consolidation | ✅ Complete 2026-10-15 | Accepted by Alex. `STATUS.md` owns status; Phase 3 evidence in `phase3/phase3-signoff.md`; ADR index conventions merged; Simpro findings applied to Phase 3B; root `CLAUDE.md` additions merged and `/sprint-task`, `/status-update` confirmed; `PDD-phase3.md` revised and closed; `docs/reviews/` created. Security documentation deferred to Phase 3B Sprint 2 |
 
-**Next task:** public-release T13 [HUMAN]: archive the old `cvc-arus/CLIVE-I` on GitHub; deletion later, after at least one scheduled backup has run from the new clone (Alex). Course correction resumes afterwards with W1 T5 (run the live tests, on Alex's request; settles `_href` as a column, ADR-016); W3 T1 (unblocked by W5).
+**Next task:** W1 T5 (run the live tests, on Alex's request; settles `_href` as a column, ADR-016); W3 T2 (scratch collection, created and deleted with Alex's approval).
 **Next decision:** phase order, at end of sprint.
 
 ## Simpro access
@@ -51,13 +51,13 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 
 | Risk | Status |
 |---|---|
-| No off-machine backup — accepted until the off-machine copy is in place (Alex, 2026-10-16; no end date set) | Open — W5 closed without T7; target not yet chosen. Cross-disk backups do not cover theft, fire, `rm` or ransomware (`docs/recovery-plan.md` §11) |
-| Both SSDs are past their rated write endurance (129 % and 116 %), from the same batch, so both could fail close together | Open — replace both, `sdb` first; firmware update to be looked into (Alex, 2026-10-14). See `docs/recovery-plan.md` §9 |
+| No off-machine backup — accepted until the off-machine copy is in place (Alex, 2026-10-16; no end date set) | Open — deferred until production (Alex, 2026-10-21). W5 closed without T7; target not yet chosen. Cross-disk backups do not cover theft, fire, `rm` or ransomware (`docs/recovery-plan.md` §11) |
+| Both SSDs are past their rated write endurance (129 % and 116 %), from the same batch, so both could fail close together | Open — deferred until production (Alex, 2026-10-21): replace both, `sdb` first; firmware update to be looked into (Alex, 2026-10-14). See `docs/recovery-plan.md` §9 |
 | Knowledge base may not meet metadata/versioning/access requirements | Under audit (W3) |
 | Simpro's API application has no dedicated read-only security group: Simpro does not stop CLIVE writing, and a leaked client secret could write (detail in the private build notes, ADR-017) | Open (Alex, 2026-10-16). Guards are the read-only rule (root `CLAUDE.md` §3) and the GET-only client. See `docs/simpro/simpro-api-findings.md` §2.2 |
 | Simpro rate limits and token lifetime not confirmed | Open — public docs give 10 req/s per build and 3600 s tokens (`docs/simpro/mock-vs-public-api.md`); conservative defaults kept (ADR-010, ADR-012); to confirm live (W1 T5) |
-| `.env` is not backed up until the GPG key pair exists | Open — GPG key deferred (Alex, 2026-10-14) |
-| Open WebUI's signing key (`WEBUI_SECRET_KEY`) is generated inside the container, not backed up: a restore or container rebuild logs everyone out | Open — fix needs `WEBUI_SECRET_KEY` in `.env` and Compose (live change, not decided). See `docs/recovery-plan.md` §10 |
+| `.env` is not backed up until the GPG key pair exists; until then the private build notes are a plain copy in the 0700 backup folder (ADR-017, D6) | Open — deferred until production (Alex, 2026-10-21) |
+| Open WebUI's signing key (`WEBUI_SECRET_KEY`) is generated inside the container, not backed up: a restore or container rebuild logs everyone out | Open — deferred until production (Alex, 2026-10-21); fix needs `WEBUI_SECRET_KEY` in `.env` and Compose. See `docs/recovery-plan.md` §10 |
 
 ## ADRs awaiting a decision
 

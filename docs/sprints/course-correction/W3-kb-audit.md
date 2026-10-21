@@ -79,7 +79,7 @@ Documentation only: `git revert`. Scratch collection deletion is the only data c
 `docs(review): knowledge base audit against metadata, versioning and access requirements`
 
 ## Acceptance criteria
-- [ ] Current state documented
+- [x] Current state documented (T1, 2026-10-21)
 - [ ] Four requirement tests run with evidence
 - [ ] Extraction quality recorded for representative files
 - [ ] Gap report with options and recommendation

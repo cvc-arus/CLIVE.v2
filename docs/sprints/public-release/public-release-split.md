@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Template** | Full (changes secrets handling, backups, git history and the GitHub remote) |
-| **Status** | Approved 2026-10-19 (Alex); decisions D1–D7 recorded in §4.4. Course correction paused meanwhile |
+| **Status** | **Complete 2026-10-21** (Alex). Approved 2026-10-19 (Alex); decisions D1–D7 recorded in §4.4 |
 | **Branch** | `chore/public-release-split` |
 | **Depends on** | Privacy audit of 2026-10-19 (report kept outside the repo); a quiet point with no open feature branches (T10 rewrites every commit) |
 | **Related** | ADR-017 (drafted in T1); root `CLAUDE.md` §3 and §9; `scripts/backup.sh`; `docs/recovery-plan.md` |
@@ -385,6 +385,11 @@ before T11, not here.
 **Stop point:** Alex confirms the archive. Deletion is a later, separate
 confirmation.
 
+**Done 2026-10-21 (Alex):** `cvc-arus/CLIVE-I` archived; GitHub reports it
+archived and private. The pre-public bundle was verified in `BACKUP_DIR` on
+2026-10-21 (T10). Deleting the old repository and the `CLIVE-I.pre-public`
+working directory remain Alex's later decisions.
+
 ### T14 — Documentation and status
 
 - `docs/STATUS.md`: record the result.
@@ -597,9 +602,18 @@ and remote.
 - [x] No tracked file contains a value listed in the private deny-list
 - [x] `docs/simpro/private/` is ignored, backed up, and listed in the recovery plan
 - [x] `.env.example` holds placeholders for every value moved to `.env`
-- [ ] The live test refuses to run unless both company-ID variables agree, and blocks every other company route
+- [x] The live test refuses to run unless both company-ID variables agree, and blocks every other company route
 - [x] Offline suite, mock integration suite and whole-repo ruff pass from the new clone
-- [ ] The old GitHub repository is deleted or archived per D2, and the pre-public bundle is verified in backup
+- [x] The old GitHub repository is deleted or archived per D2, and the pre-public bundle is verified in backup
 - [x] A proprietary `LICENSE` approved by Alex is in the published repository, and both `pyproject.toml` files declare it
 - [x] No tracked file or commit message in the published history refers to the owner by the earlier short form
 - [x] ADR-017 accepted by Alex; STATUS, CHANGELOG and README updated
+
+**Live-test guard re-verified 2026-10-21 (Claude, offline).** Every Simpro URL
+pointed at a `.invalid` host, so no request could reach Simpro. In
+`tests/test_live_contract.py`, the 5 offline guard tests pass (allow-list
+parsing; GET-only; a route scoped to another company blocked). The 20 live
+tests skip without the opt-in, and with the opt-in when the allow-list
+disagrees with the configured IDs, holds one ID, or is empty. With matching
+IDs the fixture lets them through, and the first test fails on the `.invalid`
+host as intended.
