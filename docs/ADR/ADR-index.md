@@ -2,7 +2,7 @@
 
 | # | Title | Phase | Status |
 |---|---|---|---|
-| 001 | Self-Hosted Local LLM Stack (Ollama + Open WebUI) | 1 | Accepted, implemented |
+| 001 | Self-Hosted Local LLM Stack (Ollama + Open WebUI) | 1 | Accepted, implemented; image tags superseded by ADR-018 (2026-10-23) |
 | 002 | Vector Database — PostgreSQL + PGVector | 2 | Accepted, implemented |
 | 003 | Document Extraction — Apache Tika | 2 | Accepted, implemented |
 | — | Mocking the Simpro REST API (`adr-mock-simpro-api.md`, pre-existing) | 3 | Accepted, implemented; "Capabilities & Coverage" superseded by ADR-013 |
@@ -20,7 +20,7 @@
 | 015 | Conversational Access Approach for Simpro Data (`adr-015-conversational-access-approach.md`) | 3B | Proposed (2026-10-09) |
 | 016 | `columns` projections: the server adds nothing, the client asks for the required fields (`adr-016-columns-projection-required-fields.md`; supersedes "`ID` is always included" in ADR-013 §5) | 3 | **Accepted** 2026-10-19 (Alex), implemented |
 | 017 | Public repository, private build facts (`adr-017-public-repository-private-build-facts.md`) | — | **Accepted** 2026-10-19 (Alex) |
-| 018 | Pin container images to release tags (`adr-018-pin-container-images-to-release-tags.md`; would supersede the image tags in ADR-001's Decision) | — | Proposed (2026-10-23) |
+| 018 | Pin container images to release tags (`adr-018-pin-container-images-to-release-tags.md`; supersedes the image tags in ADR-001's Decision) | — | **Accepted** 2026-10-23 (Alex) |
 
 **Next free number:** ADR-019
 

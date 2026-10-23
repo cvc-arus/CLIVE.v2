@@ -1,8 +1,8 @@
 # ADR-018: Pin container images to release tags
 
-- **Status:** Proposed — 2026-10-23. Drafted by Claude at Alex's request
-  (option 1 of the Open WebUI upgrade). If accepted, it supersedes the image
-  tags named in ADR-001's Decision (`ollama/ollama`,
+- **Status:** **Accepted** — 2026-10-23 (Alex). Drafted by Claude at Alex's
+  request (option 1 of the Open WebUI upgrade); proposed and accepted the same
+  day. It supersedes the image tags named in ADR-001's Decision (`ollama/ollama`,
   `ghcr.io/open-webui/open-webui:main`); the rest of ADR-001 stands.
 - **Date:** 2026-10-23
 - **Deciders:** Alex
@@ -47,7 +47,7 @@ tag. The latest Open WebUI release is v0.12.3 (2026-10-16).
 
 ## Decision
 
-**Proposed (recommendation: Option A).** Not decided until Alex accepts.
+**Accepted: Option A** (Alex, 2026-10-23).
 
 Every image in `docker-compose.yml` is referenced by an exact **release tag**:
 
@@ -82,8 +82,8 @@ records which image the backups use.
   notes refer to the same version.
 - **Negative:** security fixes arrive only when someone upgrades. Release
   notes need checking periodically; that is a manual step, not automated.
-- **ADR-001:** if this is accepted, its Status line records that its image
-  tags are superseded by ADR-018. Its Decision text stays unchanged.
+- **ADR-001:** its Status line records that its image tags are superseded by
+  ADR-018. Its Decision text stays unchanged.
 - **Revisit if:** a second host or CI starts building the stack (consider
   Option B), or upgrades become frequent enough to automate the release-notes
   check.
