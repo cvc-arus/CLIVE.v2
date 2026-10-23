@@ -8,7 +8,8 @@ counts and pass/fail only. Anything naming a document, file, customer or
 person goes to the private store, behind neutral labels. Section 1 needed no
 such names, so it has no private companion.
 
-Sections 2–4 are written by W3 T2–T4.
+Section 2 was added on 2026-10-23 at commit 3966eb7 (W3 T2). Sections 3–4 are
+written by W3 T3–T4.
 
 ## 1. Current state (W3 T1)
 
@@ -131,3 +132,118 @@ docker exec clive-webui sh -c 'env | cut -d= -f1 | sort'   # names only
   - non-zero components in a 50-row sample.
 - **Collections matched to files:** IDs were piped from SQLite into a Postgres
   temporary table and compared there; only counts were printed.
+
+## 2. Requirement tests (W3 T2)
+
+Run on 2026-10-22 and 2026-10-23 against Open WebUI 0.11.0 (the version in
+§1.1), through its HTTP API, in a scratch collection deleted afterwards. The
+test documents were two short synthetic texts written for the test, `S1 v1`
+and `S1 v2`, each holding a unique code word. No real document was used.
+
+| Requirement | Result |
+|---|---|
+| Metadata: custom fields, and retrieval filtered on them | **Partly met**: fields are stored, but retrieval cannot filter on them |
+| Versioning: v1 kept, v2 the default, v1 retrievable on purpose | **Not met** |
+| Access restriction: a collection limited to a group | **Met**, in search and in chat answers |
+| Deletion: chunks removed from pgvector | **Met** |
+
+### 2.1 Set-up
+
+- An admin API key (`OPENWEBUI_TEST_API_KEY`) and a regular test user
+  (`OPENWEBUI_TEST_USER_EMAIL`, `OPENWEBUI_TEST_USER_PASSWORD`), all in `.env`,
+  created by Alex. Admins bypass every access check, so access was tested as
+  the test user only.
+- The scratch items, each recorded and deleted at the end:
+  - the collection `w3-t2-scratch`;
+  - the group `w3-t2-scratch-group`;
+  - the workspace model `w3-t2-scratch-model`;
+  - a temporary access row for `llama3.2:latest` (§2.4).
+- Each check read three levels: the API response, the SQLite record and the
+  pgvector chunks. Output was status codes, counts and booleans only.
+
+### 2.2 Metadata: partly met
+
+`S1 v1` was uploaded with four custom fields (document type, customer, date,
+author; synthetic values) in the upload's `metadata` form field.
+
+| Check | Result |
+|---|---|
+| Fields on the file record (`file.meta.data`) | all four stored |
+| Fields on the chunks (`vmetadata`) | none: `created_by`, `embedding_config`, `file_id`, `hash`, `name`, `source`, `start_index` only |
+| A filter in the retrieval API | none: `QueryCollectionsForm` takes `collection_names`, `query`, `k`, `k_reranker`, `r`, `hybrid`, `hybrid_bm25_weight`, `enable_enriched_texts` |
+| Search for v1's code word | found |
+
+Search runs on chunks, and Open WebUI copies a fixed set of keys onto them,
+so custom fields stay one level away from where retrieval looks.
+
+### 2.3 Versioning: not met
+
+| Path | What was done | Result |
+|---|---|---|
+| A: v2 as a second file | `S1 v2` added next to `S1 v1` | Both versions retrievable side by side; the hashes differ, and nothing links the two files |
+| B: v2 over v1 | v1's text replaced (`POST /api/v1/files/{id}/data/content/update`), then the collection re-indexed (`POST /api/v1/knowledge/{id}/file/update`) | v1's text gone everywhere (0 chunks), so no history. The file also dropped out of the collection: the re-index returned **400** "Duplicate content detected", because path A's file held identical text |
+
+Path B's outcome is confounded by path A's file. Neither path gives "v2 by
+default, v1 on request".
+
+### 2.4 Access restriction: met
+
+The collection (holding `S1 v2`) was checked as the test user in four
+situations; the third is the control.
+
+| Situation | Listed | Search collection | Search per-file copy | Read file | Chat answer with the collection attached |
+|---|---|---|---|---|---|
+| No access grants | no | 403 | 403 | 404 | not run |
+| Read grant to a group, test user outside | no | 403 | 403 | 404 | 200; code word absent; 0 sources |
+| Test user added to the group (control) | yes | 200, found | 200, found | 200 | 200; code word in answer; 1 source |
+| Test user removed again | no | 403 | 403 | 404 | 200; code word absent; 0 sources |
+
+**Regular users cannot chat as configured.** The first chat attempt returned
+400 "Model not found":
+- A model with no row in the `model` table is admin-only.
+- A workspace model also needs read access on its base model
+  (`has_base_model_access` in `utils/access_control/__init__.py`).
+- §1 counted 0 model rows, so no regular user can use any model today.
+
+The chat test therefore used:
+- a scratch workspace model on `llama3.2:latest`, shared with the test user;
+- a temporary `llama3.2:latest` row granting the test user read access.
+
+Both were deleted afterwards.
+
+### 2.5 Deletion: met
+
+| File | Chunks before | After `POST /api/v1/knowledge/{id}/file/remove` | File record |
+|---|---|---|---|
+| `S1 v1` | 1 (its collection copy was already gone, §2.3) | 0 | gone |
+| `S1 v2` | 2 (per-file and collection copies) | 0 | gone |
+
+In this version, removing a file from a collection deletes the file record
+too: a later `DELETE /api/v1/files/{id}` returned 404. The full text in
+SQLite went with it, and the file count returned to 5.
+
+### 2.6 The `knowledge-bases` collection
+
+§1.3's seventh, unmatched collection is `knowledge-bases`, Open WebUI's index
+of collection names and descriptions. The code calls it a "system
+meta-collection" and never lets a non-admin search it. Its entry count went
+from 1 to 2 while the scratch collection existed, and back to 1 afterwards.
+
+### 2.7 State after clean-up
+
+Every scratch item was deleted. The read-only counts from §1 match:
+
+| What | §1 | After clean-up |
+|---|---|---|
+| pgvector chunks / collections | 365 / 7 | 365 / 7 |
+| `knowledge-bases` entries | 1 | 1 |
+| Files / knowledge collections / links | 5 / 1 / 5 | 5 / 1 / 5 |
+| Models / access grants / groups | 0 / 0 / 0 | 0 / 0 / 0 |
+| Users | 1 | 3 |
+
+The users now are:
+- the original admin;
+- a second admin, created 2026-10-22, not by this test;
+- the test user, Alex's, kept for now.
+
+The API key also remains.
