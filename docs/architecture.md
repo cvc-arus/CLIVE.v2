@@ -14,8 +14,8 @@ All services are defined in the single root `docker-compose.yml`:
 
 | Service | Image / Build | Container name | Port mapping | Depends on |
 |---|---|---|---|---|
-| `ollama` | `ollama/ollama` | `clive-ollama` | `127.0.0.1:11435:11434` | — |
-| `open-webui` | `ghcr.io/open-webui/open-webui:main` | `clive-webui` | `127.0.0.1:3000:8080` | `postgres` (healthy), `tika`, `ollama` |
+| `ollama` | `ollama/ollama:0.31.2` | `clive-ollama` | `127.0.0.1:11435:11434` | — |
+| `open-webui` | `ghcr.io/open-webui/open-webui:v0.12.3` | `clive-webui` | `127.0.0.1:3000:8080` | `postgres` (healthy), `tika`, `ollama` |
 | `postgres` | `pgvector/pgvector:0.8.6-pg16` | `clive-postgres` | `127.0.0.1:5432:5432` | — |
 | `tika` | `apache/tika:3.3.1.0-full` | `clive-tika` | `127.0.0.1:9998:9998` | — |
 | `simpro-mock-db` | `postgres:16-alpine` | `clive-simpro-mock-db` | `127.0.0.1:5433:5432` | — |

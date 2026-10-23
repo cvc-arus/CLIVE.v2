@@ -58,7 +58,7 @@ including `roadmap.md`, link to it instead of restating status.
 ## 4. ADR rules
 
 - Location: `docs/ADR/`. Naming: `adr-NNN-kebab-title.md`. The next free
-  number is **018**. Add every ADR to `docs/ADR/ADR-index.md` in the same
+  number is **019**. Add every ADR to `docs/ADR/ADR-index.md` in the same
   change; its naming and numbering rules apply.
 - Minimum sections: Status, Context, Decision, Alternatives Considered,
   Consequences. Status is one of Proposed, Accepted / Approved, Superseded by

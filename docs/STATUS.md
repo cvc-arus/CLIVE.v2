@@ -65,3 +65,4 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 |---|---|---|
 | ADR-014 | Simpro data access control model | Proposed. Storage conflict with root `CLAUDE.md` §3 resolved by Alex 2026-10-15 (narrow exception in §3) |
 | ADR-015 | Conversational access approach | Proposed |
+| ADR-018 | Pin container images to release tags | Proposed 2026-10-23; accepting it unblocks the Open WebUI upgrade to v0.12.3 (pre-upgrade backup `2026-10-23_1430` taken, old image kept locally) |
