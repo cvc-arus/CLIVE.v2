@@ -1,7 +1,7 @@
 # ADR-001: Self-Hosted Local LLM Stack (Ollama + Open WebUI)
 
 ## Status
-Accepted (implemented, Phase 1)
+Accepted (implemented, Phase 1). Image tags in the Decision superseded by ADR-018 (2026-10-23): images are pinned to release tags
 
 ## Context
 CLIVE requires local LLM inference with zero cloud dependency, per the project's "Open Source First / Self Hosted" principle. The stack needed to be Docker-first, GPU-capable on the development host (RTX 3080), and extensible toward RAG in the next phase.
