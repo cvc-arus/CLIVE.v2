@@ -80,7 +80,7 @@ Documentation only: `git revert`. Scratch collection deletion is the only data c
 
 ## Acceptance criteria
 - [x] Current state documented (T1, 2026-10-21)
-- [ ] Four requirement tests run with evidence
+- [x] Four requirement tests run with evidence (T2, 2026-10-23)
 - [ ] Extraction quality recorded for representative files
 - [ ] Gap report with options and recommendation
 - [ ] `STATUS.md` updated (including whether bulk ingestion may resume)
