@@ -247,3 +247,60 @@ The users now are:
 - the test user, Alex's, kept for now.
 
 The API key also remains.
+
+### 2.8 Re-run on Open WebUI 0.12.3 (2026-10-23)
+
+Run after the upgrade to the pinned release v0.12.3 (ADR-018), at commit
+10e2994, with the same synthetic documents and set-up. Two changes to the
+method:
+- **Path B:** a third synthetic text with a unique code word (`S1 v3`) was
+  written over v1's file, so the duplicate-content check could not confound it.
+- **Nested groups:** a probe for the nested groups added in 0.12.0.
+
+| Requirement | 0.11.0 (§2.2–§2.5) | 0.12.3 |
+|---|---|---|
+| Metadata | Partly met: fields on the file only | **Partly met, closer:** fields on the file **and on every chunk**; still no filter in the retrieval API or in chat |
+| Versioning | Not met | **Not met:** in-place replacement now works cleanly, but no history is kept |
+| Access restriction | Met | **Met**, including inheritance through nested groups |
+| Deletion | Met | **Met** |
+
+**Metadata.** The four custom fields (`doc_type`, `customer`, `doc_date`,
+`author`) now appear in every chunk's `vmetadata`, next to `content_type`,
+`file_hash` and `size`. The pgvector client's `search()` accepts a metadata
+`filter`, but Open WebUI calls it only internally (by `hash` and `file_id`).
+`QueryCollectionsForm` is unchanged, so neither the API nor chat can limit
+retrieval to a type, customer or date. Exposing that filter is now a small
+extension, not a new store.
+
+**Versioning.**
+- **Path A** (v2 as a second file): unchanged. Both versions are retrievable
+  and unlinked.
+- **Path B, confounded as in §2.3:** with v2's separate file present, the
+  content update returned **500**. The log shows the same "Duplicate content
+  detected" error, now unhandled.
+- **Path B with `S1 v3`:** the content update and the collection re-index
+  both returned 200. The file's chunks in both copies hold only v3's text
+  (2 chunks with v3's code word, 0 with v2's), and collection search finds
+  v3. Replacement in place works, but the old version is gone.
+
+**Access, as the test user.**
+
+| Situation | Search collection | Search per-file copy | Chat answer |
+|---|---|---|---|
+| No grants / group grant, user outside | 403 / 403 | 403 / 403 | code word absent; 0 sources |
+| User in the granted group (control) | 200, found | 200, found | code word in answer; 1 source |
+| User only in a child group of the granted group | 200, found | 200, found | code word in answer; 1 source |
+| User removed again | 403 | 403 | code word absent; 0 sources |
+
+The admin-only rule for models with no `model` row is unchanged in 0.12.3, so
+the chat test again needed the scratch model and a temporary
+`llama3.2:latest` row.
+
+**Deletion.** Removing each file from the collection left 0 chunks in both
+copies and deleted the file record.
+
+**After clean-up:**
+- pgvector: 365 chunks in 7 collections; `knowledge-bases` has 1 entry.
+- SQLite: files / collections / links 5 / 1 / 5; models, grants, groups and
+  group members 0.
+- The new `model_history` table is empty.
