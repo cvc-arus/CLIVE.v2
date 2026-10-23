@@ -132,7 +132,7 @@ Where to find current state:
 
 | ADR | Topic | Status |
 |---|---|---|
-| 001–003 | Local LLM stack, PGVector, Tika | Accepted, implemented |
+| 001–003 | Local LLM stack, PGVector, Tika | Accepted, implemented; ADR-001's image tags superseded by ADR-018 |
 | mock | `adr-mock-simpro-api.md` | Accepted, but its "Capabilities & Coverage" list is **superseded by ADR-013**: the route count predates the 12-resource mock, and the payload-fidelity claim is contradicted by Simpro's published spec |
 | 004 | httpx | Accepted, implemented |
 | 005 | Client Credentials + API key fallback; Authorization Code deferred | Accepted, implemented |
@@ -148,6 +148,7 @@ Where to find current state:
 | 015 | Conversational access approach (tool calling over a fixed query catalogue) | **Proposed** 2026-10-09 |
 | 016 | `columns` projections: server adds nothing, client asks for the model's required fields (supersedes "`ID` is always included" in ADR-013 §5) | **Accepted** 2026-10-19 (Alex), implemented |
 | 017 | Public repository, private build facts (untracked private store, guard script, rewritten history in a new repository) | **Accepted** 2026-10-19 (Alex) |
+| 018 | Pin container images to release tags (supersedes ADR-001's image tags) | **Accepted** 2026-10-23 (Alex) |
 
 Re-verify this table before relying on it; it is a snapshot.
 
