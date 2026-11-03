@@ -61,6 +61,4 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 
 ## ADRs awaiting a decision
 
-| ADR | Title | Status |
-|---|---|---|
-| ADR-015 | Conversational access approach | Proposed |
+None. ADR-014 and ADR-015 accepted 2026-11-03 (Alex).
