@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-10-09
 - **Deciders:** Alex
-- **Related:** ADR-010 (resilience policy / rate limiter), ADR-014 (Simpro data access control model, proposed)
+- **Related:** ADR-010 (resilience policy / rate limiter), ADR-014 (Simpro data access control model)
 
 ## Context
 

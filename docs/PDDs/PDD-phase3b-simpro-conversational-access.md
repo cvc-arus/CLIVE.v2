@@ -57,7 +57,7 @@ work after Phase 3 and before Phase 4, which is where its dependencies put it.
 
 - `clive-gateway` FastAPI service (Docker Compose, single worker)
 - `clive_gateway` database: access control tables and audit log (Alembic migrations)
-- Policy engine: company, resource and row-scope checks; field masking by classification
+- Policy engine: configured-company check, resource and row-scope checks; field masking by classification
 - Query catalogue v1: 8–10 read-only, parameterised queries
 - Open WebUI tool calling the gateway with the user's identity
 - Service accounts for non-human callers (needed by Phase 4)
@@ -89,7 +89,8 @@ work after Phase 3 and before Phase 4, which is where its dependencies put it.
 **Exit criteria**
 1. All Phase 3B sprint acceptance criteria met.
 2. Pilot completed with at least two users per role, feedback logged.
-3. ADR-014 and ADR-015 accepted; caching ADR written if required.
+3. ADR-014 and ADR-015 accepted; caching ADR written if required. ADR-014
+   accepted 2026-11-03 (Alex); ADR-015 still Proposed.
 4. Gateway query catalogue covers the resources Phase 4 needs, as listed in
    ADR-009's Consequences: Customers, Sites, Contacts, Jobs, Quotes, Projects,
    Assets, Employees. Simpro has no Projects resource: a project is a Job with
@@ -172,7 +173,10 @@ work after Phase 3 and before Phase 4, which is where its dependencies put it.
 ### 7.1 Principles
 
 - Enforced in the gateway, never in prompts or in the tool.
-- Deny by default at company and resource level.
+- Deny by default at resource level.
+- No per-user company permissions (ADR-014, Alex 2026-11-03): every active
+  user may see both configured companies, Service and Projects. Any other
+  company ID is rejected for everyone.
 - Classified fields hidden unless a role is explicitly granted the classification.
 - Data is filtered before it reaches the LLM.
 - Every request is audited.
@@ -184,7 +188,6 @@ work after Phase 3 and before Phase 4, which is where its dependencies put it.
 | `users` | Human users and service accounts | `id`, `account_type` (human/service), `openwebui_user_id`, `email`, `display_name`, `simpro_employee_id` (nullable), `is_active` |
 | `roles` | Named roles | `id`, `name`, `description` |
 | `user_roles` | Many-to-many user ↔ role | `user_id`, `role_id` |
-| `role_companies` | Simpro companies a role may see | `role_id`, `company_id` (Service and Projects IDs from configuration) |
 | `role_resources` | Resources a role may query, and row scope | `role_id`, `resource`, `scope` (`all` / `assigned`) |
 | `classifications` | Sensitivity labels | `code` (e.g. `financial`, `personal`), `description` |
 | `field_classifications` | Which model fields carry which label | `resource`, `field_name`, `classification` |
@@ -207,7 +210,7 @@ or test outside the mock may assume `1` and `2` (`simpro-api-findings.md` §2.3)
 
 1. Caller authenticated (service secret)? Otherwise `401`.
 2. User exists and is active? Otherwise deny.
-3. Requested company in the user's roles' companies? Otherwise deny.
+3. Requested company one of the two configured companies? Otherwise deny.
 4. Requested resource in the user's roles' resources? Otherwise deny.
 5. Scope: if every granting role has `assigned`, filter rows to the user's
    `simpro_employee_id`. If no employee ID is mapped, deny.
@@ -220,12 +223,15 @@ Where a user holds several roles, permissions are the union of those roles.
 
 Rows below are illustrative only and must be replaced with CVC's actual roles.
 
-| Role | Companies | Resources | Scope | Classifications |
-|---|---|---|---|---|
-| *e.g. Engineer* | *Service* | *Jobs, Sites, Assets* | *assigned* | *none* |
-| *e.g. Office/Admin* | *Service, Projects* | *Customers, Sites, Jobs, Contacts* | *all* | *personal* |
-| *e.g. Management* | *Service, Projects* | *All* | *all* | *financial, personal* |
-| `docgen` (service) | Service, Projects | Phase 4 needs | all | as Phase 4 requires |
+Every role sees both configured companies (ADR-014), so the matrix has no
+company column.
+
+| Role | Resources | Scope | Classifications |
+|---|---|---|---|
+| *e.g. Engineer* | *Jobs, Sites, Assets* | *assigned* | *none* |
+| *e.g. Office/Admin* | *Customers, Sites, Jobs, Contacts* | *all* | *personal* |
+| *e.g. Management* | *All* | *all* | *financial, personal* |
+| `docgen` (service) | Phase 4 needs | all | as Phase 4 requires |
 
 ## 8. Query catalogue v1 (candidate list)
 
@@ -286,7 +292,8 @@ parameterised, and returns a compact summary rather than raw records.
 Each sprint ends with passing tests, documentation updates and a git commit.
 
 ### Sprint 1 — Decisions and design (week 1)
-- ADR-009 already decided (PR #44); accept ADR-014 and ADR-015.
+- ADR-009 already decided (PR #44); ADR-014 accepted 2026-11-03 (Alex);
+  accept ADR-015.
 - Complete the permission matrix with CVC stakeholders.
 - Finalise query catalogue v1 from the user research.
 - Model spike: evaluate 2–3 tool-calling models that fit in 10 GB VRAM against

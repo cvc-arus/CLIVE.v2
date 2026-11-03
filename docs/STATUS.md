@@ -63,5 +63,4 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 
 | ADR | Title | Status |
 |---|---|---|
-| ADR-014 | Simpro data access control model | Proposed. Storage conflict with root `CLAUDE.md` §3 resolved by Alex 2026-10-15 (narrow exception in §3) |
 | ADR-015 | Conversational access approach | Proposed |
