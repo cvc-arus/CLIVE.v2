@@ -194,7 +194,7 @@ The Phase 3 → Phase 4 handoff is decided in ADR-009 (`docs/ADR/adr-009-phase3-
 
 ### 6.1 Planned Phase 3B components
 
-**Planned, not built.** None of these exist in `docker-compose.yml` or the repository yet. The design is in the Phase 3B PDD (§6) and in ADR-014 (Accepted) and ADR-015 (**Proposed**); this section moves into §2 and gets its own section as each component is built.
+**Planned, not built.** None of these exist in `docker-compose.yml` or the repository yet. The design is in the Phase 3B PDD (§6) and in ADR-014 and ADR-015 (both Accepted 2026-11-03); this section moves into §2 and gets its own section as each component is built.
 
 | Component | New / existing | Planned role |
 |---|---|---|
