@@ -89,8 +89,8 @@ work after Phase 3 and before Phase 4, which is where its dependencies put it.
 **Exit criteria**
 1. All Phase 3B sprint acceptance criteria met.
 2. Pilot completed with at least two users per role, feedback logged.
-3. ADR-014 and ADR-015 accepted; caching ADR written if required. ADR-014
-   accepted 2026-11-03 (Alex); ADR-015 still Proposed.
+3. ADR-014 and ADR-015 accepted; caching ADR written if required. Both
+   accepted 2026-11-03 (Alex).
 4. Gateway query catalogue covers the resources Phase 4 needs, as listed in
    ADR-009's Consequences: Customers, Sites, Contacts, Jobs, Quotes, Projects,
    Assets, Employees. Simpro has no Projects resource: a project is a Job with
@@ -292,8 +292,8 @@ parameterised, and returns a compact summary rather than raw records.
 Each sprint ends with passing tests, documentation updates and a git commit.
 
 ### Sprint 1 — Decisions and design (week 1)
-- ADR-009 already decided (PR #44); ADR-014 accepted 2026-11-03 (Alex);
-  accept ADR-015.
+- ADR-009 already decided (PR #44); ADR-014 and ADR-015 accepted 2026-11-03
+  (Alex).
 - Complete the permission matrix with CVC stakeholders.
 - Finalise query catalogue v1 from the user research.
 - Model spike: evaluate 2–3 tool-calling models that fit in 10 GB VRAM against

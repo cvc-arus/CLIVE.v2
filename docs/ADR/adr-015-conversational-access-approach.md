@@ -1,9 +1,10 @@
 # ADR-015: Conversational access approach for Simpro data
 
-- **Status:** Proposed
+- **Status:** **Accepted** — 2026-11-03 (Alex). Proposed 2026-10-09
 - **Date:** 2026-10-09; revised 2026-11-03 (Claude, at Alex's request):
   options D–H added, context updated for live Simpro access and ADR-014's
-  acceptance. The proposed decision is unchanged
+  acceptance. The proposed decision is unchanged. Updated 2026-11-03, before
+  acceptance, with the live filter checks and the live token result
 - **Deciders:** Alex
 - **Related:** ADR-009 (`clive-gateway` as the single Simpro access point),
   ADR-010 (rate limiting), ADR-014 (access control model, accepted
@@ -33,13 +34,16 @@ Constraints that bound the options:
   Alex's explicit approval; CVC's Simpro build is the one approved external
   API.
 - **Throughput.** Simpro documents 10 requests per second per build;
-  `simpro_client` limits itself to 8 per client instance (ADR-010), and a new
-  token invalidates the old one, so only one client should hold the
-  credentials at a time.
+  `simpro_client` limits itself to 8 per client instance (ADR-010). Simpro's
+  docs say a new token invalidates the old one; the live run of 2026-11-03 did
+  not see that (`docs/simpro/mock-vs-public-api.md` §7), but one client
+  should still hold the credentials at a time.
 - **API shape.** Collection routes return minimal fields unless `columns` is
-  sent, and the mock cannot filter jobs or quotes by customer, site or staff
-  member. Whether live Simpro can is unverified (see the live checks in
-  Consequences).
+  sent. The mock cannot filter jobs or quotes by customer, site or staff
+  member, but live Simpro can (2026-11-03, `docs/simpro/mock-vs-public-api.md`
+  §8): `Customer.ID`, `Site.ID`, `Salesperson.ID`, `ProjectManager.ID`,
+  `Technicians.ID`, and `Name` with `%` wildcards. Live Simpro **ignores an
+  unknown filter field** and returns unfiltered data with HTTP 200.
 - **Open WebUI 0.12.3** (ADR-018) runs tools in Native function-calling mode,
   the only supported mode since v0.10.0, and passes the signed-in user to
   Workspace tools as `__user__` (Open WebUI documentation, Tools).
@@ -155,11 +159,11 @@ model; G is the candidate for what they cannot answer.
 
 ## Decision
 
-**Proposed: Option A.** Options B, C, F and H are rejected; D and E are open
-until Phase 3B Sprint 1; G is deferred. Simpro data must never be written to
-the PGVector knowledge base. Nothing here is a decision until Alex accepts it.
+**Accepted: Option A** (Alex, 2026-11-03). Options B, C, F and H are
+rejected; D and E are open until Phase 3B Sprint 1; G is deferred. Simpro
+data must never be written to the PGVector knowledge base.
 
-- **A** is the proposed approach, starting from the candidate catalogue in
+- **A** is the chosen approach, starting from the candidate catalogue in
   Phase 3B PDD §8.
 - **D** is compared with A in the Sprint 1 model spike, on the same
   questions. If D's tool-choice and argument accuracy is close to A's, a
@@ -182,12 +186,15 @@ the PGVector knowledge base. Nothing here is a decision until Alex accepts it.
 - Sprint 1 of Phase 3B must produce a query catalogue from real user
   questions. The PDD §8 list is a candidate list until those questions are
   mapped to it.
-- Before acceptance, read-only live checks must establish whether Simpro can
-  filter jobs and quotes by customer and site, by staff member, and by
-  partial text match. If Simpro cannot filter by related records, A answers
-  those questions only for recent records, and G moves from deferred to
-  needed. The checks follow root `CLAUDE.md` §3 and §9 (GETs only; counts
-  and pass/fail only).
+- The read-only live checks required before acceptance ran on 2026-11-03
+  (`docs/simpro/mock-vs-public-api.md` §8): Simpro filters jobs and quotes by
+  customer, site, salesperson, project manager, technician and partial text
+  (`%` wildcards), so A can answer those questions over all records and G
+  stays deferred.
+- Because Simpro silently ignores an unknown filter field, the gateway builds
+  every filter from a per-query allow-list of field names and never passes a
+  caller-supplied field name to Simpro. A misspelt field must fail in the
+  gateway's tests, not return unfiltered data.
 - Unsupported questions are logged during the pilot to drive catalogue v2,
   through a `report_unsupported` tool that writes an audit row and makes no
   Simpro call.
@@ -206,8 +213,8 @@ the PGVector knowledge base. Nothing here is a decision until Alex accepts it.
 
 - Users consistently need questions the catalogue cannot reasonably cover
   (consider D, or G under a caching ADR).
-- Live checks show Simpro cannot filter jobs and quotes by customer, site or
-  staff member (G becomes needed).
+- Simpro stops supporting the related-record filters the catalogue relies on
+  (G becomes needed).
 - The Sprint 1 spike shows D's accuracy matches A's on the evaluation set.
 - Open WebUI gains a verifiable way to pass user identity to MCP or OpenAPI
   tool servers (E).
@@ -223,3 +230,10 @@ the PGVector knowledge base. Nothing here is a decision until Alex accepts it.
   budgets, free-text handling.
 - Proposed decision (Option A) and the rejections of B and C unchanged.
   Status stays Proposed.
+
+## Acceptance (2026-11-03)
+
+- Live filter checks run and recorded (`docs/simpro/mock-vs-public-api.md`
+  §8); Context and Consequences updated with their results and with the live
+  token result (§7).
+- Accepted by Alex: Option A.

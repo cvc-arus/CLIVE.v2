@@ -233,6 +233,50 @@ the first.
 | 17 | Empty date strings | Job detail validates in both companies | Match (fixed in W1 T4) |
 | — | `_href` as a `columns` value (ADR-016) | The client's projection for customers, which adds `_href`, was accepted (no `422`); projections validate for all five collections | Settled |
 
-Still unknown: 6, 7, 9, 10, 11 (error bodies and statuses, the `403` from a
-security group, rate limiting). Not covered: filtering jobs and quotes by
-customer, site, staff member or partial text (ADR-015 live checks).
+Still unknown: 6, 7, 10, 11 (error bodies and statuses, the `403` from a
+security group, rate limiting). Item 9 and the ADR-015 filter checks are in §8.
+
+## 8. Live filter checks for ADR-015 (2026-11-03)
+
+ADR-015 required read-only live checks, before acceptance, of whether Simpro
+filters jobs and quotes by customer, site, staff member and partial text.
+They were run at Alex's request at `caec6f0` by a scratch script (not in the
+repository) with the live settings from `.env`: GETs and the token request
+only, the two configured companies only. The console showed probe names,
+HTTP status and booleans; every value (IDs, names, totals, returned rows)
+went only to a private report in `docs/simpro/private/` (ADR-017), which
+Alex reviews and Claude Code does not read.
+
+Method: for jobs and quotes in each company, take one value of each field
+from the 50 most recent records, filter by it, and call the filter working
+when the `Result-Total` drops below the unfiltered total and every returned
+row (up to 50 checked) matches. 40 probes in all, every one HTTP 200.
+
+| Filter (query parameter) | Jobs and quotes, Service and Projects |
+|---|---|
+| `Customer.ID=<id>` | Filters (4/4) |
+| `Site.ID=<id>` | Filters (4/4) |
+| `Salesperson.ID=<id>` | Filters (4/4) |
+| `ProjectManager.ID=<id>` | Filters (4/4) |
+| `Technicians.ID=<id>` (a list field) | Filters (4/4) |
+| `Name=%word%` (contains) | Filters (4/4) |
+| `Name=word%` (starts with) | Filters (4/4) |
+| `Name=word` (no wildcard) | Exact match only: 3 returned only names equal to the word; 1 (Projects jobs) returned no rows |
+| `Name=<exact name>` | Filters (4/4) |
+| `NoSuchField=1` (unknown field) | **Ignored silently:** HTTP 200 with the unfiltered total (4/4) |
+
+Findings:
+
+- Nested filters on related records (`Customer.ID`, `Site.ID`, the staff
+  fields, including the `Technicians` list) work on live Simpro. The mock
+  supports scalar columns only (`services/simpro_mock/CLAUDE.md` §3), so it
+  is narrower than upstream here.
+- Partial text matching needs the `%` wildcard; without it `Name` is an
+  exact match. Case sensitivity was not tested.
+- **Item 9 settled:** an unknown filter field is ignored, not rejected. A
+  misspelt filter returns unfiltered data with HTTP 200. The mock returns
+  `400` (ADR-013), which is stricter. Severity: cosmetic for
+  `simpro_client`, which sends no filters itself; for `clive-gateway` it
+  means filter fields must come from an allow-list in the gateway, never
+  from the caller (ADR-015).
+- Each probe used one value per field; rate limiting was not measured.

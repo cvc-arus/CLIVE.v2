@@ -8,7 +8,7 @@
   2026-11-03 (Alex), before acceptance: no per-user company permissions,
   because every CVC employee may see both companies
 - **Deciders:** Alex
-- **Related:** ADR-009 (Phase 3 → Phase 4 handoff: `clive-gateway` as the single Simpro access point), ADR-015 (conversational access approach, Proposed).
+- **Related:** ADR-009 (Phase 3 → Phase 4 handoff: `clive-gateway` as the single Simpro access point), ADR-015 (conversational access approach, accepted 2026-11-03).
 
 ## Context
 
