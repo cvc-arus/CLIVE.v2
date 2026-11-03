@@ -1,19 +1,24 @@
 # ADR-014: Simpro data access control model
 
-- **Status:** Proposed
+- **Status:** **Accepted** — 2026-11-03 (Alex). Proposed 2026-10-09
 - **Date:** 2026-10-09; updated 2026-10-17 (Claude, at Alex's request) for live
   Simpro access: no dedicated security group, only the two configured
   companies, customers and sites shared across companies. Build-specific
-  values moved to the private build notes 2026-10-19 (ADR-017)
+  values moved to the private build notes 2026-10-19 (ADR-017). Revised
+  2026-11-03 (Alex), before acceptance: no per-user company permissions,
+  because every CVC employee may see both companies
 - **Deciders:** Alex
-- **Related:** ADR-009 (Phase 3 → Phase 4 handoff: `clive-gateway` as the single Simpro access point), ADR-015 (conversational access approach).
+- **Related:** ADR-009 (Phase 3 → Phase 4 handoff: `clive-gateway` as the single Simpro access point), ADR-015 (conversational access approach, Proposed).
 
 ## Context
 
 Multiple CVC users will query Simpro data through Open WebUI (Phase 3B).
-Some data must be restricted for some users: by company (CVC Service vs
-CVC Projects), by resource (e.g. Employees), by field (e.g. quote values) and
-by row (e.g. only jobs assigned to the user).
+Some data must be restricted for some users: by resource (e.g. Employees),
+by field (e.g. quote values) and by row (e.g. only jobs assigned to the user).
+
+**Company access is not restricted per user (Alex, 2026-11-03).** Every CVC
+employee has access to the information of both companies CLIVE uses, Service
+and Projects. CLIVE therefore has no per-user or per-role company permission.
 
 Phase 3 authenticates to Simpro with OAuth2 Client Credentials, which gives the
 backend a single service identity with no notion of the individual user.
@@ -38,9 +43,9 @@ means for access control:
   allowed, but no request is ever sent to a route scoped to any other company.
 - **Customers and sites are build-wide, not per company.** They return
   identical totals under both companies. Jobs, quotes and employees differ
-  per company. So a company allow-list can separate jobs, quotes and
-  employees, but not customers or sites. A user allowed only the Projects
-  company can still see, under it, a customer that only has Service work.
+  per company. Since every user may see both companies, this no longer
+  affects access control; it matters only so that results queried under both
+  companies are not double-counted.
 
 ## Options considered
 
@@ -65,19 +70,18 @@ Each user signs in to Simpro; queries run with their own token.
 
 ## Decision
 
-**Option 1**, behind a permission interface designed so it could later
+**Accepted: Option 1** (Alex, 2026-11-03), behind a permission interface designed so it could later
 delegate to per-user Simpro tokens.
 
 Rules:
 - Enforcement happens in `clive-gateway`, never in prompts or tools.
-- Company and resource access are allow-lists; anything absent is denied.
-  The company allow-list can only contain the two configured companies. The
-  gateway rejects any other company ID before calling Simpro, whatever a role
-  says.
-- Because customers and sites are build-wide, company scope does not
-  restrict them. Restricting them needs row rules (for example, customers
-  with jobs in an allowed company) or a resource-level grant; the Phase 3B
-  PDD decides which.
+- Resource access is an allow-list; anything absent is denied.
+- **No per-user company permissions** (Alex, 2026-11-03). Every active user
+  may see both configured companies, Service and Projects. Company is a
+  system rule, not a role setting: the gateway accepts only
+  `SIMPRO_COMPANY_ID_SERVICE` and `SIMPRO_COMPANY_ID_PROJECTS` and rejects
+  any other company ID before calling Simpro, for every user and service
+  account.
 - Row scope is `all` or `assigned` (filtered by the user's Simpro employee ID;
   denied if no ID is mapped).
 - Sensitive fields are tagged with classifications (e.g. `financial`,
@@ -106,7 +110,8 @@ Phase 3B PDD, section 7.2.
 > through its own least-privilege DB user. It must never connect to the
 > knowledge-base database, and no test may run against port 5432, so the
 > gateway's tests need a disposable database. The decision text above is
-> unchanged. This resolves the conflict only; the ADR itself is still Proposed.
+> unchanged. This resolved the conflict only; Alex accepted the ADR on
+> 2026-11-03.
 
 ## Consequences
 
@@ -131,3 +136,5 @@ Phase 3B PDD, section 7.2.
 - Simpro offers a read-only or restricted security group for API
   applications. The outer boundary in the Decision would then be restored.
 - Permission drift between CLIVE and Simpro becomes a recurring problem.
+- CVC needs some users kept out of one company's data. A per-role company
+  allow-list would then be added by a superseding ADR.
