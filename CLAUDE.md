@@ -123,10 +123,11 @@ Where to find current state:
   `src/simpro_client/CLAUDE.md` §10), not per process or per Simpro build.
   Services calling Simpro run a single worker with one client.
 - **Mock scope is frozen.** Only add mock behaviour required by an approved task.
-- From Proposed ADRs (not yet decisions, but no code may contradict them
+- **Access control is enforced server-side in `clive-gateway`,
+  deny-by-default, never via prompts (ADR-014, accepted 2026-11-03).**
+- From Proposed ADR-015 (not yet a decision, but no code may contradict it
   until Alex decides): Simpro data is never written to the pgvector knowledge
-  base (ADR-015); access control is enforced server-side and deny-by-default,
-  never via prompts (ADR-014).
+  base.
 
 ## 4. ADR status (snapshot; re-verify before relying on this)
 
@@ -144,7 +145,7 @@ Where to find current state:
 | 011 | Exception hierarchy and `SimproAuthError` context (supersedes ADR-010 §2.5) | Accepted 2026-10-06, implemented |
 | 012 | Retry delay ceiling (`SIMPRO_MAX_RETRY_DELAY`) and token-refresh concurrency | Accepted 2026-10-06 (supersedes ADR-010 §2.3, extends §2.1) |
 | 013 | Re-shape mock and client to Simpro's published OpenAPI spec | Accepted 2026-10-07, **implemented 2026-10-08** (all 7 sprints). **All 50 conformance checks pass and `tests/spec_conformance_baseline.json` is empty**, so every client model validates payloads generated from Simpro's published contract. Field names, types and optionality are governed by `docs/contracts/simpro-openapi-v1-get-subset.json`. The mock honours `columns` on all 25 routes, `orderby` and `limit` on all 13 collection routes, and returns a 400 on an unknown filter or an unorderable `orderby` field. "`ID` is always included" in §5 is superseded by ADR-016 |
-| 014 | Simpro data access control model | **Proposed** 2026-10-09. Stores `clive_gateway` on the Phase 2 Postgres; the §3 conflict was resolved by Alex on 2026-10-15 with a narrow exception in §3 |
+| 014 | Simpro data access control model (Option 1: CLIVE-managed roles in `clive-gateway`, deny by default; no per-user company permissions, every user sees both configured companies) | **Accepted** 2026-11-03 (Alex); not built (`clive-gateway` does not exist yet). Stores `clive_gateway` on the Phase 2 Postgres; the §3 conflict was resolved by Alex on 2026-10-15 with a narrow exception in §3 |
 | 015 | Conversational access approach (tool calling over a fixed query catalogue) | **Proposed** 2026-10-09 |
 | 016 | `columns` projections: server adds nothing, client asks for the model's required fields (supersedes "`ID` is always included" in ADR-013 §5) | **Accepted** 2026-10-19 (Alex), implemented |
 | 017 | Public repository, private build facts (untracked private store, guard script, rewritten history in a new repository) | **Accepted** 2026-10-19 (Alex) |

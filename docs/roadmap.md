@@ -57,7 +57,7 @@ Simpro conversational access was not in the original scope or Revision 2; it
 was added in October 2026. "3B" places it after Phase 3 and before Phase 4
 without renumbering later phases. None of it exists yet.
 
-- `clive-gateway`: the single runtime importer of `simpro_client` (ADR-009), with a deny-by-default, role-based access control model and audit log (ADR-014, Proposed)
+- `clive-gateway`: the single runtime importer of `simpro_client` (ADR-009), with a deny-by-default, role-based access control model and audit log (ADR-014)
 - An Open WebUI tool that answers questions through a fixed catalogue of read-only queries (ADR-015, Proposed); no free-form text-to-SQL, and Simpro data is never written to the PGVector knowledge base
 - The minimum security slice from Phase 5 (Nginx + HTTPS, LAN-only firewall, Open WebUI hardening)
 - Planned schedule: six sprints over about nine weeks of full-time effort (PDD §12–§13). Entry criteria include completing the course correction sprint (PDD §5)

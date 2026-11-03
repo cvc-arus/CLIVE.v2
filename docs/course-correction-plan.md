@@ -104,6 +104,9 @@ The decision is recorded in `docs/STATUS.md` and, if architectural, in an ADR.
 - **ADR-014:** CLIVE roles operate inside a dedicated read-only Simpro security
   group. Option 2 (per-user login) is more viable than assumed, since Simpro
   enforces security groups per user; revisit once the sandbox allows it to be verified.
+  *Note (2026-11-03):* no such security group exists (2026-10-16), so ADR-014
+  was updated on 2026-10-17 to make `clive-gateway` the only boundary, and
+  accepted on 2026-11-03 (Alex).
 - **Phase 4:** split into 4A and 4B if W2 supports it.
 - **Phase 10:** backup and restore moved into W5; monitoring stays.
 
