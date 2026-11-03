@@ -13,6 +13,7 @@
       "Read(**/.env.production)",
       "Read(**/.env.staging)",
       "Read(**/.env.test)",
+      "Read(docs/simpro/private/adr-015-filter-checks-2026-11-03.md)",
       "Edit(**/.env)",
       "Edit(**/.env.local)",
       "Edit(**/.env.*.local)",
@@ -21,7 +22,8 @@
       "Edit(**/.env.prod)",
       "Edit(**/.env.production)",
       "Edit(**/.env.staging)",
-      "Edit(**/.env.test)"
+      "Edit(**/.env.test)",
+      "Edit(docs/simpro/private/adr-015-filter-checks-2026-11-03.md)"
     ]
   }
 }
