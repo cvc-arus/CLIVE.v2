@@ -170,7 +170,8 @@ def test_companies_list_is_unpaginated_and_holds_both_companies(
 
     assert response.status_code == 200
     assert "Result-Count" in response.headers
-    paging = (PAGE_HEADERS - {"Result-Count"}) & set(response.headers)
+    # Membership, not set(headers): httpx yields header names in lowercase.
+    paging = {h for h in PAGE_HEADERS - {"Result-Count"} if h in response.headers}
     assert not paging, f"/companies/ now pages: headers {sorted(paging)}"
     # A bool, so a failure cannot echo any company ID (root §3, ADR-017).
     wanted = {company_id_for(live_settings, role) for role in COMPANY_ROLES}
@@ -194,7 +195,7 @@ def test_collection_pages_and_rows_validate(
     response = client._get_response(path, params={"page": 1, "pageSize": 5})
 
     assert response.status_code == 200
-    missing = PAGE_HEADERS - set(response.headers)
+    missing = {h for h in PAGE_HEADERS if h not in response.headers}
     assert not missing, f"{resource}: missing headers {sorted(missing)}"
     rows = response.json()
     assert response.headers["Result-Count"] == str(len(rows))

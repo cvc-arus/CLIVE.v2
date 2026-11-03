@@ -174,3 +174,65 @@ security group, rate limiting, and token invalidation across instances); 14
 
 The three "breaks client" items are W1 T4's work, one at a time with tests.
 They are also open entries in `docs/known-issues.md`.
+
+## 7. Live contract tests (W1 T5, 2026-11-03)
+
+The opt-in tests in `tests/test_live_contract.py` (W1 T3) were run against
+CVC's live build at Alex's request, read-only (GETs and token requests
+only), printing test names, pass/fail, status codes, header names and
+validation error locations, never values (root `CLAUDE.md` §3, §9).
+
+First run, at `5e2dba5`:
+
+```text
+20 failed, 5 passed in 151.92s
+```
+
+`SIMPRO_BASE_URL` in `.env` held a mistyped host; only the token requests
+reached Simpro. After Alex corrected it, a second run at `5e2dba5` gave:
+
+```text
+10 failed, 15 passed in 9.46s
+tests/test_live_contract.py:198: AssertionError: customers: missing headers ['Result-Count', 'Result-Pages', 'Result-Total']
+...   (the same for sites, jobs, quotes, employees, in both companies)
+```
+
+This was a test bug, not a Simpro difference: iterating `httpx.Headers`
+yields lowercase names, so `PAGE_HEADERS - set(response.headers)` always
+reported all three headers missing. The same bug made the `/companies/`
+"no paging headers" check unable to fail. Fixed by testing membership
+(`h in response.headers`, case-insensitive) in both places. With that fix:
+
+```text
+25 passed in 8.36s
+```
+
+That run used the fixed test in a scratch copy, and set `SIMPRO_BASE_URL` to
+the configured value plus `/api/v1.0` for the run only, because `.env` lacked
+the path. After Alex added `/api/v1.0` to `.env`, the documented command
+(`SIMPRO_LIVE_TESTS=1 uv run pytest -m live -v --tb=no -rN`, here limited to
+`tests/test_live_contract.py`) with the fixed repository test and no override gave:
+
+```text
+25 passed in 12.71s
+```
+
+A separate value-free check compared two token requests: both `200`,
+`expires_in: 3600`, `token_type: Bearer`, and the second token differed from
+the first.
+
+### 7.1 Items settled
+
+| # | Item | Live result | Severity now |
+|---|---|---|---|
+| 1 | `ID` in a `columns` projection | Confirmed: `columns=Description` on jobs returns only `Description` | Match (fixed in W1 T4, ADR-016) |
+| 2 | `Result-*` headers | All three sent on customers, sites, jobs, quotes and employees in both companies; `Result-Count` equals the rows returned | Match (confirmed) |
+| 4 | `/companies/` paginated or not | Confirmed: `Result-Count` only, now genuinely checked; both configured companies listed | Match (fixed in W1 T4) |
+| 14 | Access token lifetime | `expires_in: 3600`, `Bearer` | Match (confirmed) |
+| 15 | Fetching a new token invalidates the old one | **Not observed.** A second client's token request returned a different token, and the first client's token stayed usable for its next request (`test_token_survives_a_second_client`) | Match: the documented invalidation would have been the harder case. Checked over seconds only, not up to expiry |
+| 17 | Empty date strings | Job detail validates in both companies | Match (fixed in W1 T4) |
+| — | `_href` as a `columns` value (ADR-016) | The client's projection for customers, which adds `_href`, was accepted (no `422`); projections validate for all five collections | Settled |
+
+Still unknown: 6, 7, 9, 10, 11 (error bodies and statuses, the `403` from a
+security group, rate limiting). Not covered: filtering jobs and quotes by
+customer, site, staff member or partial text (ADR-015 live checks).

@@ -25,7 +25,7 @@ build notes, not here (ADR-017).
 | UAT build | Dedicated UAT build via Operations: minimum one user licence per month, possible migration fees | Stated; not used |
 | Authentication | OAuth2 Client Credentials | Resolved: CVC's application uses OAuth2 (API Key not used) |
 | Rate limits | HTTP 429 on throttling; the public docs give 10 requests per second per build (`docs/simpro/mock-vs-public-api.md` item 10); `Retry-After` not specified | Partly documented; to measure (§2.5) |
-| Token lifetime | `expires_in: 3600`; a new token invalidates the old one (`docs/simpro/mock-vs-public-api.md` items 14–15) | Documented; to confirm live |
+| Token lifetime | `expires_in: 3600`; the docs say a new token invalidates the old one (`docs/simpro/mock-vs-public-api.md` items 14–15) | `expires_in` confirmed live 2026-11-03. Invalidation **not observed**: a second token request left the first token usable (`mock-vs-public-api.md` §7) |
 | Documentation | Public: https://developer.simprogroup.com/apidoc/ (Client Credentials workflow: https://developer.simprogroup.com/apidoc/?page=3366d2ea7906f693b27d57ed9cca3acb#tag/Client-credentials-grant-workflow) · in-product: Settings > System Setup > API > Documentation | Stated |
 | Build-specific OpenAPI/Swagger export | Available via Support case | Stated; not requested |
 | Custom fields | Readable via the API; documented at https://developer.simprogroup.com/apidoc/?page=07adc9c3c19b7c17e7309e86c22161a2#tag/ | Stated |
@@ -109,6 +109,9 @@ Keep ADR-010's conservative defaults (8 req/sec, backoff with jitter on 429,
 proactive token refresh and refresh on 401), with every retry delay, including a
 server-supplied `Retry-After`, capped by `SIMPRO_MAX_RETRY_DELAY` (ADR-012).
 Confirm against the live API (W1 T5) without deliberately exceeding the limit.
+**2026-11-03:** W1 T5 confirmed `expires_in: 3600` and that a new token did not
+revoke the previous one; the rate limit was not measured
+(`mock-vs-public-api.md` §7).
 
 ### 2.6 Webhooks: future option, not current scope
 
@@ -174,9 +177,12 @@ Two differences from Simpro's documented token request (`docs/simpro/mock-vs-pub
 - Simpro's docs show the token request as JSON; `auth.py` sends it
   form-encoded, with `client_id` and `client_secret` in the body. **Settled
   2026-10-17:** the live smoke check authenticated with the form-encoded request.
-- A new token invalidates the old one, so `.env`'s credentials should be used
-  by one `SimproClient` at a time (for example, not by a live test run while
-  `clive-gateway` is running).
+- Simpro's docs say a new token invalidates the old one. The live run of
+  2026-11-03 did not see this: a second client's token request left the first
+  client's token usable (`mock-vs-public-api.md` §7). Keep using `.env`'s
+  credentials from one `SimproClient` at a time anyway (for example, not a live
+  test run while `clive-gateway` is running), since only a short window was
+  checked and the documented behaviour may still apply.
 
 Every test builds its own settings pointing at the mock or at `respx`
 (`tests/conftest.py`, `tests/test_client_mock_drift.py`), so live values in
