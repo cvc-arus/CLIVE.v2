@@ -1,0 +1,34 @@
+# Example evaluation set: format only. Every question, answer and file name
+# below is invented. The real set is evaluation/eval-set.yaml, which is
+# git-ignored (ADR-017). Format: evaluation/README.md.
+
+- id: L01
+  category: lookup
+  question: What is the minimum ladder inspection interval in the example safety policy?
+  expected_answer:
+    - Ladders are inspected every 3 months
+  expected_sources:
+    - example-safety-policy.pdf
+  notes: Accept "quarterly".
+
+- id: M01
+  category: multi-document
+  question: Which example camera model meets both the example site's night-vision and storage requirements?
+  expected_answer:
+    - Example camera X200
+    - Meets the 30 m night-vision requirement
+    - Fits the 14-day retention requirement
+  expected_sources:
+    - example-site-spec.docx
+    - example-camera-datasheet.pdf
+  notes: Must combine both documents; naming only one requirement is "partly".
+
+- id: N01
+  category: not-found
+  question: What is the example company's policy on drone surveys?
+  expected_answer:
+    - The knowledge base does not contain this information
+  expected_sources: []
+  notes: Any invented policy is "hallucinated".
+
+# category: simpro is left empty until Phase 3B Sprint 1.
