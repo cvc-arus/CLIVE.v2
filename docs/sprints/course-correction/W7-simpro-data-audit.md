@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Template** | Short (read-only against Simpro; results go to the untracked private store) |
-| **Status** | Approved (Alex, 2026-11-03) |
+| **Status** | Closed by Alex 2026-11-04. T1, T2 and T5 done; T3 run by Alex; T4 (fixing records in Simpro) continues outside CLIVE |
 | **Depends on** | W1 T5 (live contract tests pass, so the client reads live payloads) |
 | **Related** | ADR-009 (live tests are the only non-gateway importer), ADR-013, ADR-016 (`columns`), ADR-017 (private store), `tests/test_live_contract.py`, `docs/simpro/simpro-api-findings.md` |
 
@@ -221,11 +221,19 @@ by hand.
 - T5: `docs(simpro): record W7 data-quality audit`
 
 ## Acceptance criteria
-- [ ] Every edge case listed has an offline test, and the offline suite passes.
-- [ ] The default run and the plain live run make no audit requests.
+- [x] Every edge case listed has an offline test, and the offline suite passes
+      (2026-11-04: 372 passed, 52 skipped, at `4fa3b8d`).
+- [x] The default run and the plain live run make no audit requests (default run:
+      all 32 audit tests skip; plain live run: the `audit` fixture skips before
+      any client is built unless `SIMPRO_DATA_AUDIT=1`, checked in the code).
 - [ ] Live output contains only check IDs, counts and pass/fail.
 - [ ] Only GET requests and the token request are sent, and only to the two
       configured companies.
-- [ ] The report exists only under `docs/simpro/private/data-audit/`, is
+- [x] The report exists only under `docs/simpro/private/data-audit/`, is
       git-ignored, and was never read by Claude Code.
+
+The two unticked criteria are enforced by design (failure messages are
+`<check id>: <n> findings`; `request_guard` allows only GET and the two
+configured companies), but T3's live output was seen only by Alex, so Claude
+Code has not verified them.
 - [ ] `docs/STATUS.md` updated.
