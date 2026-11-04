@@ -14,6 +14,7 @@ the running mock over HTTP. Configuration lives in root `pyproject.toml`
 | Contract conformance | `test_spec_conformance.py` | always | none: payloads are generated from the vendored spec |
 | Manual diagnostic | `scripts/verify-simpro-mock.py` | by hand | local mock |
 | Live Simpro | `test_live_contract.py`, marked `pytest.mark.live` (course correction W1 T3) | only with `SIMPRO_LIVE_TESTS=1`, and only when Alex asks | GET requests and the token request to CVC's live build |
+| Live data-quality audit | `test_live_data_quality.py`, marked `pytest.mark.live` (course correction W7); check logic in `simpro_data_checks.py`, tested offline by `test_simpro_data_checks.py` | only with `SIMPRO_LIVE_TESTS=1` **and** `SIMPRO_DATA_AUDIT=1`, and only when Alex asks | GET requests and the token request to CVC's live build; the report goes to the git-ignored `docs/simpro/private/data-audit/`, which Claude Code never reads |
 
 Rules:
 - New tests are offline unit tests unless the behaviour can only be proven
@@ -28,7 +29,10 @@ Rules:
   no client data (root `CLAUDE.md` §9) and run only when Alex asks, with
   `SIMPRO_LIVE_TESTS=1 uv run pytest -m live -v --tb=no -rN`. Without the
   variable they skip at runtime, so live credentials in `.env` alone never
-  make a run contact Simpro.
+  make a run contact Simpro. The W7 data-quality audit
+  (`test_live_data_quality.py`) also needs `SIMPRO_DATA_AUDIT=1`, so the plain
+  live run never starts it:
+  `COLUMNS=200 SIMPRO_LIVE_TESTS=1 SIMPRO_DATA_AUDIT=1 uv run pytest tests/test_live_data_quality.py -m live -v --tb=no -rfE`.
 - Tests never connect to PostgreSQL directly and never import `simpro_mock`.
   The mock is exercised only through its HTTP API.
 - `test_spec_conformance.py` is the authority on model field names, types and

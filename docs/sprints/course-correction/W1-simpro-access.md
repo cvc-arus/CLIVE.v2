@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Template** | Short |
-| **Status** | Approved |
+| **Status** | Complete — signed off by Alex 2026-11-04 |
 | **Depends on** | — |
 | **Related** | `docs/simpro/simpro-api-findings.md`, ADR-010, ADR-013, ADR-014 |
 
