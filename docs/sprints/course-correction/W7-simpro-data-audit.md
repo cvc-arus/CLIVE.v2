@@ -181,7 +181,7 @@ one per contact. That is out of scope.
 ### T3 — Run the audit (only when Alex asks)
 
 ```bash
-SIMPRO_LIVE_TESTS=1 SIMPRO_DATA_AUDIT=1 uv run pytest tests/test_live_data_quality.py -m live -v --tb=no -rN
+COLUMNS=200 SIMPRO_LIVE_TESTS=1 SIMPRO_DATA_AUDIT=1 uv run pytest tests/test_live_data_quality.py -m live -v --tb=no -rfE
 ```
 
 Report pass or fail and the count for each check. Confirm that
