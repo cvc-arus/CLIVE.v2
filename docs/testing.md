@@ -53,6 +53,14 @@ request) to CVC's live build, in the two configured companies only, and reports 
 counts and pass/fail, never values. Run it only when Alex asks; the command and
 what it covers are in `docs/simpro/simpro-api-findings.md` §2.1.
 
+**Live data-quality audit (opt-in).** `tests/test_live_data_quality.py` is also
+marked `live`, and needs `SIMPRO_DATA_AUDIT=1` as well as `SIMPRO_LIVE_TESTS=1`,
+so the plain live run never starts it (course correction W7). It writes its
+findings to the git-ignored `docs/simpro/private/data-audit/` and prints check
+IDs, counts and pass/fail only. Its check logic, `tests/simpro_data_checks.py`,
+is covered offline by `tests/test_simpro_data_checks.py`. The method and command
+are in `docs/simpro/simpro-api-findings.md` §2.1 and `tests/CLAUDE.md` §1.
+
 ## 4. Manual Diagnostic Script
 
 `scripts/verify-simpro-mock.py` is a comprehensive manual diagnostic — not a pytest test, and deliberately kept outside `tests/` because its helper functions are named `test_list_endpoint`, `test_single_endpoint`, etc. If it lived inside `tests/`, pytest would try (and fail) to collect and run those helpers as real tests. It exercises every one of the mock's 25 routes plus auth and health, printing pass/fail diagnostics and exiting non-zero on the first failure — so expect to fix problems one at a time.

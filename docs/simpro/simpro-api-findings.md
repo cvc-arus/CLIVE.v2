@@ -59,6 +59,17 @@ the shared sandbox.
 
   `--tb=no -rN` keeps tracebacks and the short summary out of the output,
   since Pydantic and exception messages can echo values or the build host.
+- Live also adds: an opt-in data-quality audit of CVC's records (course
+  correction W7), `tests/test_live_data_quality.py`, skipped unless both
+  `SIMPRO_LIVE_TESTS=1` and `SIMPRO_DATA_AUDIT=1` are set. Method: it fetches
+  sites, customers, jobs and quotes as `columns` projections (no custom fields,
+  notes or amounts), then the assets of each site, because assets have no
+  build-wide route. That is one GET per site, so the asset scan dominates the
+  request budget: about 6,500 requests, about 15 minutes. The checks are pure functions in
+  `tests/simpro_data_checks.py`. The findings go only to the git-ignored
+  `docs/simpro/private/data-audit/<date>/`, and the console shows check IDs,
+  counts and pass/fail only. Run only when Alex asks; the command is in
+  `tests/CLAUDE.md` §1.
 - **Read-only:** only `GET` requests and the OAuth2 token request; nothing is
   ever written to Simpro (root `CLAUDE.md` §3).
 - **No client data reaches Claude Code:** live checks print status codes,

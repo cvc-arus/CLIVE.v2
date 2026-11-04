@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Template** | Short |
-| **Status** | Approved |
+| **Status** | Complete 2026-11-04 — T1 run as a written survey (5 responses); T3 ranking proposed by Claude Code for Alex's approval |
 | **Depends on** | — |
 | **Owner** | Alex (human-led; Claude Code formats results only) |
 
@@ -58,7 +58,7 @@ Every row has figures from at least one interview, or is marked "estimate".
 `docs(review): document generation value check`
 
 ## Acceptance criteria
-- [ ] At least 5 people or all document types covered
-- [ ] Ranked table committed
-- [ ] 4A / 4B split proposed (or rejected with reasons)
-- [ ] `STATUS.md` updated
+- [x] At least 5 people or all document types covered (5 survey responses)
+- [x] Ranked table committed (`docs/reviews/doc-generation-value-check.md`)
+- [x] 4A / 4B split proposed
+- [x] `STATUS.md` updated (2026-11-04)
