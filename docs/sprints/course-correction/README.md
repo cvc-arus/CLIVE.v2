@@ -37,6 +37,7 @@ Tasks marked **[HUMAN]** are yours. Claude Code will stop and list them.
 | `W4-evaluation.md` | Evaluation set and baseline | Short |
 | `W5-backups.md` | Backups and restore drill | Full |
 | `W6-docs-consolidation.md` | Documentation consolidation, Phase 3 sign-off | Short |
+| `W7-simpro-data-audit.md` | Simpro data-quality audit (added 2026-11-03) | Short |
 
 ## Rules for every task (added to root `CLAUDE.md` by W6 T6)
 
