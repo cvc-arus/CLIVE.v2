@@ -69,7 +69,7 @@ hallucinated; no question or answer text). Run
 `feat(eval): evaluation set, runner and baseline results`
 
 ## Acceptance criteria
-- [ ] 20–30 approved questions with expected answers and sources
+- [x] 20–30 approved questions with expected answers and sources (40, written by Alex, 2026-11-05)
 - [ ] Runner in repo, documented in `evaluation/README.md` (created by this task)
 - [ ] Value-free baseline summary committed with model and settings recorded; questions and results git-ignored and backed up
 - [ ] `STATUS.md` updated
