@@ -9,7 +9,8 @@ person goes to the private store, behind neutral labels. Section 1 needed no
 such names, so it has no private companion.
 
 Section 2 was added on 2026-10-23 at commit 3966eb7 (W3 T2). Section 3 was
-added on 2026-11-05 at commit 0a4b630 (W3 T3). Section 4 is written by W3 T4.
+added on 2026-11-05 at commit 0a4b630 (W3 T3). Section 4 was added on
+2026-11-05 at commit 9200219 (W3 T4).
 
 ## 1. Current state (W3 T1)
 
@@ -404,3 +405,76 @@ lookup     PASS 22
 multi_doc  FAIL 1
 multi_doc  PASS 9
 ```
+
+## 4. Gap report and options (W3 T4)
+
+Written 2026-11-05 against Open WebUI 0.12.3. The requirements come from the
+scope documents:
+- `docs/scope/master-project-document.md`, Knowledge Base: metadata,
+  versioning, a local vector database and RAG search, for about 5,000
+  documents of the types listed.
+- `docs/scope/clive-scope.md`: "Every document must support metadata",
+  "Every document must support future versioning".
+- The W3 goal: access restriction for sensitive documents.
+
+Before writing, the read-only counts were re-checked at `9200219`. They match
+§2.7: 1 collection, 5 files, 365 chunks in 7 collections, and 0 groups,
+access grants and model rows. No scratch item is left from T2.
+
+### 4.1 Requirements against findings
+
+| Requirement | Result | Evidence | What is missing |
+|---|---|---|---|
+| Metadata on every document | **Partly met** | §2.8: custom fields set at upload reach the file record and every chunk | Retrieval cannot filter on them: no filter in the retrieval API or in chat. Nothing sets the fields today, since manual uploads carry none (§1.4) |
+| Future versioning | **Partly met** | §2.3, §2.8: a content update replaces a file in place, and two uploads coexist unlinked | No version history and no "current version by default". "Future" versioning only needs a stable document identity and version field from the first ingestion, so it can be added later without re-ingesting |
+| Access restriction for sensitive documents | **Met, not usable yet** | §2.4, §2.8: group grants hold in search and chat, including nested groups | No model rows exist, so regular users cannot chat at all (§2.4; still 0 rows on 2026-11-05). Groups and grants are not set up |
+| Deletion (W3 T2) | **Met** | §2.5, §2.8 | — |
+| Local vector database | **Met** | §1.1: pgvector 0.8.6 in the Phase 2 Postgres (ADR-002) | Not load-tested at about 5,000 documents (ADR-002, PDD-phase2). Each chunk is stored twice and padded to 1536 dimensions (§1.3), so vector storage is about four times the minimum |
+| RAG search | **Met, below documented quality** | §1.1, §3.2: hybrid search works; 33 of 34 answerable facts in the W4 set survive extraction | No reranker is configured, although three documents say CrossEncoder reranking is used (§1.1). Top-k is 3 |
+| Document types: PDF, Word | **Met** | §3.1 | PDF tables and headings are flattened to plain lines; DOCX keeps them |
+| Document types: certificates (scans), drawings | **Unknown** | §3.3 | No scanned PDF and no drawing in the T3 sample. OCR fails on handwriting |
+
+### 4.2 Options
+
+| Option | What it means | Effort (rough) | Risk |
+|---|---|---|---|
+| **A. Keep** as is | Bulk-upload through the Open WebUI interface | None | **High.** About 5,000 documents with no metadata and no document identity: adding either later means re-ingesting everything, the cost W3 exists to avoid. Regular users still cannot chat |
+| **B. Extend: ingestion conventions** (no new service) | A CLIVE ingestion script calls Open WebUI's own API (the calls tested in §2). Each upload sets the metadata fields plus `doc_id` and `version`. Collections are split by document family and sensitivity, each granted to groups, so the choice of collection acts as the filter. A superseded version moves to an admin-only archive collection, so the current version is the default and old versions stay retrievable on purpose. Model rows and groups are created so regular users can chat | 3–5 days, plus Alex's time on the field list and collection layout | **Medium-low.** Relies on Open WebUI's API, which changed behaviour between 0.11 and 0.12 (§2.8: a 400 became a 500); the image is pinned (ADR-018), and the script's checks re-run on each upgrade. Retrieval still cannot filter on metadata within a collection |
+| **B+. Extend: patch Open WebUI** to expose the metadata filter | A local change to `QueryCollectionsForm` and the chat path. The pgvector client already accepts a filter (§2.8) | 2–4 days, then re-applied on every upgrade | **High.** A fork to maintain; it breaks the pinned-release model of ADR-018 |
+| **C. Own the pipeline** | A CLIVE ingestion service writes chunks and metadata to pgvector, and a retrieval tool, like the planned `clive-gateway`, serves filtered, versioned search. Open WebUI stays the front end | 3–6 weeks; needs an ADR (new service, persistence strategy) | **Medium.** Full control of metadata filters, versions and table-aware chunking, but it duplicates what Open WebUI does today, adds a service to secure and back up, and competes with Phase 3B for the same effort |
+| **D. Extraction improvements** (alongside any option) | (1) Test scanned PDFs and drawings before bulk ingestion. (2) If tables matter, which the W4 evaluation can show, try a table-aware extraction engine; Open WebUI supports Docling, which would be a new container. (3) Treat handwriting and drawings as metadata-only unless tests show otherwise | (1) under a day; (2) 2–3 days to evaluate; it needs an ADR to adopt | **Low** for (1). (2) adds a service. The 1 handwriting miss in §3.2 shows OCR's limit, not a pipeline fault |
+
+Also needed under every option, and small: configure a reranker or correct the
+three documents that claim one (§1.1), and decide whether the duplicate chunk
+copies and 1536-dimension padding matter at 5,000 documents.
+
+### 4.3 Recommendation (non-binding)
+
+**Option B, with D(1) first; C only if evidence calls for it.**
+
+- B meets the scope as written: metadata on every document, and the
+  `doc_id`/`version` fields that make future versioning possible without
+  re-ingesting. It also makes access restriction usable, with no new service,
+  store or dependency.
+- The one gap B leaves is metadata filtering within a collection. The W4
+  evaluation is the right place to measure whether that gap costs answer
+  quality. If it does, C becomes the next step and needs its own ADR.
+- B+ is not recommended, because of the fork it creates.
+
+**No ADR is drafted.** B uses Open WebUI's existing API and adds no service,
+store, dependency category or architectural change (root `CLAUDE.md` §3).
+Its conventions (fields, collection layout, version rule) belong in the
+ingestion task's plan. C, or adopting Docling, would each need an ADR.
+
+**Bulk ingestion: keep it paused** until all of these are done:
+1. Alex approves B's field list and collection layout.
+2. The ingestion script is built and tested on synthetic documents.
+3. Model rows and groups exist, so a regular user can chat with a granted
+   collection.
+4. Scanned PDFs and drawings have been spot-checked (D1).
+
+The W4 baseline should run on the knowledge base as it will be (after items
+1–3), not on today's five unlabelled files.
+
+This is Alex's decision. The outcome goes to `docs/STATUS.md`, and to an ADR
+if C or Docling is chosen.
