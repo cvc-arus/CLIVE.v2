@@ -5,7 +5,7 @@ changes are judged on evidence rather than impression. It comes from course corr
 (`docs/sprints/course-correction/W4-evaluation.md`). Phase 3B's model choice will use
 it.
 
-> **Status of this folder:** W4 T1 design, awaiting Alex's approval. The runner
+> **Status of this folder:** W4 T1 design, approved by Alex 2026-11-04. The runner
 > (`scripts/eval/run_eval.py`) does not exist yet; T3 builds it. Current status is in
 > `docs/STATUS.md`.
 
