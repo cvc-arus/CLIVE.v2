@@ -58,8 +58,30 @@ Claude Code never runs the script or reads its inputs or text outputs.
 Alex selects ~10 representative files (tender PDF with tables, RAMS,
 contract, scanned certificate, equipment datasheet, drawing), runs the
 script, reviews the text, and records quality per file.
-**Stop point:** quality table per file (e.g. `F3`, scanned certificate);
-label-to-file mapping and extracted text kept in the private store only.
+
+Output layout, all under the git-ignored
+`docs/simpro/private/kb-extraction/<YYYY-MM-DD>/` (ADR-017):
+
+| Path | Holds | Claude Code may read? |
+|---|---|---|
+| `labels.md` | Neutral label (`F1`…) → file name and type | **No** |
+| `text/<label>.txt` | Extracted text | **No** |
+| `metrics.json` | Per label: type, numbers and parser names only; no file names, no text | Yes (T4 uses it) |
+
+Safeguards, as in W7:
+- Before writing anything, the script runs `git check-ignore` on the output
+  directory and aborts if it is not ignored. Directory mode is 0700 and file
+  mode 0600.
+- The script prints labels, counts and pass/fail only, never file names or
+  text.
+- Claude Code adds `Read`, `Edit` and `Bash` deny rules for
+  `docs/simpro/private/kb-extraction/*/text/**` and
+  `docs/simpro/private/kb-extraction/*/labels.md` to `.claude/settings.json`,
+  in the same change as the script.
+
+**Stop point:** quality table per file (e.g. `F3`, scanned certificate),
+built from Alex's review and `metrics.json`; label-to-file mapping and
+extracted text kept in the private store only.
 
 ### T4 — Gap report and options
 Complete `docs/reviews/kb-audit-2026-10.md` with:
