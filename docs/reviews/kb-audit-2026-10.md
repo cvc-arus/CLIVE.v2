@@ -8,8 +8,8 @@ counts and pass/fail only. Anything naming a document, file, customer or
 person goes to the private store, behind neutral labels. Section 1 needed no
 such names, so it has no private companion.
 
-Section 2 was added on 2026-10-23 at commit 3966eb7 (W3 T2). Sections 3–4 are
-written by W3 T3–T4.
+Section 2 was added on 2026-10-23 at commit 3966eb7 (W3 T2). Section 3 was
+added on 2026-11-05 at commit 0a4b630 (W3 T3). Section 4 is written by W3 T4.
 
 ## 1. Current state (W3 T1)
 
@@ -304,3 +304,103 @@ copies and deleted the file record.
 - SQLite: files / collections / links 5 / 1 / 5; models, grants, groups and
   group members 0.
 - The new `model_history` table is empty.
+
+## 3. Extraction spot-check (W3 T3)
+
+Run 2026-11-05 against Tika 3.3.1 (`apache/tika:3.3.1.0-full`) with
+`scripts/extraction_spotcheck.py` at commit `0a4b630`. Alex chose the ten
+files and ran the script. It makes the same `PUT /tika/text` call Open WebUI
+0.12.3 makes, then calls `PUT /tika/html` to get the page structure.
+
+The files are named here only by label and type. The label-to-file mapping
+and the extracted text are in the private store
+(`docs/simpro/private/kb-extraction/2026-11-05/`, ADR-017). For this run only,
+Alex let Claude Code open the source folder for the fact check in §3.2.
+Claude Code did not read the private text files.
+
+### 3.1 Per file
+
+Figures come from `metrics.json`. A page counts as empty when it has fewer
+than 20 non-whitespace characters. For DOCX files, the page count is Word's own
+count from the file's metadata.
+
+| Label | Type | Pages | Chars/page | Empty pages | Tables / rows | Headings | OCR | Result |
+|---|---|---|---|---|---|---|---|---|
+| F1 | Product datasheet, PDF | 5 | 2,040 | 0 | 0 / 0 | 0 | no | Text layer complete |
+| F2 | Product datasheet, PDF | 1 | 2,132 | 0 | 0 / 0 | 0 | no | Text complete; spec table flattened to `label (unit) value` lines |
+| F3 | Customer proposal, PDF | 15 | 1,584 | 0 | 0 / 0 | 0 | no | Text layer complete |
+| F4 | Supplier registration record, PDF | 2 | 1,145 | 0 | 0 / 0 | 0 | no | Text layer complete |
+| F5 | Photographed invoice, JPEG | — | 1,366 chars | — | 0 / 0 | 0 | yes | Printed text read with some character errors; handwritten note largely lost |
+| F6 | Company policy, PDF | 14 | 1,974 | 0 | 0 / 0 | 0 | no | Text layer complete |
+| F7 | Combined datasheet pack, PDF | 49 | 1,387 | 0 | 0 / 0 | 0 | no | Text layer complete |
+| F8 | Tender response, DOCX | 40 | 1,380 | — | 34 / 149 | 16 | no | Tables and headings kept |
+| F9 | Technical submission, DOCX | 17 | 2,114 | — | 1 / 104 | 0 | no | Parts table kept as one table |
+| F10 | Equipment model schedule, DOCX | 3 | 908 | — | 4 / 34 | 16 | no | Tables and headings kept |
+
+All ten files extracted without errors or Tika warnings, in at most 4.4 s each.
+
+### 3.2 Fact check against the W4 question set
+
+Alex's W4 evaluation set has 40 questions. It is git-ignored, and its questions
+are not reproduced here. Each question has must-include facts and the
+documents that hold them. A scratch check, not tracked, re-extracted each source
+file in memory the way Open WebUI does. It then looked for every fact in the
+text of the question's documents, after lowercasing and removing whitespace and
+thousands separators. The check printed only question IDs and pass/fail.
+
+The first run failed five more questions, but the fault was in the checker,
+not in extraction. It did not map `&` in a file name to `_` the way the
+question set's source names do, and it did not remove thousands separators.
+Both were fixed before the run below.
+
+| Category | Questions | All facts in the extracted text | Missing |
+|---|---|---|---|
+| lookup | 24 | 22 | 2 |
+| multi_doc | 10 | 9 | 1 |
+| not_found | 6 | — (no facts to find) | — |
+
+Of the three misses, only one is a real extraction gap:
+
+- **One lookup: real gap.** A handwritten note on the photographed invoice
+  (F5) is not read by OCR. The amount is lost; one word survives.
+- **One lookup and one multi_doc: the facts are in the text.** F2's spec table
+  comes out as `label (unit) value`, so the unit sits before the number.
+  A model can read it, but the question set's exact `value+unit` patterns do
+  not match. This is a fix to the question set, not an extraction gap.
+
+So 33 of the 34 facts that should be answerable are present in what Open WebUI
+would index. 4 of the 6 `not_found` questions have distractor values present in
+the corpus, which makes them a real test of hallucination.
+
+### 3.3 Findings
+
+- **PDF tables and headings are not kept.** Tika's PDF parser emits no table
+  or heading markup, so the spec tables in F1, F2 and F7 become plain lines.
+  The values survive, but row and column structure is lost before chunking.
+  DOCX tables and headings are kept.
+- **OCR works on printed text, not handwriting.** F5 (JPEG) went through
+  Tesseract. Its printed fields were read with some errors, and the handwriting
+  was not. No PDF needed OCR: every PDF page had a text layer.
+- **Two of the task's file types were not in the sample:** a scanned PDF
+  certificate and a drawing. OCR on scanned PDFs, and drawings, are therefore
+  untested.
+
+### 3.4 Commands
+
+```bash
+# Alex, 2026-11-05 (input folder outside the repository)
+uv run python scripts/extraction_spotcheck.py <folder>
+# Claude Code: per-file figures from
+# docs/simpro/private/kb-extraction/2026-11-05/metrics.json
+# Claude Code: fact check (scratch script, not tracked; prints IDs and pass/fail)
+uv run --with pyyaml==6.0.2 python answerability.py evaluation/eval-set.yaml <folder>
+```
+
+Fact check summary output (after the two checker fixes in §3.2):
+
+```text
+lookup     FAIL 2
+lookup     PASS 22
+multi_doc  FAIL 1
+multi_doc  PASS 9
+```
