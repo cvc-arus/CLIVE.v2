@@ -50,13 +50,16 @@ Test in a **scratch collection** (create and later delete with Alex's approval):
 **Stop point:** pass/fail per test with evidence.
 
 ### T3 — [HUMAN + Claude Code] Extraction spot-check
-Alex selects ~10 representative files: tender PDF with tables, RAMS, contract,
-scanned certificate, equipment datasheet, drawing. Claude Code runs them
-through Tika (the existing container), and records extracted text quality:
-tables intact, headings kept, scanned text present, drawings readable.
-**Stop point:** quality table per file, with each file identified by a
-neutral label and its type (for example `F3`, scanned certificate); the
-label-to-file mapping is kept in the private store only.
+Claude Code writes `scripts/extraction_spotcheck.py`: sends each file in a
+given folder to the existing Tika container, writes extracted text to the
+private store under neutral labels, and writes a numbers-only metrics file
+(chars/page, empty-page share, table/heading counts, OCR used, parser).
+Claude Code never runs the script or reads its inputs or text outputs.
+Alex selects ~10 representative files (tender PDF with tables, RAMS,
+contract, scanned certificate, equipment datasheet, drawing), runs the
+script, reviews the text, and records quality per file.
+**Stop point:** quality table per file (e.g. `F3`, scanned certificate);
+label-to-file mapping and extracted text kept in the private store only.
 
 ### T4 — Gap report and options
 Complete `docs/reviews/kb-audit-2026-10.md` with:
