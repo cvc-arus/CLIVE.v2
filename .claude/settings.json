@@ -16,6 +16,10 @@
       "Read(docs/simpro/private/adr-015-filter-checks-2026-11-03.md)",
       "Read(docs/simpro/private/data-audit/**)",
       "Bash(*private/data-audit*)",
+      "Read(docs/simpro/private/kb-extraction/*/text/**)",
+      "Read(docs/simpro/private/kb-extraction/*/labels.md)",
+      "Bash(*kb-extraction*text*)",
+      "Bash(*kb-extraction*labels*)",
       "Edit(**/.env)",
       "Edit(**/.env.local)",
       "Edit(**/.env.*.local)",
@@ -26,7 +30,9 @@
       "Edit(**/.env.staging)",
       "Edit(**/.env.test)",
       "Edit(docs/simpro/private/adr-015-filter-checks-2026-11-03.md)",
-      "Edit(docs/simpro/private/data-audit/**)"
+      "Edit(docs/simpro/private/data-audit/**)",
+      "Edit(docs/simpro/private/kb-extraction/*/text/**)",
+      "Edit(docs/simpro/private/kb-extraction/*/labels.md)"
     ]
   }
 }
