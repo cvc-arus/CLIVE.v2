@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Template** | Short (read-only review; any fixes become a separate sprint) |
-| **Status** | Approved |
+| **Status** | Complete 2026-11-05 — option B accepted by Alex; bulk ingestion paused until its conditions are met |
 | **Depends on** | W5 complete (backups exist before inspecting live data) |
 | **Related** | Phase 2 docs (`docs/PDDs/PDD-phase2.md`), ADR-002 (pgvector), ADR-003 (Tika) |
 
@@ -108,4 +108,4 @@ Documentation only: `git revert`. Scratch collection deletion is the only data c
 - [x] Four requirement tests run with evidence (T2, 2026-10-23)
 - [x] Extraction quality recorded for representative files (T3, 2026-11-05; scanned PDFs and drawings not in the sample)
 - [x] Gap report with options and recommendation (T4, 2026-11-05; awaiting Alex's decision)
-- [ ] `STATUS.md` updated (including whether bulk ingestion may resume)
+- [x] `STATUS.md` updated (including whether bulk ingestion may resume): paused until option B's four conditions are met (2026-11-05)
