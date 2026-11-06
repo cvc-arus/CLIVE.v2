@@ -15,7 +15,7 @@ dependencies = [
     "psycopg2-binary==2.9.12",
     "alembic==1.19.1",
     "pydantic-settings==2.15.0",
-    "python-multipart==0.0.27",
+    "python-multipart==0.0.31",
 ]
 
 [project.optional-dependencies]
