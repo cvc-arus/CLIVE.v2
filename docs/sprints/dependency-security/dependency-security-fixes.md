@@ -5,7 +5,7 @@
 
 | | |
 |---|---|
-| **Status** | Approved by Alex 2026-11-06 |
+| **Status** | Approved by Alex 2026-11-06. Complete 2026-11-09: T1–T3 merged (PRs #44, #45), 0 open Dependabot alerts (13 fixed) |
 | **Depends on** | Nothing |
 | **Related ADRs** | ADR-004 (httpx), ADR-007 (pydantic-settings). No new ADR: version updates of packages already in use, no new dependency or category |
 
@@ -158,10 +158,10 @@ Unchanged.
 
 ## 14. Acceptance criteria
 
-- [ ] Root lock: certifi ≥ 2026.10.18, python-dotenv 1.2.3
-- [ ] Mock lock: certifi ≥ 2026.10.18, Mako ≥ 1.4.2, python-multipart 0.0.31
-- [ ] Offline suite and whole-repo lint pass
-- [ ] Mock rebuilt; integration tests pass
-- [ ] Live TLS check passed (T3, Alex)
-- [ ] Zero open Dependabot alerts on `main`
-- [ ] `STATUS.md`, CHANGELOG and `docs/README.md` updated
+- [x] Root lock: certifi ≥ 2026.10.18, python-dotenv 1.2.3
+- [x] Mock lock: certifi ≥ 2026.10.18, Mako ≥ 1.4.2, python-multipart 0.0.31
+- [x] Offline suite and whole-repo lint pass
+- [x] Mock rebuilt; integration tests pass
+- [x] Live TLS check passed (T3, Alex)
+- [x] Zero open Dependabot alerts on `main`
+- [x] `STATUS.md`, CHANGELOG and `docs/README.md` updated

@@ -4,7 +4,7 @@
 > (`/status-update`). Keep this file short: history belongs in `docs/CHANGELOG.md`,
 > decisions in `docs/ADR/`.
 
-**Last updated:** 2026-11-06
+**Last updated:** 2026-11-09
 
 ## Phases
 
@@ -17,7 +17,7 @@ Phase list and scope: `docs/roadmap.md`.
 | 3 | Simpro API Integration | ✅ Closed 2026-10-09 (Alex). Evidence: `docs/phase3/phase3-signoff.md` |
 | — | Course correction sprint | 🔶 In progress — resumed 2026-10-21 (Alex) after the public-release sprint |
 | — | Public-release sprint | ✅ Complete 2026-10-21 (Alex): `docs/sprints/public-release/public-release-split.md`. The rewritten history is the **public** repository `cvc-arus/CLIVE.v2`; `check-public-safe.py --history` and gitleaks are clean on it; the working copy is a clone of it. The old `cvc-arus/CLIVE-I` is archived and private; deleting it is Alex's later decision (D2) |
-| — | Dependency security fixes | 🔶 T1–T3 done 2026-11-06, merged (PRs #44, #45): certifi, python-dotenv, python-multipart, Mako updated; live contract tests 25/25 with the new CA bundle. T4 close-out waits for Dependabot to re-scan `main`. Plan: `docs/sprints/dependency-security/dependency-security-fixes.md` |
+| — | Dependency security fixes | ✅ Complete 2026-11-09: certifi, python-dotenv, python-multipart and Mako updated (PRs #44, #45); live contract tests 25/25 with the new CA bundle; 0 open Dependabot alerts (13 fixed). Plan: `docs/sprints/dependency-security/dependency-security-fixes.md` |
 | 3B | Simpro Conversational Access | 📝 Planned — PDD drafted; ADR-014 and ADR-015 accepted 2026-11-03 (Alex); order set at decision point |
 | 4 | Document Generation (4A / 4B split proposed by W2; decided at the decision point) | ⏳ Not started; no longer blocked (ADR-009 decided) |
 | 5 | Security & Reverse Proxy (minimum slice moves into 3B) | ⏳ Not started |
@@ -38,7 +38,7 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 | W6 Docs consolidation | ✅ Complete 2026-10-15 | Accepted by Alex. `STATUS.md` owns status; Phase 3 evidence in `phase3/phase3-signoff.md`; ADR index conventions merged; Simpro findings applied to Phase 3B; root `CLAUDE.md` additions merged and `/sprint-task`, `/status-update` confirmed; `PDD-phase3.md` revised and closed; `docs/reviews/` created. Security documentation deferred to Phase 3B Sprint 2 |
 | W7 Simpro data-quality audit | ✅ Closed 2026-11-04 (Alex) | Opt-in, read-only audit (`tests/test_live_data_quality.py`, double opt-in); run by Alex; findings only in the git-ignored private store, never read by Claude Code. Fixing the records is Alex's work in Simpro (T4), outside CLIVE |
 
-**Next task:** dependency security fixes T4 (close-out: Dependabot shows 0 open alerts, 13 fixed, 2026-11-06). Option B needs scoping as its own task: Alex approves the field list and collection layout first; scanned-PDF and drawing spot-check (D1) alongside. W4 T4 baseline after B's conditions 1–3.
+**Next task:** scope option B as its own task: Alex approves the field list and collection layout first; scanned-PDF and drawing spot-check (D1) alongside. W4 T4 baseline after B's conditions 1–3.
 **Next decision:** phase order, at end of sprint.
 
 ## Simpro access
@@ -57,7 +57,6 @@ Plan: `docs/course-correction-plan.md` · Tasks: `docs/sprints/course-correction
 | Both SSDs are past their rated write endurance (129 % and 116 %), from the same batch, so both could fail close together | Open — deferred until production (Alex, 2026-10-21): replace both, `sdb` first; firmware update to be looked into (Alex, 2026-10-14). See `docs/recovery-plan.md` §9 |
 | Knowledge base does not yet meet the metadata, versioning and access requirements (W3 §4.1) | Mitigation decided (Alex, 2026-11-05): option B; bulk ingestion paused until its four conditions are met (W3 row) |
 | Simpro's API application has no dedicated read-only security group: Simpro does not stop CLIVE writing, and a leaked client secret could write (detail in the private build notes, ADR-017) | Open (Alex, 2026-10-16). Guards are the read-only rule (root `CLAUDE.md` §3) and the GET-only client. See `docs/simpro/simpro-api-findings.md` §2.2 |
-| 13 open Dependabot alerts on `main` (found 2026-11-06). Only one matters: `certifi` 2026.7.22 trusts emSign roots with compromised intermediate keys (GHSA-6q48-6c7w-9gw2), and `httpx` uses it to verify TLS on live Simpro calls, including the token request. The rest (`python-dotenv`, and the mock's `python-multipart` and `Mako`) have low or no impact | Fix merged 2026-11-06 (PRs #44, #45) and verified live (25/25); GitHub had not re-scanned the alerts when last checked. Closed in the plan's T4 |
 | Simpro rate limit not confirmed | Open — public docs give 10 req/s per build; conservative defaults kept (ADR-010, ADR-012); not measured in W1 T5. Token lifetime confirmed live 2026-11-03 (3600 s; a new token did not revoke the old one, `docs/simpro/mock-vs-public-api.md` §7) |
 | `.env` is not backed up until the GPG key pair exists; until then the private build notes are a plain copy in the 0700 backup folder (ADR-017, D6) | Open — deferred until production (Alex, 2026-10-21) |
 | Open WebUI's signing key (`WEBUI_SECRET_KEY`) is generated inside the container, not backed up: a restore or container rebuild logs everyone out | Open — deferred until production (Alex, 2026-10-21); fix needs `WEBUI_SECRET_KEY` in `.env` and Compose. See `docs/recovery-plan.md` §10 |
