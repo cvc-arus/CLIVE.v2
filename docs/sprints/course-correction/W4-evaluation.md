@@ -70,6 +70,6 @@ hallucinated; no question or answer text). Run
 
 ## Acceptance criteria
 - [x] 20–30 approved questions with expected answers and sources (40, written by Alex, 2026-11-05)
-- [ ] Runner in repo, documented in `evaluation/README.md` (created by this task)
+- [x] Runner in repo, documented in `evaluation/README.md` (created by this task) (T3, 2026-11-06; dry run on 3 questions: 3/3 answered)
 - [ ] Value-free baseline summary committed with model and settings recorded; questions and results git-ignored and backed up
 - [ ] `STATUS.md` updated

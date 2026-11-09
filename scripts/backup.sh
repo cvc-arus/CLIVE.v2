@@ -11,6 +11,9 @@
 #   - the private build notes (docs/simpro/private/, ADR-017), encrypted to the
 #     same key, or a plain copy in this 0700 folder until BACKUP_GPG_RECIPIENT
 #     is set
+#   - the evaluation set and results (evaluation/eval-set.yaml and
+#     evaluation/results/, git-ignored client content; W4 T3), handled like
+#     the private build notes
 #   - the Ollama model list and the running image digests
 # and writes a SHA-256 MANIFEST.txt, verified before the backup is accepted.
 #
@@ -28,6 +31,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ENV_FILE="${REPO_DIR}/.env"
 PRIVATE_DIR="${REPO_DIR}/docs/simpro/private"
+EVAL_PATHS=(evaluation/eval-set.yaml evaluation/results)
 
 # Load only BACKUP_* settings from .env; values already in the environment win.
 # Whitespace (including a CR from Windows line endings) around keys and values
@@ -229,8 +233,8 @@ else
 fi
 
 # --- 6. Private build notes --------------------------------------------------
-STEP="private build notes"
-log "[6/8] Private build notes"
+STEP="private build notes and evaluation set"
+log "[6/8] Private build notes and evaluation set"
 if [[ ! -d "${PRIVATE_DIR}" ]]; then
     log "      WARNING: ${PRIVATE_DIR} not found; private build notes NOT backed up (ADR-017)"
     echo "private build notes not backed up: ${PRIVATE_DIR} not found" >>"${PARTIAL}/NOTES.txt"
@@ -243,6 +247,24 @@ else
     gzip -t "${PARTIAL}/private-notes.tar.gz"
     log "      WARNING: plain copy (BACKUP_GPG_RECIPIENT is not set); protected only by this folder's 0700 mode"
     echo "private build notes stored unencrypted: BACKUP_GPG_RECIPIENT not set" >>"${PARTIAL}/NOTES.txt"
+fi
+
+# Evaluation set and results (W4 T3): git-ignored client content, same handling.
+eval_present=()
+for p in "${EVAL_PATHS[@]}"; do
+    [[ -e "${REPO_DIR}/${p}" ]] && eval_present+=("${p}")
+done
+if [[ ${#eval_present[@]} -eq 0 ]]; then
+    log "      evaluation set: nothing to back up"
+elif [[ -n "${GPG_RECIPIENT}" ]]; then
+    tar czf - -C "${REPO_DIR}" "${eval_present[@]}" | gpg --batch --yes --quiet --trust-model always --encrypt \
+        --recipient "${GPG_RECIPIENT}" --output "${PARTIAL}/evaluation.tar.gz.gpg"
+    log "      evaluation set encrypted to evaluation.tar.gz.gpg"
+else
+    tar czf "${PARTIAL}/evaluation.tar.gz" -C "${REPO_DIR}" "${eval_present[@]}"
+    gzip -t "${PARTIAL}/evaluation.tar.gz"
+    log "      WARNING: evaluation set is a plain copy (BACKUP_GPG_RECIPIENT is not set)"
+    echo "evaluation set stored unencrypted: BACKUP_GPG_RECIPIENT not set" >>"${PARTIAL}/NOTES.txt"
 fi
 
 # --- 7. Model list and image versions -------------------------------------
