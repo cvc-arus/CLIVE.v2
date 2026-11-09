@@ -1,9 +1,11 @@
 # CLAUDE.md — `tests/`
 
 Complements the root `CLAUDE.md`. All tests here target `simpro_client`, or
-the running mock over HTTP. Configuration lives in root `pyproject.toml`
-(`testpaths = ["tests"]`, `pythonpath = ["src"]`, markers `integration` and
-`live`).
+the running mock over HTTP. One exception: `test_eval_runner.py` tests the
+evaluation runner script (`scripts/eval/run_eval.py`, W4 T3) offline, with
+Open WebUI faked by `respx` and invented content only. Configuration lives
+in root `pyproject.toml` (`testpaths = ["tests"]`, `pythonpath = ["src"]`,
+markers `integration` and `live`).
 
 ## 1. Test layers
 

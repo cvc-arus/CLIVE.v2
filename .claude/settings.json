@@ -1,6 +1,6 @@
 {
   "permissions": {
-    "ask":[
+    "ask": [
       "Bash(git push *)"
     ],
     "deny": [
@@ -20,6 +20,10 @@
       "Read(docs/simpro/private/kb-extraction/*/labels.md)",
       "Bash(*kb-extraction*text*)",
       "Bash(*kb-extraction*labels*)",
+      "Read(evaluation/eval-set.yaml)",
+      "Read(evaluation/results/**)",
+      "Bash(*evaluation/results*)",
+      "Bash(*eval-set.yaml*)",
       "Edit(**/.env)",
       "Edit(**/.env.local)",
       "Edit(**/.env.*.local)",
@@ -32,7 +36,9 @@
       "Edit(docs/simpro/private/adr-015-filter-checks-2026-11-03.md)",
       "Edit(docs/simpro/private/data-audit/**)",
       "Edit(docs/simpro/private/kb-extraction/*/text/**)",
-      "Edit(docs/simpro/private/kb-extraction/*/labels.md)"
+      "Edit(docs/simpro/private/kb-extraction/*/labels.md)",
+      "Edit(evaluation/eval-set.yaml)",
+      "Edit(evaluation/results/**)"
     ]
   }
 }

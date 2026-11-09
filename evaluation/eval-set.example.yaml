@@ -2,33 +2,40 @@
 # below is invented. The real set is evaluation/eval-set.yaml, which is
 # git-ignored (ADR-017). Format: evaluation/README.md.
 
-- id: L01
-  category: lookup
-  question: What is the minimum ladder inspection interval in the example safety policy?
-  expected_answer:
-    - Ladders are inspected every 3 months
-  expected_sources:
-    - example-safety-policy.pdf
-  notes: Accept "quarterly".
+version: 1
+questions:
+  - id: L01
+    category: lookup
+    question: What is the minimum ladder inspection interval in the example safety policy?
+    reference_answer: Ladders are inspected every 3 months.
+    must_include:
+      - [3 months, three months, quarterly]
+    source_groups:
+      - [example-safety-policy.pdf]
+    source_locator: Section 4.2, inspection table
+    distractors: [6 months, 12 months]
 
-- id: M01
-  category: multi-document
-  question: Which example camera model meets both the example site's night-vision and storage requirements?
-  expected_answer:
-    - Example camera X200
-    - Meets the 30 m night-vision requirement
-    - Fits the 14-day retention requirement
-  expected_sources:
-    - example-site-spec.docx
-    - example-camera-datasheet.pdf
-  notes: Must combine both documents; naming only one requirement is "partly".
+  - id: M01
+    category: multi_doc
+    question: Which example camera model meets both the example site's night-vision and storage requirements?
+    reference_answer: The X200 meets the 30 m night-vision and 14-day retention requirements.
+    must_include:
+      - [x200]
+      - [30 m, 30 metres]
+      - [14 days, 14-day]
+    source_groups:
+      - [example-site-spec.docx]
+      - [example-camera-datasheet.pdf, example-camera-datasheet-v2.pdf]
+    source_locator: Spec section 3; datasheet page 2
+    distractors: [x100]
 
-- id: N01
-  category: not-found
-  question: What is the example company's policy on drone surveys?
-  expected_answer:
-    - The knowledge base does not contain this information
-  expected_sources: []
-  notes: Any invented policy is "hallucinated".
+  - id: N01
+    category: not_found
+    question: What is the example company's policy on drone surveys?
+    reference_answer: The knowledge base does not contain this information.
+    must_include: []
+    source_groups: []
+    source_locator: ""
+    distractors: []
 
-# category: simpro is left empty until Phase 3B Sprint 1.
+# A simpro category is added in Phase 3B Sprint 1.
