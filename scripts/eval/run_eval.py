@@ -160,7 +160,11 @@ def select_questions(
         if unknown:
             raise EvalSetError(f"unknown id(s): {', '.join(unknown)}")
         questions = [q for q in questions if q["id"] in ids]
-    return questions[:limit] if limit else questions
+    if limit is None:
+        return questions
+    if limit < 1:
+        raise EvalSetError("limit must be at least 1")
+    return questions[:limit]
 
 
 # --- Marking aids ---------------------------------------------------------------
@@ -183,10 +187,26 @@ def normalise_name(name: str) -> str:
     return re.sub(r"[^a-z0-9]", "", name.lower())
 
 
+def term_in_text(term: str, text: str) -> bool:
+    """Return whether ``term`` appears in ``text``, as a fact rather than a fragment.
+
+    Case, commas and whitespace are ignored, as in ``normalise_text``. A term
+    that starts or ends with a digit must not continue into a longer number, so
+    ``60mm`` is not found in ``160mm`` or ``2.60mm``, nor ``IP6`` in ``IP68``.
+    An empty term is never found.
+    """
+    chars = normalise_text(term)
+    if not chars:
+        return False
+    before = r"(?<!\d)(?<!\d[.,])" if chars[0].isdecimal() else ""
+    after = r"(?!\d)(?![.,]\d)" if chars[-1].isdecimal() else ""
+    body = r"[\s,]*".join(re.escape(c) for c in chars)
+    return re.search(before + body + after, text.lower()) is not None
+
+
 def groups_found(answer: str, groups: list[list[str]]) -> int:
     """Count ``must_include`` groups with at least one alternative in the answer."""
-    text = normalise_text(answer)
-    return sum(1 for group in groups if any(normalise_text(a) in text for a in group))
+    return sum(1 for group in groups if any(term_in_text(a, answer) for a in group))
 
 
 def _same_file(expected: str, cited: str) -> bool:
@@ -207,19 +227,34 @@ def source_groups_hit(cited_names: list[str], groups: list[list[str]]) -> int:
 
 def distractors_present(answer: str, distractors: list[str]) -> int:
     """Count distractors (known wrong facts) that appear in the answer."""
-    text = normalise_text(answer)
-    return sum(1 for d in distractors if normalise_text(d) in text)
+    return sum(1 for d in distractors if term_in_text(d, answer))
 
 
 # --- Open WebUI ---------------------------------------------------------------
 
 
+def _get_json_object(client: httpx.Client, path: str) -> dict[str, Any]:
+    """GET ``path`` and return its JSON object.
+
+    Raises ``ValueError`` when the body is not JSON or not an object (for
+    example an HTML login page served with status 200).
+    """
+    data = client.get(path).raise_for_status().json()
+    if not isinstance(data, dict):
+        raise ValueError(f"{path}: response is not a JSON object")
+    return data
+
+
 def settings_snapshot(client: httpx.Client) -> dict[str, Any]:
-    """Record the Open WebUI version and the allow-listed retrieval settings."""
-    version = client.get("/api/version").raise_for_status().json().get("version")
-    rag = client.get("/api/v1/retrieval/config").raise_for_status().json()
-    embedding = client.get("/api/v1/retrieval/embedding").raise_for_status().json()
-    template = rag.get("RAG_TEMPLATE") or ""
+    """Record the Open WebUI version and the allow-listed retrieval settings.
+
+    Raises ``ValueError`` when a response is not a JSON object.
+    """
+    version = _get_json_object(client, "/api/version").get("version")
+    rag = _get_json_object(client, "/api/v1/retrieval/config")
+    embedding = _get_json_object(client, "/api/v1/retrieval/embedding")
+    template = rag.get("RAG_TEMPLATE")
+    template = template if isinstance(template, str) else ""
     return {
         "openwebui_version": version,
         "retrieval": {k: rag.get(k) for k in RAG_SETTING_KEYS},
@@ -288,7 +323,10 @@ def ask(
         record["http_status"] = response.status_code
         response.raise_for_status()
         data = response.json()
-        record["answer"] = data["choices"][0]["message"]["content"] or ""
+        content = data["choices"][0]["message"]["content"]
+        if content is not None and not isinstance(content, str):
+            raise TypeError("answer content is not text")
+        record["answer"] = content or ""
         record["sources"] = extract_sources(data.get("sources"))
         record["usage"] = data.get("usage")
         if record["answer"].strip():
@@ -324,23 +362,34 @@ def ask(
 
 
 def is_git_ignored(path: Path) -> bool:
-    """Return whether git ignores ``path``; works before the path exists."""
-    probe = path / "probe.json"
+    """Return whether git ignores both output file types in the folder ``path``.
+
+    Works before the folder exists.
+    """
     cwd = next(p for p in [path, *path.parents] if p.exists())
-    result = subprocess.run(
-        ["git", "check-ignore", "-q", str(probe)],
-        cwd=cwd,
-        capture_output=True,
-        check=False,
-    )
-    return result.returncode == 0
+    for probe in (path / "probe.json", path / "probe.md"):
+        result = subprocess.run(
+            ["git", "check-ignore", "-q", str(probe)],
+            cwd=cwd,
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            return False
+    return True
 
 
 def write_private(path: Path, content: str, *, replace: bool = False) -> None:
-    """Write ``path`` with mode 0600; refuse to overwrite unless ``replace``."""
-    flags = os.O_WRONLY | os.O_CREAT | (os.O_TRUNC if replace else os.O_EXCL)
+    """Write ``path`` with mode 0600; refuse to overwrite unless ``replace``.
+
+    An existing file being replaced is set to 0600 as well, and a symbolic
+    link at ``path`` is refused (``OSError``) rather than followed.
+    """
+    flags = os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW
+    flags |= os.O_TRUNC if replace else os.O_EXCL
     fd = os.open(path, flags, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        os.fchmod(fh.fileno(), 0o600)
         fh.write(content)
 
 
@@ -483,6 +532,11 @@ def run(
         except httpx.HTTPError as exc:
             logger.error("Open WebUI not reachable: %s", type(exc).__name__)
             return 2
+        except ValueError as exc:  # not JSON, or not a JSON object
+            logger.error(
+                "settings snapshot: unexpected response (%s)", type(exc).__name__
+            )
+            return 2
         logger.info(
             "Open WebUI %s; %d of %d questions",
             snapshot["openwebui_version"],
@@ -549,10 +603,27 @@ def summarise(path: Path) -> int:
     except (OSError, json.JSONDecodeError) as exc:
         logger.error("cannot read the results file: %s", type(exc).__name__)
         return 2
-    write_private(path.with_suffix(".md"), summary_markdown(results), replace=True)
-    marks = Counter(r.get("mark") or "unmarked" for r in results["records"])
+    try:
+        summary = summary_markdown(results)
+        marks = Counter(r.get("mark") or "unmarked" for r in results["records"])
+    except (KeyError, TypeError, AttributeError) as exc:  # hand-edited file
+        logger.error("results file has an unexpected structure: %s", type(exc).__name__)
+        return 2
+    try:
+        write_private(path.with_suffix(".md"), summary, replace=True)
+    except OSError as exc:
+        logger.error("cannot write the summary: %s", type(exc).__name__)
+        return 2
     logger.info("summary rewritten; marks: %s", dict(sorted(marks.items())))
     return 0
+
+
+def _positive_int(value: str) -> int:
+    """Parse a command-line integer that must be at least 1."""
+    number = int(value)
+    if number < 1:
+        raise argparse.ArgumentTypeError("must be at least 1")
+    return number
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -561,7 +632,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--eval-set", type=Path, default=DEFAULT_EVAL_SET)
     parser.add_argument("--results-dir", type=Path, default=RESULTS_DIR)
     parser.add_argument("--ids", help="comma-separated question ids to run")
-    parser.add_argument("--limit", type=int, help="run at most this many questions")
+    parser.add_argument(
+        "--limit", type=_positive_int, help="run at most this many questions"
+    )
     parser.add_argument(
         "--summarise",
         type=Path,
