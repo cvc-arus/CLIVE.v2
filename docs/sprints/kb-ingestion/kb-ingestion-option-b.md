@@ -152,8 +152,7 @@ chunk (W3 §2.8). No person's name is stored: ownership is a team.
 | `doc_date` | manifest | if known | ISO date |
 | `owner_team` | manifest | yes | A group from §4.3 |
 | `skip` | manifest | no | Reason not to ingest, e.g. `duplicate-of <doc_id>` |
-| `status` | script | — | `current` or `superseded` |
-| `superseded_by` | script | — | Version that replaced it |
+| `status` | script | — | Always `current`, written at upload. It cannot be changed afterwards (§4.5, probe 2), so a file in `kb-archive` is superseded whatever this field says (§4.4) |
 | `source_sha256` | script | — | Hash of the source file |
 | `ingested_at` | script | — | UTC timestamp |
 
@@ -184,20 +183,61 @@ chunk (W3 §2.8). No person's name is stored: ownership is a team.
 (nested groups work in 0.12.3, W3 §2.8). Teams follow the W2 survey's teams.
 Memberships are Alex's, in the Admin Panel.
 
-### 4.4 Version rule (Approved by Alex 2026-11-10)
+### 4.4 Version rule (Approved by Alex 2026-11-10; mechanism fixed by T2, Alex 2026-11-11)
 
 - A manifest entry whose `doc_id` exists with another `version` is a new
   version. It is uploaded to its collection with `status: current`.
-- The old version gets `status: superseded` and `superseded_by`, and moves to
-  `kb-archive`, so the current version is the default and old ones stay
-  retrievable on purpose by admins. The move mechanism is settled by T2.
+- The old version is relinked to `kb-archive`: its file is added to
+  `kb-archive`, then removed from its collection with `delete_file=false`
+  (§4.5, probe 1). Nothing is uploaded or embedded again, and the old source
+  file is not needed. The current version is the default and old ones stay
+  retrievable on purpose by admins.
+- A file's metadata cannot be changed after upload (§4.5, probe 2), so an
+  archived file keeps `status: current`. Being in `kb-archive` is what makes
+  a file superseded; the version that replaced it is the file with the same
+  `doc_id` outside the archive. No `superseded_by` field is stored.
+- A file linked to two collections is never removed with the default
+  `delete_file`: that deletes the file record and leaves its chunks
+  searchable in the other collection (§4.5, probe 1).
 - The same `doc_id` and `version` with a different file hash is an error, not
   an update: a changed document needs a new version.
 - Nothing is deleted except on an explicit `--delete <doc_id>`.
 
 ### 4.5 T2 results
 
-To be filled in by T2.
+Run by Alex on 2026-11-11 against Open WebUI v0.12.3, with scratch items and
+invented texts only. The four counts (collections, groups, files, models)
+matched before and after probes 1, 2 and 4. Probe 3's scratch items were
+removed afterwards (Alex, 2026-11-11).
+
+| # | What was done | Result |
+|---|---|---|
+| 1 | One file added to two collections, then removed from the first. Run twice: default removal, then `delete_file=false` | Both adds: 200. Default removal: 200, file record deleted, second collection lists 0 files, **search in the second collection still finds the code word**. `delete_file=false`: 200, file record kept, second collection lists 1 file and search finds the code word; the first collection lists 0 and finds nothing |
+| 2 | A file uploaded with `doc_id`, `version`, `status`; then renamed, re-processed (`file/update`), and three guessed metadata routes tried | Rename and re-process: 200, labels unchanged. Guessed routes: 405. Chunk metadata carries the three labels. **No way to change metadata without a new upload** |
+| 3 | A scratch workspace model with one collection attached, no `files` in the request. Chat as the test user (not an admin), inside and outside the group granted read on the collection, in default and legacy function-calling mode | Legacy, inside: 200, code word in the answer, 1 source item. Legacy, outside: 200, code word absent, 0 source items, empty answer. Default mode, inside and outside: 200, empty answer, 0 source items. Direct search as the user: 200 and found inside the group, 403 outside |
+| 4 | The same content uploaded twice; both copies added to one collection, then one copy each to two collections | Same collection: first add 200, second add 400 with an error naming a duplicate, the second copy's file record remains. Two collections: both adds 200 |
+
+What follows from these:
+
+- **Probe 1** fixes the mechanism in §4.4: relink with `delete_file=false`.
+- **Probe 2** is why an archived file keeps `status: current` (§4.1, §4.4).
+- **Probe 3:** the `clive` model must use legacy function calling (§4.7).
+  Group grants are enforced on the chat path. Two results are unexplained
+  and are re-run in T5 on the real `clive` model: why default mode returns an
+  empty answer, and why legacy mode without access returns an empty answer
+  instead of a refusal. The probe was one run on a scratch model without
+  `clive`'s saved parameters. The first attempt returned 400 on every chat
+  until the test user was given read access to the base model (W3 §2.4).
+- **Probe 4:** `apply` deletes the uploaded file when the add is refused, so
+  no orphan is left, and reports the duplicate by `doc_id`. Duplicates are
+  only detected inside one collection, so the old collection does not block
+  the T8 re-ingest.
+- **Upload timing:** `file/add` refuses a file that has not been processed,
+  so uploads use `process_in_background=false`.
+- **Reserved metadata names** (read in the installed v0.12.3 source, not
+  probed): Open WebUI gives its own meaning to `knowledge_id`,
+  `directory_id`, `channel_id` and `file_hash` in upload metadata. §4.1 uses
+  none of them and must not in future.
 
 ### 4.6 The script
 
@@ -211,11 +251,12 @@ PyYAML from the dev group; synchronous; counts-only console, root `CLAUDE.md`
 | `setup` | Creates missing collections from the layout and sets their grants; groups must already exist | Open WebUI |
 | `plan` | Compares the manifest with Open WebUI: new, new version, unchanged, skipped, errors, per collection | Open WebUI, read-only |
 | `apply` | Carries out `plan`; idempotent (keyed on `doc_id`, `version`, `source_sha256`). With `--delete <doc_id>`, removes that document's files (§4.4) | Open WebUI |
-| `verify` | Per collection: files, files missing a required field, superseded files outside the archive | Open WebUI, read-only |
+| `verify` | Per collection: files, files missing a required field, `doc_id`s with more than one version outside the archive, files linked to both a collection and the archive | Open WebUI, read-only |
 
 It uses only routes confirmed in the running v0.12.3: `POST /api/v1/files/`
 (form field `metadata`), `POST /api/v1/knowledge/create`,
-`/{id}/file/add`, `/{id}/file/remove`, `/{id}/access/update`,
+`/{id}/file/add`, `/{id}/file/remove` (with `delete_file=false` when
+archiving, §4.4), `/{id}/access/update`,
 `GET /api/v1/knowledge/{id}/files`, `GET /api/v1/groups/`. It never deletes a
 collection and never creates or changes a model.
 
@@ -224,7 +265,9 @@ collection and never creates or changes a model.
 A workspace model `clive` on the chosen base model, with every collection
 except `kb-archive` attached and the base model's parameters saved on it
 (thinking off, `num_ctx`; set by Alex on 2026-11-09). Read access: `staff`,
-on `clive` and on its base model's model row (W3 §2.4).
+on `clive` and on its base model's model row (W3 §2.4). Function calling
+is set to legacy: in default mode, knowledge attached to the model returned
+no sources over the API (§4.5, probe 3).
 Users chat with `clive`; each user retrieves only from collections their
 groups can read (T2 item 3 confirms this). The runner then evaluates `clive`
 as an admin, so the baseline covers every collection; access is tested
@@ -353,7 +396,7 @@ One commit per task, for example
 ## 14. Acceptance criteria
 
 - [x] §4.1–§4.4 approved by Alex (condition 1)
-- [ ] T2 results recorded; version mechanism fixed
+- [x] T2 results recorded; version mechanism fixed
 - [ ] `ingest.py` offline tests pass; whole-repo lint passes
 - [ ] Live synthetic test passes and is cleaned up (condition 2)
 - [ ] Groups, collections and the `clive` model exist; test-user access table passes (condition 3)
