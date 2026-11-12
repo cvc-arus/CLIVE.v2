@@ -10,7 +10,7 @@ as-built revision was written on 2026-10-15 from the codebase at commit
 **Supersedes:** the as-built version of 2026-09-04 (in git history), which
 predated the typed client layer, and the original Phase 3 PDD drafted before
 it was known that there was no live Simpro API access.
-**Sign-off evidence:** `docs/phase3/phase3-signoff.md` (test run, close,
+**Sign-off evidence:** `docs/sprints/course-correction/phase3/phase3-signoff.md` (test run, close,
 items carried past the close).
 
 ---
@@ -80,7 +80,7 @@ Offline: `test_client.py`, `test_auth.py`, `test_config.py`, `test_logging.py`,
 `test_spec_conformance.py` (with `spec_conformance_baseline.json`, which is
 empty). Integration, needing the mock: `test_simpro_mock_v2.py` and
 `test_client_mock_drift.py`. Layers and commands: `docs/testing.md` and
-`tests/CLAUDE.md`. Test counts at the close: `docs/phase3/phase3-signoff.md`.
+`tests/CLAUDE.md`. Test counts at the close: `docs/sprints/course-correction/phase3/phase3-signoff.md`.
 
 ## 4. Architecture at the Close
 
@@ -119,7 +119,7 @@ library-first design stands; only its "no service wrapper" part is superseded.
 | Sprint 1 — client foundation | Delivered |
 | Sprint 2 — architecture pivot | Delivered as planning (mock-first decision) |
 | Sprint 3 — Simpro mock service | Delivered |
-| Sprint 4 — typed client layer | Delivered (sprint records in `docs/phase3/sprints/`) |
+| Sprint 4 — typed client layer | Delivered (sprint records in `docs/sprints/course-correction/phase3/sprints/`) |
 | Sprint 5 — hardening and documentation | Delivered as the resilience ADRs (ADR-010 to ADR-012), the ADR-013 re-shape (seven sprints, 2026-10-07 to 2026-10-08) and the October documentation audit (`docs/doc-audit.md`) |
 | Sprint 6 — Phase 4 readiness review | Replaced by the Phase 3B handover checklist (Phase 3B PDD §5) |
 
@@ -140,7 +140,7 @@ ADR-010. Status of each: `docs/ADR/ADR-index.md`.
 | Item | Where it is tracked |
 |---|---|
 | No live Simpro API access at the close | `docs/STATUS.md` (Simpro access), course correction W1 |
-| Four mock behaviours unverifiable without live credentials: `ID` in an unrequested `columns` projection, the `Result-*` pagination headers, `limit`'s semantics, `/companies/` pagination | `docs/phase3/phase3-signoff.md`, `docs/roadmap.md` |
+| Four mock behaviours unverifiable without live credentials: `ID` in an unrequested `columns` projection, the `Result-*` pagination headers, `limit`'s semantics, `/companies/` pagination | `docs/sprints/course-correction/phase3/phase3-signoff.md`, `docs/roadmap.md` |
 | Real Simpro rate limits and token lifetime undocumented; conservative defaults kept | `docs/STATUS.md` (open risks), ADR-010, ADR-012 |
 | The rate limiter's budget is per client instance, not per Simpro build | `src/simpro_client/CLAUDE.md` §10; the gateway runs a single worker (Phase 3B PDD §11) |
 | `pip install -e ".[dev]"` does not install dev tools; use `uv sync` | `docs/known-issues.md` |
@@ -148,5 +148,5 @@ ADR-010. Status of each: `docs/ADR/ADR-index.md`.
 ## 8. Close
 
 Phase 3 was closed by Alex on 2026-10-09, once ADR-009 was decided. Evidence:
-`docs/phase3/phase3-signoff.md`. Next: Phase 3B and Phase 4, in the order set
+`docs/sprints/course-correction/phase3/phase3-signoff.md`. Next: Phase 3B and Phase 4, in the order set
 at the end of the course correction sprint (`docs/STATUS.md`).

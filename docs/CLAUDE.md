@@ -12,7 +12,7 @@ exists.
 1. Code and command output decide what is implemented.
 2. ADRs (`docs/ADR/`) decide intended architecture and binding constraints.
 3. PDDs (`docs/PDDs/`), scope (`docs/scope/`), `roadmap.md` and sprint
-   reports (`docs/phase*/`) are context. Several are stale.
+   reports (`docs/sprints/course-correction/phase3/`) are context. Several are stale.
 
 Before writing any statement about the code, open the file or run the command
 that proves it. When a document disagrees with the code, record the
@@ -89,7 +89,7 @@ including `roadmap.md`, link to it instead of restating status.
 | Reviews of the project or its documents | `docs/reviews/` (rules in its `README.md`; each review is historical) |
 | Architecture decisions | `docs/ADR/` |
 | Phase design | `docs/PDDs/PDD-phaseN.md` |
-| Sprint plans, contracts, reports | `docs/phaseN/` |
+| Sprint plans, contracts, reports | `docs/phaseN/` (Phase 3's records moved to `docs/sprints/course-correction/phase3/` on 2026-11-12) |
 | Cross-cutting guides | `docs/architecture.md`, `installation.md`, `testing.md`, `development-standards.md` |
 | Mock API reference | `docs/simpro-mock-api-reference.md` (generated from `services/simpro_mock/` code) |
 | Discrepancies | `docs/known-issues.md` |
@@ -97,7 +97,7 @@ including `roadmap.md`, link to it instead of restating status.
 
 - New files are Markdown with a `.md` extension and lowercase kebab-case
   names without spaces. Phase documents are prefixed with the phase, as in
-  `docs/phase3/sprints/phase3-sprint4-contract.md`.
+  `docs/sprints/course-correction/phase3/sprints/phase3-sprint4-contract.md`.
 
 - Historical documents (listed in `docs/README.md` §6) are read-only. Ask
   Alex before editing one.
