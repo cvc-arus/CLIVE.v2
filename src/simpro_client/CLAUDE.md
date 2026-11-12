@@ -196,7 +196,7 @@ failures. (Missing route parameters currently raise `ValueError` from
   disagree, the contract decides which one is wrong — report it rather than
   matching the mock.
   (Before ADR-013 this rule pointed at the mock's schemas and
-  `docs/phase3/sprints/phase3-sprint4-contract.md`. That sprint report is a
+  `docs/sprints/course-correction/phase3/sprints/phase3-sprint4-contract.md`. That sprint report is a
   historical record and is no longer normative; do not rewrite it.)
 - Dates are `datetime.date`; timestamps are `datetime.datetime`. Live
   Simpro sends `""` for an empty date the contract declares nullable, so

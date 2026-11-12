@@ -65,7 +65,7 @@ Where to find current state:
   `docs/course-correction-plan.md`).
 - **Decisions:** `docs/ADR/ADR-index.md`. Proposed ADRs are not decisions yet.
 - **Historical documents:** listed in `docs/README.md` §6 (`docs/scope/`,
-  `docs/phase*/` sprint records, `docs/doc-audit.md`). Read-only; factual errors
+  `docs/sprints/course-correction/phase3/` sprint records, `docs/doc-audit.md`). Read-only; factual errors
   get a dated correction note only when Alex asks.
 - **Simpro facts:** `docs/simpro/simpro-api-findings.md` (Simpro's API
   behaviour); CVC's build-specific values (company IDs, the API application's
