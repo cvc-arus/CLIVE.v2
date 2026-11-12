@@ -128,10 +128,11 @@ uv run python scripts/eval/run_eval.py                     # the whole set
 uv run python scripts/eval/run_eval.py --summarise evaluation/results/<file>.json
 ```
 
-`--limit N` runs the first N questions. `--summarise` rebuilds the Markdown summary of
+`--limit N` runs the first N questions (N is at least 1). `--summarise` rebuilds the Markdown summary of
 a results file after marking. Exit codes: 0 all answered, 1 some questions failed, 2 a
-setup problem (settings, eval set, Open WebUI unreachable, results folder not
-git-ignored). Offline tests: `tests/test_eval_runner.py`.
+setup problem (settings, eval set, Open WebUI unreachable or answering with something
+other than its JSON settings, results folder not git-ignored, a results file whose
+structure `--summarise` cannot read). Offline tests: `tests/test_eval_runner.py`.
 
 ### What a run records
 
@@ -157,7 +158,8 @@ the same day gets `_2`, never overwriting) holds:
   - latency in seconds and the `usage` token counts;
   - marking aids: `must_include` groups found in the answer, source groups among the
     cited sources, and distractors present. Facts match ignoring case, commas and
-    spaces (`60 mm` matches `60mm`); file names match on letters and digits only
+    spaces (`60 mm` matches `60mm`), but a fact that starts or ends with a digit is
+    not found inside a longer number (`60mm` does not match `160mm`); file names match on letters and digits only
     (Open WebUI changes punctuation and spacing on upload), with or without the
     extension;
   - `mark`, empty until marked: one of `correct`, `partly`, `wrong`, `hallucinated`;
