@@ -9,6 +9,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import stat
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -167,6 +168,20 @@ def test_select_questions_by_id_and_limit(eval_set: Path) -> None:
         run_eval.select_questions(questions, ["X99"], None)
 
 
+@pytest.mark.parametrize("limit", [0, -1])
+def test_select_questions_rejects_a_limit_below_one(eval_set: Path, limit: int) -> None:
+    questions = run_eval.load_eval_set(eval_set)
+    with pytest.raises(run_eval.EvalSetError, match="limit must be at least 1"):
+        run_eval.select_questions(questions, None, limit)
+
+
+@pytest.mark.parametrize("limit", ["0", "-1", "two"])
+def test_main_rejects_a_limit_below_one(limit: str) -> None:
+    with pytest.raises(SystemExit) as exc:
+        run_eval.main(["--limit", limit])
+    assert exc.value.code == 2
+
+
 # --- Marking aids -------------------------------------------------------------
 
 
@@ -194,6 +209,33 @@ def test_source_names_match_on_letters_and_digits_only() -> None:
 
 def test_distractors_present() -> None:
     assert run_eval.distractors_present("every 6 Months", ["6 months", "9 months"]) == 1
+
+
+@pytest.mark.parametrize(
+    ("term", "text", "found"),
+    [
+        ("60mm", "a 160mm lens", False),
+        ("60mm", "a 2.60mm lens", False),
+        ("500 mm", "height 1,500 mm", False),
+        ("IP6", "rated IP68", False),
+        ("x200", "the X2000 model", False),
+        ("6 months", "every 16 months", False),
+        ("60mm", "zone 1 60 mm lens", True),
+        ("60mm", "It is 60mm.", True),
+        ("IP68", "rated IP 68, tested", True),
+        ("1,500 mm", "Height is 1500 MM", True),
+        ("x200", "Use the X200.", True),
+        ("month", "every 3 months", True),
+        ("", "any answer", False),
+        (" , ", "any answer", False),
+    ],
+)
+def test_term_matching_respects_number_boundaries(
+    term: str, text: str, found: bool
+) -> None:
+    assert run_eval.term_in_text(term, text) is found
+    assert run_eval.distractors_present(text, [term]) == int(found)
+    assert run_eval.groups_found(text, [[term]]) == int(found)
 
 
 # --- Open WebUI calls ---------------------------------------------------------
@@ -281,6 +323,63 @@ def test_ask_counts_an_empty_answer_as_an_error(
     assert record["http_status"] == 200
 
 
+@respx.mock(base_url=BASE, assert_all_called=False)
+def test_ask_records_a_non_text_answer_as_an_error(
+    respx_mock: respx.MockRouter, settings: Any, eval_set: Path
+) -> None:
+    parts = {"choices": [{"message": {"content": [{"type": "text", "text": "x"}]}}]}
+    _fake_webui(respx_mock, httpx.Response(200, json=parts))
+    question = run_eval.load_eval_set(eval_set)[0]
+    with httpx.Client(base_url=BASE) as client:
+        record = run_eval.ask(client, settings, question)
+    assert record["status"] == "error"
+    assert record["error"] == "TypeError"
+    assert record["answer"] is None
+    assert record["aids"]["must_include_found"] == 0
+
+
+# --- Output files -------------------------------------------------------------
+
+
+def test_write_private_resets_the_mode_of_a_replaced_file(tmp_path: Path) -> None:
+    path = tmp_path / "summary.md"
+    path.write_text("old")
+    path.chmod(0o644)
+    run_eval.write_private(path, "new", replace=True)
+    assert path.read_text() == "new"
+    assert stat.S_IMODE(path.stat().st_mode) == 0o600
+
+
+def test_write_private_refuses_to_overwrite_without_replace(tmp_path: Path) -> None:
+    path = tmp_path / "results.json"
+    run_eval.write_private(path, "first")
+    with pytest.raises(FileExistsError):
+        run_eval.write_private(path, "second")
+    assert path.read_text() == "first"
+
+
+def test_write_private_does_not_follow_a_symlink(tmp_path: Path) -> None:
+    target = tmp_path / "elsewhere.txt"
+    target.write_text("untouched")
+    link = tmp_path / "summary.md"
+    link.symlink_to(target)
+    with pytest.raises(OSError):
+        run_eval.write_private(link, "new", replace=True)
+    assert target.read_text() == "untouched"
+
+
+@pytest.mark.parametrize(
+    ("ignore_rule", "expected"),
+    [("results/\n", True), ("*.json\n", False), ("*.md\n", False), ("", False)],
+)
+def test_is_git_ignored_needs_both_output_types_ignored(
+    tmp_path: Path, ignore_rule: str, expected: bool
+) -> None:
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    (tmp_path / ".gitignore").write_text(ignore_rule)
+    assert run_eval.is_git_ignored(tmp_path / "results") is expected
+
+
 # --- Full run -----------------------------------------------------------------
 
 
@@ -345,6 +444,36 @@ def test_run_stops_on_a_malformed_eval_set(
     bad = tmp_path / "bad.yaml"
     bad.write_text("questions: [{id: L01, category: other}]\n", encoding="utf-8")
     assert run_eval.run(settings, bad, tmp_path / "results") == 2
+
+
+@pytest.mark.parametrize("body", ["<html>login</html>", "[1, 2]"])
+def test_run_stops_on_an_unexpected_settings_response(
+    tmp_path: Path,
+    settings: Any,
+    eval_set: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    body: str,
+) -> None:
+    monkeypatch.setattr(run_eval, "is_git_ignored", lambda _path: True)
+    with respx.mock(base_url=BASE, assert_all_called=False) as router:
+        chat = _fake_webui(router, _chat_ok())
+        router.get("/api/v1/retrieval/config").respond(200, text=body)
+        assert run_eval.run(settings, eval_set, tmp_path / "results") == 2
+    assert not chat.called
+    assert not (tmp_path / "results").exists()
+
+
+@pytest.mark.parametrize(
+    "content", ['{"run": {}}', '{"run": {}, "records": [1]}', "[]", '"text"']
+)
+def test_summarise_stops_on_an_unexpected_structure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, content: str
+) -> None:
+    monkeypatch.setattr(run_eval, "is_git_ignored", lambda _path: True)
+    path = tmp_path / "results.json"
+    path.write_text(content)
+    assert run_eval.summarise(path) == 2
+    assert not path.with_suffix(".md").exists()
 
 
 def test_summarise_counts_marks(
