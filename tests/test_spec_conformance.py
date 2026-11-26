@@ -52,6 +52,7 @@ from simpro_client.models import (
     JobNote,
     ProjectStatusCode,
     Quote,
+    Schedule,
     Site,
 )
 
@@ -141,6 +142,12 @@ RESOURCES: tuple[tuple[str, type[BaseModel], str, str | None], ...] = (
         Attachment,
         "/companies/{companyID}/jobs/{jobID}/attachments/files/",
         "/companies/{companyID}/jobs/{jobID}/attachments/files/{fileID}",
+    ),
+    (
+        "Schedule",
+        Schedule,
+        "/companies/{companyID}/schedules/",
+        "/companies/{companyID}/schedules/{scheduleID}",
     ),
     (
         "ProjectStatusCode",

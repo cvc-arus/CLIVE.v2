@@ -13,6 +13,7 @@ from simpro_client.endpoints.job import JobsEndpoint
 from simpro_client.endpoints.job_note import JobNotesEndpoint
 from simpro_client.endpoints.project_status_code import ProjectStatusCodesEndpoint
 from simpro_client.endpoints.quote import QuotesEndpoint
+from simpro_client.endpoints.schedule import SchedulesEndpoint
 from simpro_client.endpoints.site import SitesEndpoint
 
 __all__ = [
@@ -30,5 +31,6 @@ __all__ = [
     "ProjectStatusCodesEndpoint",
     "QuotesEndpoint",
     "ResourceEndpoint",
+    "SchedulesEndpoint",
     "SitesEndpoint",
 ]

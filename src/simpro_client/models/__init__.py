@@ -39,6 +39,7 @@ from simpro_client.models.job import Job
 from simpro_client.models.job_note import JobNote
 from simpro_client.models.project_status_code import ProjectStatusCode
 from simpro_client.models.quote import Quote
+from simpro_client.models.schedule import Schedule
 from simpro_client.models.site import Site
 
 __all__ = [
@@ -74,6 +75,7 @@ __all__ = [
     "PreferredTechnician",
     "ProjectStatusCode",
     "Quote",
+    "Schedule",
     "Site",
     "SiteBillingAddress",
     "SitePrimaryContact",

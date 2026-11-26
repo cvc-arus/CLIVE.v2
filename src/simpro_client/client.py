@@ -24,6 +24,7 @@ from simpro_client.endpoints import (
     JobsEndpoint,
     ProjectStatusCodesEndpoint,
     QuotesEndpoint,
+    SchedulesEndpoint,
     SitesEndpoint,
 )
 from simpro_client.exceptions import (
@@ -95,6 +96,7 @@ class SimproClient:
         self.job_notes = JobNotesEndpoint(self)
         self.attachments = AttachmentsEndpoint(self)
         self.project_status_codes = ProjectStatusCodesEndpoint(self)
+        self.schedules = SchedulesEndpoint(self)
 
     def get(self, path: str, params: dict[str, Any] | None = None) -> Any:
         """GET ``path`` and return the decoded JSON body.

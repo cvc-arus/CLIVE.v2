@@ -22,6 +22,7 @@ from simpro_client.endpoints import (
     ProjectStatusCodesEndpoint,
     QuotesEndpoint,
     ResourceEndpoint,
+    SchedulesEndpoint,
     SitesEndpoint,
 )
 
@@ -73,6 +74,10 @@ EXPECTED_ROUTES = {
     ProjectStatusCodesEndpoint: (
         "/companies/{company_id}/setup/statusCodes/projects/",
         "/companies/{company_id}/setup/statusCodes/projects/{status_code_id}",
+    ),
+    SchedulesEndpoint: (
+        "/companies/{company_id}/schedules/",
+        "/companies/{company_id}/schedules/{schedule_id}",
     ),
 }
 

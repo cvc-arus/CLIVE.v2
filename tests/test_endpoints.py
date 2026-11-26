@@ -17,6 +17,7 @@ from simpro_client import (
     JobNote,
     ProjectStatusCode,
     Quote,
+    Schedule,
     Site,
 )
 from simpro_client.client import SimproClient
@@ -124,6 +125,14 @@ GET_CASES = [
         "/companies/1/setup/statusCodes/projects/12",
         {"ID": 12, "Name": "Open"},
         ProjectStatusCode,
+    ),
+    (
+        "schedules",
+        13,
+        {"company_id": 1},
+        "/companies/1/schedules/13",
+        {"ID": 13, "Type": "job", "Reference": "3-7", "Date": "2026-11-25"},
+        Schedule,
     ),
 ]
 

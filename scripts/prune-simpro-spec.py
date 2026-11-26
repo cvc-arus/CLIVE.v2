@@ -46,6 +46,8 @@ KEEP_PATHS: tuple[str, ...] = (
     "/companies/{companyID}/jobs/{jobID}/notes/{noteID}",
     "/companies/{companyID}/jobs/{jobID}/attachments/files/",
     "/companies/{companyID}/jobs/{jobID}/attachments/files/{fileID}",
+    "/companies/{companyID}/schedules/",
+    "/companies/{companyID}/schedules/{scheduleID}",
     "/companies/{companyID}/quotes/",
     "/companies/{companyID}/quotes/{quoteID}",
     "/companies/{companyID}/sites/",
