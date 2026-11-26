@@ -18,6 +18,7 @@ from simpro_client.models import (
     JobNote,
     ProjectStatusCode,
     Quote,
+    Schedule,
     Site,
 )
 
@@ -397,6 +398,31 @@ MODEL_CASES = [
         "Name",
         ["Color", "Priority", "DateModified"],
     ),
+    (
+        Schedule,
+        {
+            "ID": 13,
+            "Type": "job",
+            "Reference": "3-7",
+            "Date": "2026-11-25",
+            "TotalHours": 8,
+            "Staff": {"ID": 8, "Name": "Linus Torvalds", "Type": "employee"},
+            "Project": "3-1-7",
+            "Notes": "Bring ladder",
+            "IsLocked": False,
+            "DateModified": "2026-11-20T10:30:00+00:00",
+        },
+        "Reference",
+        [
+            "Date",
+            "TotalHours",
+            "Staff",
+            "Project",
+            "Notes",
+            "IsLocked",
+            "DateModified",
+        ],
+    ),
 ]
 
 
@@ -438,6 +464,7 @@ def test_temporal_fields_use_python_types():
     assert isinstance(
         Attachment.model_validate(PAYLOADS[Attachment]).date_added, datetime
     )
+    assert isinstance(Schedule.model_validate(PAYLOADS[Schedule]).date, date)
 
 
 def test_empty_date_strings_read_as_none():

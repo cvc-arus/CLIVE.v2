@@ -7692,6 +7692,489 @@
     "x-private": false
    }
   },
+  "/api/v1.0/companies/{companyID}/schedules/": {
+   "get": {
+    "deprecated": false,
+    "operationId": "c81549288cc61e04c339b32a65425326",
+    "parameters": [
+     {
+      "description": "A build with Multi-company setup may have companyID >= 0, other builds use 0 by default.<br />\nFor more information about Multi-company, see:<br />\nhttps://helpguide.simprogroup.com/Content/Service-and-Enterprise/Multi-company.htm",
+      "in": "path",
+      "name": "companyID",
+      "required": true,
+      "type": "integer",
+      "x-example": 12345
+     },
+     {
+      "default": "all",
+      "description": "Search result must have a match on all provided fields or a match on any of the provided fields.",
+      "enum": [
+       "all",
+       "any"
+      ],
+      "example": "search=any",
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "type": "string"
+     },
+     {
+      "collectionFormat": "csv",
+      "description": "When listing or searching a resource, specify which columns to be displayed",
+      "example": "columns=ID,Name",
+      "in": "query",
+      "items": {
+       "type": "string"
+      },
+      "name": "columns",
+      "required": false,
+      "type": "array"
+     },
+     {
+      "default": 30,
+      "description": "The maximum number of results to be returned by a request.",
+      "example": "pageSize=50",
+      "in": "query",
+      "maximum": 1000,
+      "minimum": 1,
+      "name": "pageSize",
+      "required": false,
+      "type": "integer"
+     },
+     {
+      "default": 1,
+      "description": "Set the page number on paginated request",
+      "example": "page=2",
+      "in": "query",
+      "name": "page",
+      "required": false,
+      "type": "integer"
+     },
+     {
+      "collectionFormat": "csv",
+      "description": "Set the order of the requested records, by prefixing '-' on the column name you can get records by descending order. Comma separated list can also be provided.",
+      "example": "orderby=Name",
+      "in": "query",
+      "items": {
+       "type": "string"
+      },
+      "name": "orderby",
+      "required": false,
+      "type": "array"
+     },
+     {
+      "description": "Set the limit of number of records in a request",
+      "example": "limit=10",
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "type": "integer"
+     },
+     {
+      "description": "Filter schedules by job ID. Supports operators: lt(), le(), gt(), ge(), ne(), between(), in(), !in().",
+      "example": "JobID=gt(1000)",
+      "in": "query",
+      "name": "JobID",
+      "required": false,
+      "type": "string"
+     },
+     {
+      "description": "Filter schedules by quote ID. Supports operators: lt(), le(), gt(), ge(), ne(), between(), in(), !in().",
+      "example": "QuoteID=gt(1000)",
+      "in": "query",
+      "name": "QuoteID",
+      "required": false,
+      "type": "string"
+     },
+     {
+      "description": "Filter schedules by lead ID. Supports operators: lt(), le(), gt(), ge(), ne(), between(), in(), !in().",
+      "example": "LeadID=gt(1000)",
+      "in": "query",
+      "name": "LeadID",
+      "required": false,
+      "type": "string"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "List all schedules.",
+      "schema": {
+       "items": {
+        "additionalProperties": false,
+        "properties": {
+         "Blocks": {
+          "items": {
+           "additionalProperties": false,
+           "properties": {
+            "EndTime": {
+             "description": "Between 00:00 and 24:00",
+             "example": "16:00",
+             "type": "string"
+            },
+            "Hrs": {
+             "description": "Duration in hours.",
+             "example": 8,
+             "pattern": "(^\\d+(\\.\\d{1,2})?$)",
+             "type": "number"
+            },
+            "ISO8601EndTime": {
+             "description": "RFC3339 date-time format eg. 2018-05-21T19:53:39+10:00. See https://tools.ietf.org/html/rfc3339#section-5.6",
+             "example": "2018-05-21T19:53:39+10:00",
+             "format": "date-time",
+             "type": "string"
+            },
+            "ISO8601StartTime": {
+             "description": "RFC3339 date-time format eg. 2018-05-21T19:53:39+10:00. See https://tools.ietf.org/html/rfc3339#section-5.6",
+             "example": "2018-05-21T19:53:39+10:00",
+             "format": "date-time",
+             "type": "string"
+            },
+            "ScheduleRate": {
+             "additionalProperties": false,
+             "properties": {
+              "ID": {
+               "example": 12345,
+               "type": "integer"
+              },
+              "Name": {
+               "example": "Overtime",
+               "type": "string"
+              }
+             },
+             "required": [
+              "ID",
+              "Name"
+             ],
+             "type": "object"
+            },
+            "StartTime": {
+             "description": "Between 00:00 and 24:00",
+             "example": "08:00",
+             "type": "string"
+            }
+           },
+           "required": [
+            "Hrs",
+            "StartTime",
+            "ISO8601StartTime",
+            "EndTime",
+            "ISO8601EndTime",
+            "ScheduleRate"
+           ],
+           "type": "object"
+          },
+          "type": "array"
+         },
+         "Date": {
+          "description": "Date in YYYY-MM-DD format eg. 2021-04-22. Null dates can be filtered by Field=null or Field=ne(null)",
+          "example": "2021-04-22",
+          "format": "date",
+          "type": "string"
+         },
+         "ID": {
+          "type": "integer"
+         },
+         "Project": {
+          "description": "Project context (ProjectID, SectionID, CostCenterID) for job and quote schedules. Null for lead and activity schedules.",
+          "type": "string"
+         },
+         "Reference": {
+          "description": "For activity, reference is activity type ID.<br /> For job and quote, reference would be Job/Quote ID and cost center ID separated by hyphen(-).<br /> For leads, reference is lead ID.",
+          "type": "string"
+         },
+         "Staff": {
+          "additionalProperties": false,
+          "description": "Staff assigned for the schedule.",
+          "properties": {
+           "ID": {
+            "description": "Employee ID of the staff member",
+            "example": 123,
+            "type": "integer"
+           },
+           "Name": {
+            "description": "Name of the staff member",
+            "example": "John Smith",
+            "type": "string"
+           },
+           "Type": {
+            "description": "Staff type",
+            "enum": [
+             "employee",
+             "contractor",
+             "plant"
+            ],
+            "type": "string"
+           },
+           "TypeId": {
+            "description": "Employee ID / Contractor ID / Plant ID",
+            "type": "integer"
+           }
+          },
+          "required": [
+           "ID",
+           "Name",
+           "Type",
+           "TypeId"
+          ],
+          "type": "object"
+         },
+         "TotalHours": {
+          "description": "Total hours or duration of a schedules.",
+          "example": 1.57,
+          "pattern": "(^\\d+(\\.\\d{1,2})?$)",
+          "type": "number"
+         },
+         "Type": {
+          "description": "Type of schedule.",
+          "enum": [
+           "lead",
+           "quote",
+           "job",
+           "activity"
+          ],
+          "type": "string"
+         }
+        },
+        "required": [
+         "ID",
+         "Type",
+         "Reference",
+         "TotalHours",
+         "Staff",
+         "Date",
+         "Blocks",
+         "Project"
+        ],
+        "type": "object"
+       },
+       "type": "array"
+      }
+     }
+    },
+    "summary": "List all schedules.",
+    "tags": [
+     "Schedules"
+    ],
+    "x-private": false
+   }
+  },
+  "/api/v1.0/companies/{companyID}/schedules/{scheduleID}": {
+   "get": {
+    "deprecated": false,
+    "operationId": "c2da1448d667c782ef71303683fd7f56",
+    "parameters": [
+     {
+      "description": "A build with Multi-company setup may have companyID >= 0, other builds use 0 by default.<br />\nFor more information about Multi-company, see:<br />\nhttps://helpguide.simprogroup.com/Content/Service-and-Enterprise/Multi-company.htm",
+      "in": "path",
+      "name": "companyID",
+      "required": true,
+      "type": "integer",
+      "x-example": 12345
+     },
+     {
+      "description": "A valid schedule id",
+      "in": "path",
+      "name": "scheduleID",
+      "required": true,
+      "type": "integer",
+      "x-example": 12345
+     },
+     {
+      "collectionFormat": "csv",
+      "description": "When listing or searching a resource, specify which columns to be displayed",
+      "example": "columns=ID,Name",
+      "in": "query",
+      "items": {
+       "type": "string"
+      },
+      "name": "columns",
+      "required": false,
+      "type": "array"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Schedule details.",
+      "schema": {
+       "additionalProperties": false,
+       "properties": {
+        "Blocks": {
+         "items": {
+          "additionalProperties": false,
+          "properties": {
+           "EndTime": {
+            "description": "Between 00:00 and 24:00",
+            "example": "16:00",
+            "type": "string"
+           },
+           "Hrs": {
+            "description": "Duration in hours.",
+            "example": 8,
+            "pattern": "(^\\d+(\\.\\d{1,2})?$)",
+            "type": "number"
+           },
+           "ISO8601EndTime": {
+            "description": "RFC3339 date-time format eg. 2018-05-21T19:53:39+10:00. See https://tools.ietf.org/html/rfc3339#section-5.6",
+            "example": "2018-05-21T19:53:39+10:00",
+            "format": "date-time",
+            "type": "string"
+           },
+           "ISO8601StartTime": {
+            "description": "RFC3339 date-time format eg. 2018-05-21T19:53:39+10:00. See https://tools.ietf.org/html/rfc3339#section-5.6",
+            "example": "2018-05-21T19:53:39+10:00",
+            "format": "date-time",
+            "type": "string"
+           },
+           "ScheduleRate": {
+            "additionalProperties": false,
+            "properties": {
+             "ID": {
+              "example": 12345,
+              "type": "integer"
+             },
+             "Name": {
+              "example": "Overtime",
+              "type": "string"
+             }
+            },
+            "required": [
+             "ID",
+             "Name"
+            ],
+            "type": "object"
+           },
+           "StartTime": {
+            "description": "Between 00:00 and 24:00",
+            "example": "08:00",
+            "type": "string"
+           }
+          },
+          "required": [
+           "Hrs",
+           "StartTime",
+           "ISO8601StartTime",
+           "EndTime",
+           "ISO8601EndTime",
+           "ScheduleRate"
+          ],
+          "type": "object"
+         },
+         "type": "array"
+        },
+        "Date": {
+         "description": "Date in YYYY-MM-DD format eg. 2021-04-22. Null dates can be filtered by Field=null or Field=ne(null)",
+         "example": "2021-04-22",
+         "format": "date",
+         "type": "string"
+        },
+        "DateModified": {
+         "description": "RFC3339 date-time format eg. 2018-05-21T19:53:39+10:00. See https://tools.ietf.org/html/rfc3339#section-5.6",
+         "example": "2018-05-21T19:53:39+10:00",
+         "format": "date-time",
+         "type": "string"
+        },
+        "ID": {
+         "type": "integer"
+        },
+        "IsLocked": {
+         "type": "boolean"
+        },
+        "Notes": {
+         "type": "string"
+        },
+        "Project": {
+         "description": "Project context (ProjectID, SectionID, CostCenterID) for job and quote schedules. Null for lead and activity schedules.",
+         "type": "string"
+        },
+        "Reference": {
+         "description": "For activity, reference is activity type ID.<br /> For job and quote, reference would be Job/Quote ID and cost center ID separated by hyphen(-).<br /> For leads, reference is lead ID.",
+         "type": "string"
+        },
+        "Staff": {
+         "additionalProperties": false,
+         "description": "Staff assigned for the schedule.",
+         "properties": {
+          "ID": {
+           "description": "Employee ID of the staff member",
+           "example": 123,
+           "type": "integer"
+          },
+          "Name": {
+           "description": "Name of the staff member",
+           "example": "John Smith",
+           "type": "string"
+          },
+          "Type": {
+           "description": "Staff type",
+           "enum": [
+            "employee",
+            "contractor",
+            "plant"
+           ],
+           "type": "string"
+          },
+          "TypeId": {
+           "description": "Employee ID / Contractor ID / Plant ID",
+           "type": "integer"
+          }
+         },
+         "required": [
+          "ID",
+          "Name",
+          "Type",
+          "TypeId"
+         ],
+         "type": "object"
+        },
+        "TotalHours": {
+         "description": "Total hours or duration of a schedules.",
+         "example": 1.57,
+         "pattern": "(^\\d+(\\.\\d{1,2})?$)",
+         "type": "number"
+        },
+        "Type": {
+         "description": "Type of schedule.",
+         "enum": [
+          "lead",
+          "quote",
+          "job",
+          "activity"
+         ],
+         "type": "string"
+        },
+        "_href": {
+         "description": "Link to this schedule's details",
+         "type": "string"
+        }
+       },
+       "required": [
+        "ID",
+        "Type",
+        "Reference",
+        "TotalHours",
+        "Notes",
+        "IsLocked",
+        "Staff",
+        "Date",
+        "Blocks",
+        "_href",
+        "DateModified",
+        "Project"
+       ],
+       "type": "object"
+      }
+     },
+     "404": {
+      "description": "Schedule not found."
+     }
+    },
+    "summary": "Retrieve details for a specific schedule.",
+    "tags": [
+     "Schedules"
+    ],
+    "x-private": false
+   }
+  },
   "/api/v1.0/companies/{companyID}/setup/statusCodes/projects/": {
    "get": {
     "deprecated": false,
