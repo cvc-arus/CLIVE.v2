@@ -21,7 +21,7 @@ library directly and calls CVC's live Simpro build. The exception is narrow:
 - It reads attachment metadata only: the job's file list with
   `columns=ID,Filename`. It never calls a file's detail route, `/view/`,
   `display=Base64` or the zipped-folder route.
-- The CSV goes to `$RAMS_REPORT_DIR`, outside the repository. Console and log
+- The report (an `.xlsx` workbook) goes to `$RAMS_REPORT_DIR`, outside the repository. Console and log
   output carry only counts, company labels, job IDs and error class names.
 
 `tests/test_rams_report.py` enforces the last three points. When `clive-gateway`

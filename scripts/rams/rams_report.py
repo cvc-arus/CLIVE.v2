@@ -9,11 +9,16 @@ requested: only the job's attachment *list* route is called, with
 ``columns=ID,Filename``; the detail route, ``/view/``, ``display=Base64`` and
 the zipped-folder download are never used.
 
-The CSV report goes to ``$RAMS_REPORT_DIR`` (outside the repository; mode 700
-directory, mode 600 file), named ``rams_report_YYYY-MM-DD.csv``. Console and
-log output hold counts, timings, company labels, job IDs and error class names
-only, never a customer, site or file name, or the report's path (root
-``CLAUDE.md`` §9).
+The report is an Excel workbook (``.xlsx``, one sheet, written with the
+standard library only) in ``$RAMS_REPORT_DIR`` (outside the repository; mode
+700 directory, mode 600 file), named ``rams_report_YYYY-MM-DD.xlsx``. Every
+text cell is an inline string, so no cell is ever evaluated as a formula.
+Console and log output hold counts, timings, company labels, job IDs and error
+class names only, never a customer, site or file name, or the report's path
+(root ``CLAUDE.md`` §9).
+
+If a company's schedules cannot be read, the report carries an ``ERROR`` row
+for that company, so a reader can see that its jobs may be missing.
 
 Governance: a side task, not CLIVE development. It imports ``simpro_client``
 directly, a narrow, read-only exception to ADR-009's single-gateway rule that
@@ -34,24 +39,26 @@ line for the account that owns the report directory::
         /path/to/uv run python scripts/rams/rams_report.py >> /path/to/rams.log 2>&1
 
 Exit codes: 0 done, 1 done but some Simpro calls failed (the report is still
-written, failed jobs carry status ``ERROR``), 2 invalid configuration (nothing
-is requested or written).
+written; failed jobs and companies carry status ``ERROR``), 2 invalid
+configuration (nothing is requested or written).
 """
 
 from __future__ import annotations
 
-import csv
 import io
 import logging
 import os
 import re
+import stat
 import sys
 import tempfile
 import time
-from collections.abc import Callable, Iterable
+import zipfile
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from pathlib import Path
+from xml.sax.saxutils import escape
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import AliasChoices, Field, ValidationError, field_validator
@@ -70,7 +77,7 @@ SCHEDULE_COLUMNS = ("ID", "Type", "Reference", "Date")
 JOB_COLUMNS = ("ID", "Customer", "Site")
 ATTACHMENT_COLUMNS = ("ID", "Filename")
 
-CSV_HEADER = (
+HEADER = (
     "job_no",
     "company",
     "site",
@@ -81,14 +88,85 @@ CSV_HEADER = (
     "status",
     "doc_count",
     "doc_names",
+    "note",
 )
 STATUSES = ("BOTH", "RA_ONLY", "MS_ONLY", "NONE", "ERROR")
+
+JOB_ERROR_NOTE = "job details or attachments could not be read"
+COMPANY_ERROR_NOTE = "schedules could not be read; this company's jobs may be missing"
+
+#: Errors that mark a job or company as failed instead of stopping the run.
+#: ``ValueError`` covers a response body that is not JSON (``JSONDecodeError``)
+#: and pydantic's ``ValidationError``.
+READ_ERRORS = (SimproError, ValueError)
 
 #: Separators folded to a space before matching, so "Risk_Assessment-v2" and
 #: "Method.Statement" read like the spaced form.
 _SEPARATORS = re.compile(r"[_\-.]+")
-#: Characters that make a spreadsheet treat a cell as a formula.
-_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+#: Characters XML 1.0 does not allow; one of them would corrupt the workbook.
+_XML_ILLEGAL = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff￾￿]")
+#: Excel's limit on the characters in one cell.
+_MAX_CELL_CHARS = 32767
+#: A fixed timestamp for the workbook's zip entries.
+_ZIP_TIME = (1980, 1, 1, 0, 0, 0)
+_SHEET_NAME = "RAMS"
+
+_NS_MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+_NS_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+_NS_PKG_REL = "http://schemas.openxmlformats.org/package/2006/relationships"
+_XML_DECL = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+_CT = "application/vnd.openxmlformats-officedocument.spreadsheetml"
+
+_CONTENT_TYPES = (
+    _XML_DECL
+    + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+    '<Default Extension="rels" '
+    'ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+    '<Default Extension="xml" ContentType="application/xml"/>'
+    f'<Override PartName="/xl/workbook.xml" ContentType="{_CT}.sheet.main+xml"/>'
+    '<Override PartName="/xl/worksheets/sheet1.xml" '
+    f'ContentType="{_CT}.worksheet+xml"/>'
+    f'<Override PartName="/xl/styles.xml" ContentType="{_CT}.styles+xml"/>'
+    "</Types>"
+)
+_ROOT_RELS = (
+    _XML_DECL + f'<Relationships xmlns="{_NS_PKG_REL}">'
+    f'<Relationship Id="rId1" Type="{_NS_REL}/officeDocument" '
+    'Target="xl/workbook.xml"/>'
+    "</Relationships>"
+)
+_WORKBOOK_RELS = (
+    _XML_DECL + f'<Relationships xmlns="{_NS_PKG_REL}">'
+    f'<Relationship Id="rId1" Type="{_NS_REL}/worksheet" '
+    'Target="worksheets/sheet1.xml"/>'
+    f'<Relationship Id="rId2" Type="{_NS_REL}/styles" Target="styles.xml"/>'
+    "</Relationships>"
+)
+#: Style 0 is the default; style 1 is bold, for the header row.
+_STYLES = (
+    _XML_DECL + f'<styleSheet xmlns="{_NS_MAIN}">'
+    '<fonts count="2">'
+    '<font><sz val="11"/><name val="Calibri"/></font>'
+    '<font><b/><sz val="11"/><name val="Calibri"/></font>'
+    "</fonts>"
+    '<fills count="2"><fill><patternFill patternType="none"/></fill>'
+    '<fill><patternFill patternType="gray125"/></fill></fills>'
+    '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/>'
+    "</border></borders>"
+    '<cellStyleXfs count="1">'
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+    '<cellXfs count="2">'
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+    '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" '
+    'applyFont="1"/>'
+    "</cellXfs>"
+    '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/>'
+    "</cellStyles>"
+    "</styleSheet>"
+)
+
+Cell = str | int
 
 
 class RamsSettings(BaseSettings):
@@ -106,7 +184,7 @@ class RamsSettings(BaseSettings):
     )
 
     report_dir: Path = Field(
-        description="Directory for the CSV report; must be outside the repo."
+        description="Directory for the report; must be outside the repo."
     )
     window_days: int = Field(
         default=7,
@@ -194,10 +272,10 @@ class JobRow:
         """Order by first scheduled date, then company, then job number."""
         return (min(self.dates), self.company, self.job_id)
 
-    def as_csv(self) -> list[str]:
-        """Render the row in ``CSV_HEADER`` order, formula-safe."""
-        values = [
-            str(self.job_id),
+    def as_cells(self) -> list[Cell]:
+        """Render the row in ``HEADER`` order; numbers stay numbers."""
+        return [
+            self.job_id,
             self.company,
             self.site,
             self.client_name,
@@ -205,10 +283,10 @@ class JobRow:
             "Y" if self.ra else "N",
             "Y" if self.ms else "N",
             self.status,
-            str(len(self.matched)),
+            len(self.matched),
             "; ".join(self.matched),
+            JOB_ERROR_NOTE if self.error else "",
         ]
-        return [safe_cell(v) for v in values]
 
 
 @dataclass
@@ -218,7 +296,12 @@ class RunStats:
     schedules_seen: int = 0
     out_of_window: int = 0
     bad_reference: int = 0
-    company_errors: int = 0
+    failed_companies: list[str] = field(default_factory=list)
+
+    @property
+    def company_errors(self) -> int:
+        """How many companies' schedules could not be read."""
+        return len(self.failed_companies)
 
 
 # --- Pure helpers ---------------------------------------------------------------
@@ -253,9 +336,13 @@ def compile_pattern(pattern: str) -> re.Pattern[str]:
 
 
 def job_id_from_reference(reference: str) -> int | None:
-    """Return the job ID from a job schedule's ``"<jobID>-<costCentreID>"``."""
+    """Return the job ID from a job schedule's ``"<jobID>-<costCentreID>"``.
+
+    Only ASCII digits count: ``str.isdigit`` also accepts characters such as
+    superscripts, which ``int`` rejects.
+    """
     head = reference.split("-", 1)[0].strip()
-    return int(head) if head.isdigit() else None
+    return int(head) if head.isascii() and head.isdigit() else None
 
 
 def client_name(customer: CustomerRef | None) -> str:
@@ -268,18 +355,87 @@ def client_name(customer: CustomerRef | None) -> str:
     return " ".join(p.strip() for p in parts if p and p.strip())
 
 
-def safe_cell(value: str) -> str:
-    """Prefix ``'`` to a cell a spreadsheet would read as a formula."""
-    return "'" + value if value.startswith(_FORMULA_PREFIXES) else value
+def company_error_cells(label: str) -> list[Cell]:
+    """Render the row that flags a company whose schedules failed."""
+    cells: list[Cell] = ["" for _ in HEADER]
+    cells[HEADER.index("company")] = label
+    cells[HEADER.index("status")] = "ERROR"
+    cells[HEADER.index("note")] = COMPANY_ERROR_NOTE
+    return cells
 
 
-def render_csv(rows: Iterable[JobRow]) -> str:
-    """Render the header and rows as CSV text."""
-    buffer = io.StringIO()
-    writer = csv.writer(buffer, lineterminator="\n")
-    writer.writerow(CSV_HEADER)
-    for row in rows:
-        writer.writerow(row.as_csv())
+def _column_letter(index: int) -> str:
+    """Return the spreadsheet column name for a 0-based index (0 -> ``A``)."""
+    letters = ""
+    index += 1
+    while index:
+        index, rem = divmod(index - 1, 26)
+        letters = chr(ord("A") + rem) + letters
+    return letters
+
+
+def _cell_xml(ref: str, value: Cell, style: int) -> str:
+    """Render one cell: a number, or an inline string that is never a formula."""
+    style_attr = f' s="{style}"' if style else ""
+    if isinstance(value, int) and not isinstance(value, bool):
+        return f'<c r="{ref}"{style_attr}><v>{value}</v></c>'
+    text = escape(_XML_ILLEGAL.sub("", str(value))[:_MAX_CELL_CHARS])
+    return (
+        f'<c r="{ref}"{style_attr} t="inlineStr">'
+        f'<is><t xml:space="preserve">{text}</t></is></c>'
+    )
+
+
+def render_xlsx(rows: Iterable[Sequence[Cell]]) -> bytes:
+    """Render ``HEADER`` and ``rows`` as a one-sheet ``.xlsx`` workbook.
+
+    The header is bold and frozen, with an auto-filter over the whole table.
+    The zip entries carry a fixed timestamp, so the same rows give the same
+    bytes.
+    """
+    all_rows: list[Sequence[Cell]] = [HEADER, *rows]
+    last_col = _column_letter(len(HEADER) - 1)
+    last_ref = f"{last_col}{len(all_rows)}"
+    row_xml = []
+    for r, values in enumerate(all_rows, start=1):
+        style = 1 if r == 1 else 0
+        cells = "".join(
+            _cell_xml(f"{_column_letter(c)}{r}", v, style) for c, v in enumerate(values)
+        )
+        row_xml.append(f'<row r="{r}">{cells}</row>')
+    sheet = (
+        _XML_DECL + f'<worksheet xmlns="{_NS_MAIN}" xmlns:r="{_NS_REL}">'
+        f'<dimension ref="A1:{last_ref}"/>'
+        '<sheetViews><sheetView workbookViewId="0">'
+        '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>'
+        "</sheetView></sheetViews>"
+        f"<sheetData>{''.join(row_xml)}</sheetData>"
+        f'<autoFilter ref="A1:{last_ref}"/>'
+        "</worksheet>"
+    )
+    workbook = (
+        _XML_DECL + f'<workbook xmlns="{_NS_MAIN}" xmlns:r="{_NS_REL}">'
+        f'<sheets><sheet name="{_SHEET_NAME}" sheetId="1" r:id="rId1"/></sheets>'
+        "<definedNames>"
+        '<definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">'
+        f"'{_SHEET_NAME}'!$A$1:${last_col}${len(all_rows)}</definedName>"
+        "</definedNames>"
+        "</workbook>"
+    )
+    parts = {
+        "[Content_Types].xml": _CONTENT_TYPES,
+        "_rels/.rels": _ROOT_RELS,
+        "xl/workbook.xml": workbook,
+        "xl/_rels/workbook.xml.rels": _WORKBOOK_RELS,
+        "xl/styles.xml": _STYLES,
+        "xl/worksheets/sheet1.xml": sheet,
+    }
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for name, text in parts.items():
+            info = zipfile.ZipInfo(name, date_time=_ZIP_TIME)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            zf.writestr(info, text.encode("utf-8"))
     return buffer.getvalue()
 
 
@@ -288,7 +444,24 @@ def inside_repo(path: Path) -> bool:
     return path.resolve().is_relative_to(REPO_ROOT)
 
 
-def write_report(report_dir: Path, run_date: date, content: str) -> None:
+def report_dir_problem(path: Path) -> str | None:
+    """Return why ``path`` cannot hold the report, or ``None`` if it can.
+
+    A missing directory is fine (``write_report`` creates it with mode 700).
+    An existing one must be a directory that only its owner can read, because
+    file names and dates in it are visible to anyone who can list it. The
+    script does not change the mode of a directory it did not create.
+    """
+    if not path.exists():
+        return None
+    if not path.is_dir():
+        return "RAMS_REPORT_DIR exists and is not a directory"
+    if stat.S_IMODE(path.stat().st_mode) & 0o077:
+        return "RAMS_REPORT_DIR must not be readable by group or others (chmod 700)"
+    return None
+
+
+def write_report(report_dir: Path, run_date: date, content: bytes) -> None:
     """Write the report atomically with mode 600 in a mode-700 directory.
 
     The directory is created (mode 700) when missing. The file is written to
@@ -298,10 +471,10 @@ def write_report(report_dir: Path, run_date: date, content: str) -> None:
     if not report_dir.exists():
         report_dir.mkdir(mode=0o700, parents=True)
         os.chmod(report_dir, 0o700)
-    target = report_dir / f"rams_report_{run_date.isoformat()}.csv"
+    target = report_dir / f"rams_report_{run_date.isoformat()}.xlsx"
     fd, tmp = tempfile.mkstemp(dir=report_dir, prefix=".rams_report_", suffix=".tmp")
     try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
+        with os.fdopen(fd, "wb") as fh:
             os.fchmod(fh.fileno(), 0o600)
             fh.write(content)
         os.replace(tmp, target)
@@ -330,6 +503,8 @@ def collect_jobs(
 
     ``Date`` and ``Type`` are sent as Simpro filters, and are checked again
     here, because Simpro ignores filter fields it does not know (ADR-015).
+    A company whose schedules fail is recorded in ``stats.failed_companies``;
+    rows already read for it are kept.
     """
     jobs: dict[tuple[str, int], JobRow] = {}
     filters = {
@@ -359,8 +534,8 @@ def collect_jobs(
                     JobRow(company=label, company_id=company_id, job_id=job_id),
                 )
                 row.dates.add(schedule.date)
-        except (SimproError, ValidationError) as exc:
-            stats.company_errors += 1
+        except READ_ERRORS as exc:
+            stats.failed_companies.append(label)
             logger.error("company=%s schedules failed: %s", label, _error_label(exc))
     return jobs
 
@@ -389,7 +564,7 @@ def fill_job(
             row.ms |= is_ms
             if is_ra or is_ms:
                 row.matched.append(attachment.filename)
-    except (SimproError, ValidationError) as exc:
+    except READ_ERRORS as exc:
         row.error = True
         logger.error(
             "company=%s job=%d failed: %s", row.company, row.job_id, _error_label(exc)
@@ -411,7 +586,9 @@ def run(settings: RamsSettings, client: SimproClient, run_date: date) -> int:
     for row in rows:
         fill_job(client, row, ra, ms)
 
-    write_report(settings.report_dir, run_date, render_csv(rows))
+    cells = [company_error_cells(label) for label in stats.failed_companies]
+    cells += [row.as_cells() for row in rows]
+    write_report(settings.report_dir, run_date, render_xlsx(cells))
 
     counts = {status: 0 for status in STATUSES}
     for row in rows:
@@ -456,6 +633,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     if inside_repo(settings.report_dir):
         logger.error("RAMS_REPORT_DIR must be outside the repository")
+        return 2
+    if problem := report_dir_problem(settings.report_dir):
+        logger.error(problem)
         return 2
     try:
         simpro_settings = SimproSettings()

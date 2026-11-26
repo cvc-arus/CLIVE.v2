@@ -26,6 +26,8 @@
       "Bash(*eval-set.yaml*)",
       "Read(**/rams_report_*.csv)",
       "Bash(*rams_report_*.csv*)",
+      "Read(**/rams_report_*.xlsx)",
+      "Bash(*rams_report_*.xlsx*)",
       "Bash(*RAMS_REPORT_DIR*)",
       "Edit(**/.env)",
       "Edit(**/.env.local)",
@@ -42,7 +44,8 @@
       "Edit(docs/simpro/private/kb-extraction/*/labels.md)",
       "Edit(evaluation/eval-set.yaml)",
       "Edit(evaluation/results/**)",
-      "Edit(**/rams_report_*.csv)"
+      "Edit(**/rams_report_*.csv)",
+      "Edit(**/rams_report_*.xlsx)"
     ]
   }
 }

@@ -7,16 +7,18 @@ to ``tmp_path`` only.
 
 from __future__ import annotations
 
-import csv
 import importlib.util
+import io
 import logging
 import re
 import stat
 import sys
+import zipfile
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
+from xml.etree import ElementTree
 
 import httpx
 import pytest
@@ -47,6 +49,10 @@ INJECTION_CUSTOMER = "=HYPERLINK(evil)"
 
 #: Request paths the fake answers with a 503, set per test.
 FAILING_PATHS: set[str] = set()
+#: Request paths the fake answers with a 200 whose body is not JSON.
+NOT_JSON_PATHS: set[str] = set()
+
+_NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
 
 
 # --- Pure helpers ---------------------------------------------------------------
@@ -141,7 +147,13 @@ def test_client_name_handles_company_and_individual(customer, expected):
 
 @pytest.mark.parametrize(
     ("reference", "expected"),
-    [("123-45", 123), ("123", 123), ("abc-1", None), ("", None)],
+    [
+        ("123-45", 123),
+        ("123", 123),
+        ("abc-1", None),
+        ("", None),
+        ("\u00b2-1", None),  # a superscript digit: isdigit() but not int()
+    ],
 )
 def test_job_id_from_reference(reference, expected):
     """Job schedules carry '<jobID>-<costCentreID>' in Reference."""
@@ -149,9 +161,47 @@ def test_job_id_from_reference(reference, expected):
 
 
 @pytest.mark.parametrize("value", ["=1+1", "+1", "-1", "@SUM(A1)", "\tx"])
-def test_formula_cells_are_escaped(value):
-    """Cells a spreadsheet would evaluate get a leading apostrophe."""
-    assert rams.safe_cell(value) == "'" + value
+def test_formula_like_text_is_an_inline_string(value):
+    """Text that looks like a formula is stored as text, never as a formula."""
+    sheet = _sheet_xml(rams.render_xlsx([[value]]))
+    assert sheet.find(".//m:f", _NS) is None
+    assert _rows(sheet)[1] == [value]
+
+
+def test_xml_illegal_characters_are_dropped():
+    """A control character in a Simpro value cannot corrupt the workbook."""
+    sheet = _sheet_xml(rams.render_xlsx([["a\x00b\x0bc", 7]]))
+    assert _rows(sheet)[1] == ["abc", "7"]
+
+
+def test_workbook_has_the_required_parts():
+    """The file is a zip with the parts a spreadsheet application needs."""
+    with zipfile.ZipFile(io.BytesIO(rams.render_xlsx([]))) as zf:
+        names = set(zf.namelist())
+        for name in names:
+            ElementTree.fromstring(zf.read(name))  # every part is well-formed
+    assert names == {
+        "[Content_Types].xml",
+        "_rels/.rels",
+        "xl/workbook.xml",
+        "xl/_rels/workbook.xml.rels",
+        "xl/styles.xml",
+        "xl/worksheets/sheet1.xml",
+    }
+
+
+def test_existing_report_dir_must_be_private(tmp_path):
+    """A group- or world-readable directory is refused; 700 or missing is fine."""
+    assert rams.report_dir_problem(tmp_path / "missing") is None
+    open_dir = tmp_path / "open"
+    open_dir.mkdir(mode=0o755)
+    open_dir.chmod(0o755)
+    assert rams.report_dir_problem(open_dir)
+    open_dir.chmod(0o700)
+    assert rams.report_dir_problem(open_dir) is None
+    a_file = tmp_path / "file"
+    a_file.write_text("x")
+    assert rams.report_dir_problem(a_file)
 
 
 def test_inside_repo_detection(tmp_path):
@@ -231,6 +281,9 @@ def _simpro(request: httpx.Request) -> httpx.Response:
     params = parse_qs(urlsplit(str(request.url)).query)
     if path in FAILING_PATHS:
         return httpx.Response(503)
+    if path in NOT_JSON_PATHS:
+        headers = {"Result-Total": "1", "Result-Count": "1", "Result-Pages": "1"}
+        return httpx.Response(200, text="<html>maintenance</html>", headers=headers)
     if m := re.fullmatch(r"/companies/(\d+)/schedules/", path):
         return _paged(SCHEDULES.get(int(m[1]), []), params)
     if m := re.fullmatch(r"/companies/(\d+)/jobs/(\d+)", path):
@@ -282,10 +335,36 @@ def settings(tmp_path):
     )
 
 
+def _sheet_xml(workbook: bytes) -> ElementTree.Element:
+    """Parse the worksheet part of an ``.xlsx`` file's bytes."""
+    with zipfile.ZipFile(io.BytesIO(workbook)) as zf:
+        return ElementTree.fromstring(zf.read("xl/worksheets/sheet1.xml"))
+
+
+def _rows(sheet: ElementTree.Element) -> list[list[str]]:
+    """Return every row's cell text, inline strings and numbers alike."""
+    rows = []
+    for row in sheet.find("m:sheetData", _NS):
+        values = []
+        for cell in row:
+            if cell.get("t") == "inlineStr":
+                values.append(
+                    "".join(t.text or "" for t in cell.iterfind(".//m:t", _NS))
+                )
+            else:
+                values.append(cell.findtext("m:v", "", _NS))
+        rows.append(values)
+    return rows
+
+
+def _report_path(settings) -> Path:
+    return settings.report_dir / f"rams_report_{RUN_DATE.isoformat()}.xlsx"
+
+
 def _read_report(settings) -> list[dict[str, str]]:
-    path = settings.report_dir / f"rams_report_{RUN_DATE.isoformat()}.csv"
-    with path.open(newline="", encoding="utf-8") as fh:
-        return list(csv.DictReader(fh))
+    header, *body = _rows(_sheet_xml(_report_path(settings).read_bytes()))
+    assert header == list(rams.HEADER)
+    return [dict(zip(header, row, strict=True)) for row in body]
 
 
 # --- End to end -----------------------------------------------------------------
@@ -297,7 +376,7 @@ def test_report_rows_and_columns(fake_simpro, settings):
     assert rams.run(settings, client, RUN_DATE) == 1  # job 202 failed
 
     rows = _read_report(settings)
-    assert list(rows[0]) == list(rams.CSV_HEADER)
+    assert list(rows[0]) == list(rams.HEADER)
     by_job = {(r["company"], r["job_no"]): r for r in rows}
     assert [(r["company"], r["job_no"]) for r in rows] == [
         ("Projects", "203"),
@@ -321,7 +400,7 @@ def test_report_rows_and_columns(fake_simpro, settings):
 
     combined = by_job[("Projects", "201")]
     assert (combined["status"], combined["doc_count"]) == ("BOTH", "1")
-    assert combined["client_name"] == "'" + INJECTION_CUSTOMER
+    assert combined["client_name"] == INJECTION_CUSTOMER  # stored as text
 
     none = by_job[("Projects", "203")]
     assert (none["ra"], none["ms"], none["status"]) == ("N", "N", "NONE")
@@ -330,6 +409,9 @@ def test_report_rows_and_columns(fake_simpro, settings):
     error = by_job[("Projects", "202")]
     assert error["status"] == "ERROR"
     assert error["scheduled_date"] == "2026-11-28"
+    assert error["note"] == rams.JOB_ERROR_NOTE
+    assert both["note"] == ""
+    assert _sheet_xml(_report_path(settings).read_bytes()).find(".//m:f", _NS) is None
 
 
 def test_report_file_and_directory_are_private(fake_simpro, settings):
@@ -338,7 +420,7 @@ def test_report_file_and_directory_are_private(fake_simpro, settings):
     rams.run(settings, client, RUN_DATE)
     assert stat.S_IMODE(settings.report_dir.stat().st_mode) == 0o700
     files = list(settings.report_dir.iterdir())
-    assert [f.name for f in files] == ["rams_report_2026-11-25.csv"]
+    assert [f.name for f in files] == ["rams_report_2026-11-25.xlsx"]
     assert stat.S_IMODE(files[0].stat().st_mode) == 0o600
 
 
@@ -417,7 +499,7 @@ def test_window_counts_and_ignored_schedules(fake_simpro, settings, caplog):
 def test_failed_company_is_reported_not_fatal(
     fake_simpro, settings, caplog, monkeypatch
 ):
-    """A schedules failure for one company still writes the other's rows."""
+    """A schedules failure writes the other company's rows and flags this one."""
     _router, client = fake_simpro
     monkeypatch.setattr(
         sys.modules[__name__], "FAILING_PATHS", {f"/companies/{PROJECTS}/schedules/"}
@@ -425,8 +507,34 @@ def test_failed_company_is_reported_not_fatal(
     caplog.set_level(logging.INFO, logger="clive.rams")
     assert rams.run(settings, client, RUN_DATE) == 1
     rows = _read_report(settings)
-    assert {r["company"] for r in rows} == {"Service"}
+    flag, *jobs = rows
+    assert (flag["company"], flag["job_no"], flag["status"]) == (
+        "Projects",
+        "",
+        "ERROR",
+    )
+    assert flag["note"] == rams.COMPANY_ERROR_NOTE
+    assert {r["company"] for r in jobs} == {"Service"}
     assert "company=Projects schedules failed: SimproServerError" in caplog.text
+
+
+def test_body_that_is_not_json_marks_the_job_not_the_run(
+    fake_simpro, settings, caplog, monkeypatch
+):
+    """A 200 with a non-JSON body fails that job only; the report is written."""
+    _router, client = fake_simpro
+    monkeypatch.setattr(
+        sys.modules[__name__],
+        "NOT_JSON_PATHS",
+        {f"/companies/{SERVICE}/jobs/102/attachments/files/"},
+    )
+    caplog.set_level(logging.INFO, logger="clive.rams")
+    assert rams.run(settings, client, RUN_DATE) == 1
+    by_job = {(r["company"], r["job_no"]): r for r in _read_report(settings)}
+    assert by_job[("Service", "102")]["status"] == "ERROR"
+    assert by_job[("Service", "101")]["status"] == "BOTH"
+    assert "company=Service job=102 failed: JSONDecodeError" in caplog.text
+    assert "maintenance" not in caplog.text
 
 
 # --- Configuration --------------------------------------------------------------
@@ -443,6 +551,23 @@ def test_main_refuses_report_dir_inside_repo(monkeypatch, tmp_path, caplog):
         assert not router.calls
     assert "outside the repository" in caplog.text
     assert not (REPO_ROOT / "reports").exists()
+
+
+def test_main_refuses_an_open_report_dir(monkeypatch, tmp_path, caplog):
+    """An existing report directory others can read stops the run first."""
+    monkeypatch.chdir(tmp_path)
+    open_dir = tmp_path / "out"
+    open_dir.mkdir()
+    open_dir.chmod(0o755)
+    monkeypatch.setenv("RAMS_REPORT_DIR", str(open_dir))
+    monkeypatch.setenv("SIMPRO_COMPANY_ID_SERVICE", str(SERVICE))
+    monkeypatch.setenv("SIMPRO_COMPANY_ID_PROJECTS", str(PROJECTS))
+    with respx.mock(assert_all_called=False) as router:
+        assert rams.main([]) == 2
+        assert not router.calls
+    assert "chmod 700" in caplog.text
+    assert str(tmp_path) not in caplog.text
+    assert not list(open_dir.iterdir())
 
 
 def test_main_names_missing_settings_without_values(monkeypatch, tmp_path, caplog):
