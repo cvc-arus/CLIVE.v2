@@ -1,9 +1,12 @@
 # CLAUDE.md — `tests/`
 
 Complements the root `CLAUDE.md`. All tests here target `simpro_client`, or
-the running mock over HTTP. One exception: `test_eval_runner.py` tests the
+the running mock over HTTP. Two exceptions: `test_eval_runner.py` tests the
 evaluation runner script (`scripts/eval/run_eval.py`, W4 T3) offline, with
-Open WebUI faked by `respx` and invented content only. Configuration lives
+Open WebUI faked by `respx` and invented content only. Likewise,
+`test_rams_report.py` tests the RAMS document check script
+(`scripts/rams/rams_report.py`) offline, with Simpro faked by `respx` and
+invented data only. Configuration lives
 in root `pyproject.toml` (`testpaths = ["tests"]`, `pythonpath = ["src"]`,
 markers `integration` and `live`).
 

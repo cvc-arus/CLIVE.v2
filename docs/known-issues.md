@@ -7,6 +7,26 @@ Found by reading the actual codebase and running the test suite, per the project
 
 The root `pyproject.toml` defines dev dependencies under `[dependency-groups]` (PEP 735 style) rather than `[project.optional-dependencies]`. `pip install -e ".[dev]"` prints `WARNING: simpro-client 0.1.0 does not provide the extra 'dev'` and installs only the base package — `pytest`, `respx`, `ruff`, and `pytest-cov` are not installed by that command. `uv sync` (or explicit `pip install pytest respx ruff pytest-cov`) is required instead.
 
+## Exception to ADR-009: the RAMS document check script imports `simpro_client` directly
+
+Recorded 2026-11-25. Alex approved it on 2026-11-25. ADR-009 says only
+`clive-gateway` imports `simpro_client` at runtime. `scripts/rams/rams_report.py`
+is a side task, not CLIVE development: a daily, read-only report that imports the
+library directly and calls CVC's live Simpro build. The exception is narrow:
+
+- It covers one script, run by hand or on a schedule. The script is never a
+  service, and nothing else may import it.
+- It sends GET requests only, and only to `SIMPRO_COMPANY_ID_SERVICE` and
+  `SIMPRO_COMPANY_ID_PROJECTS`.
+- It reads attachment metadata only: the job's file list with
+  `columns=ID,Filename`. It never calls a file's detail route, `/view/`,
+  `display=Base64` or the zipped-folder route.
+- The CSV goes to `$RAMS_REPORT_DIR`, outside the repository. Console and log
+  output carry only counts, company labels, job IDs and error class names.
+
+`tests/test_rams_report.py` enforces the last three points. When `clive-gateway`
+exists, move the script behind it or retire it.
+
 ## RESOLVED 2026-10-17 — `/companies/` is not paginated upstream; the client and mock assumed it was
 
 Found 2026-10-17 by the first live read-only check
